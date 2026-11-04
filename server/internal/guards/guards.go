@@ -6,12 +6,16 @@ package guards
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"slices"
 
+	"ganigeorgiev.com/pocketbase/dbx"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/hook"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/security"
@@ -60,6 +64,22 @@ func Register(app core.App) {
 		return errors.New("the organisation settings record cannot be deleted")
 	})
 
+	// Forms: the form id ties every version's XForm and every submission to
+	// the form, so it is fixed once the form has a version.
+	onUpdate(app, schema.Forms, func(e *core.RecordEvent, old *core.Record) error {
+		if changed(old, e.Record, "form_id") {
+			total, err := e.App.CountRecords(schema.FormVersions, dbx.HashExp{"form": old.Id})
+			if err != nil {
+				return err
+			}
+			if total > 0 {
+				return validation.Errors{"form_id": validation.NewError("validation_form_id_fixed",
+					"The form id cannot be changed once the form has a version.")}
+			}
+		}
+		return e.Next()
+	})
+
 	// Form versions: checked against their XForm; immutable once published.
 	app.OnRecordCreate(schema.FormVersions).BindFunc(func(e *core.RecordEvent) error {
 		if err := checkFormVersion(e.App, e.Record); err != nil {
@@ -91,15 +111,22 @@ func Register(app core.App) {
 		return e.Next()
 	})
 
-	// Submissions: only the review state may change after receipt.
+	// Submissions: the XML is checked on arrival, from any source; after
+	// that only the review state and comment may change.
+	app.OnRecordCreate(schema.Submissions).BindFunc(func(e *core.RecordEvent) error {
+		if err := checkSubmission(e.App, e.Record); err != nil {
+			return err
+		}
+		return e.Next()
+	})
 	onUpdate(app, schema.Submissions, func(e *core.RecordEvent, old *core.Record) error {
 		for _, f := range e.Record.Collection().Fields {
 			name := f.GetName()
-			if name == "review_state" || name == "updated" {
+			if name == "updated" || slices.Contains(schema.ReviewFields, name) {
 				continue
 			}
 			if changed(old, e.Record, name) {
-				return fmt.Errorf("a received submission cannot be changed (field %q); only its review state can", name)
+				return fmt.Errorf("a received submission cannot be changed (field %q); only its review state and comment can", name)
 			}
 		}
 		return e.Next()
@@ -257,9 +284,14 @@ func syncUserLocationPath(e *core.RecordEvent) error {
 	return e.Next()
 }
 
+// stampPublished makes published_at the server's own record of when a
+// version was published: now, when it is published by this write, and empty
+// while it is not published. A value sent by the client is ignored.
 func stampPublished(r *core.Record) {
-	if r.GetBool("published") && r.GetDateTime("published_at").IsZero() {
+	if r.GetBool("published") {
 		r.Set("published_at", types.NowDateTime())
+	} else {
+		r.Set("published_at", "")
 	}
 }
 
@@ -272,13 +304,18 @@ func checkSingleOwner(r *core.Record) error {
 	return nil
 }
 
-// checkFormVersion confirms that the XForm file's form id and version match
-// the form record and the version string, so that submissions made with it
-// can be matched back to this version.
+// checkFormVersion checks the whole XForm file (see package xform) and
+// confirms that its form id and version match the form record and the
+// version string, so that submissions made with it can be matched back to
+// this version. Problems are reported per field, as the API returns them.
 func checkFormVersion(app core.App, r *core.Record) error {
 	form, err := app.FindRecordById(schema.Forms, r.GetString("form"))
 	if err != nil {
-		return errors.New("the form for this version does not exist")
+		return validation.Errors{"form": validation.NewError("validation_missing_form", "The form for this version does not exist.")}
+	}
+
+	if files := r.GetUnsavedFiles("xform"); len(files) > 1 {
+		return validation.Errors{"xform": validation.NewError("validation_too_many_files", "Upload exactly one XForm file.")}
 	}
 
 	reader, closeFn, err := openXForm(app, r)
@@ -287,22 +324,92 @@ func checkFormVersion(app core.App, r *core.Record) error {
 	}
 	defer closeFn()
 
-	def, err := xform.ParseDefinition(io.LimitReader(reader, schema.MaxXMLSize+1))
+	def, err := xform.ParseDefinition(reader)
 	if err != nil {
-		return fmt.Errorf("the XForm file could not be read: %w", err)
+		return xmlFieldError("xform", err)
 	}
 	if def.FormID != form.GetString("form_id") {
-		return fmt.Errorf("the XForm's form id is %q but this form's id is %q", def.FormID, form.GetString("form_id"))
+		return validation.Errors{"xform": validation.NewError("validation_xform_mismatch",
+			fmt.Sprintf("The XForm's form id is %q but this form's id is %q.", def.FormID, form.GetString("form_id")))}
 	}
 	if def.Version != r.GetString("version") {
-		return fmt.Errorf("the XForm's version is %q but this record's version is %q", def.Version, r.GetString("version"))
+		return validation.Errors{"version": validation.NewError("validation_xform_mismatch",
+			fmt.Sprintf("The XForm's version is %q but this record's version is %q.", def.Version, r.GetString("version")))}
 	}
 
 	return nil
 }
 
+// checkSubmission checks the submission XML (see package xform) and that
+// the record's instance id, SHA-256, form and form version agree with it,
+// whoever writes the record: the submissions route, Go code or a superuser.
+func checkSubmission(app core.App, r *core.Record) error {
+	files := r.GetUnsavedFiles("xml")
+	if len(files) != 1 {
+		return validation.Errors{"xml": validation.NewError("validation_required", "Exactly one submission XML file is required.")}
+	}
+	if files[0].Size > schema.MaxXMLSize {
+		return xmlFieldError("xml", xform.ErrTooLarge)
+	}
+	f, err := files[0].Reader.Open()
+	if err != nil {
+		return fmt.Errorf("the submission XML could not be opened: %w", err)
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	inst, err := xform.ParseInstance(io.TeeReader(f, h))
+	if err != nil {
+		return xmlFieldError("xml", err)
+	}
+
+	mismatch := func(field, msg string) error {
+		return validation.Errors{field: validation.NewError("validation_submission_mismatch", msg)}
+	}
+	if r.GetString("xml_sha256") != hex.EncodeToString(h.Sum(nil)) {
+		return mismatch("xml_sha256", "xml_sha256 is not the SHA-256 of the submission XML.")
+	}
+	if r.GetString("instance_id") != inst.InstanceID {
+		return mismatch("instance_id", "instance_id is not the submission XML's meta/instanceID.")
+	}
+	form, err := app.FindRecordById(schema.Forms, r.GetString("form"))
+	if err != nil || form.GetString("form_id") != inst.FormID {
+		return mismatch("form", "The form is not the one the submission XML names.")
+	}
+	version, err := app.FindRecordById(schema.FormVersions, r.GetString("form_version"))
+	if err != nil || version.GetString("form") != form.Id || version.GetString("version") != inst.Version {
+		return mismatch("form_version", "The form version is not the one the submission XML names.")
+	}
+
+	return nil
+}
+
+// xmlFieldError reports a problem with an uploaded XML file as a field
+// validation error, which the API returns as data.<field>.code and
+// .message. A failure to read the file is not the uploader's fault and is
+// returned unchanged.
+func xmlFieldError(field string, err error) error {
+	var code string
+	switch {
+	case errors.Is(err, xform.ErrTooLarge):
+		code = "validation_file_size_limit"
+	case errors.Is(err, xform.ErrMalformed):
+		code = "validation_invalid_xml"
+	case errors.Is(err, xform.ErrNotXForm):
+		code = "validation_invalid_xform"
+	case errors.Is(err, xform.ErrNotInstance):
+		code = "validation_invalid_instance"
+	default:
+		return err
+	}
+	return validation.Errors{field: validation.NewError(code, "The file is "+err.Error()+".")}
+}
+
 func openXForm(app core.App, r *core.Record) (io.Reader, func(), error) {
 	if files := r.GetUnsavedFiles("xform"); len(files) > 0 {
+		if files[0].Size > schema.MaxXMLSize {
+			return nil, nil, xmlFieldError("xform", xform.ErrTooLarge)
+		}
 		f, err := files[0].Reader.Open()
 		if err != nil {
 			return nil, nil, fmt.Errorf("the XForm file could not be opened: %w", err)

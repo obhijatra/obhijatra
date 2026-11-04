@@ -27,8 +27,8 @@ import (
 
 // Baseline values the blueprint requires and init switches on.
 const (
-	LoginRateLimitRequests = 2 // login attempts...
-	LoginRateLimitSeconds  = 3 // ...per this many seconds, per IP address
+	LoginRateLimitRequests = schema.AuthRateLimitRequests // sign-in attempts...
+	LoginRateLimitSeconds  = schema.AuthRateLimitSeconds  // ...per this many seconds, per IP address
 	LogRetentionDays       = 365
 	MinPasswordLength      = 12
 
@@ -371,7 +371,9 @@ func (r *Report) WritePosture(w io.Writer) {
 		on("Server settings are encrypted; the key is in %s (owner-only), outside the data folder", r.EnvFile)
 		on("Data folder %s is readable by this server's user only", r.DataDir)
 	}
-	on("Login rate limit: %d attempts every %d seconds from one IP address", LoginRateLimitRequests, LoginRateLimitSeconds)
+	on("Sign-in rate limit: %d attempts every %d seconds from one IP address", LoginRateLimitRequests, LoginRateLimitSeconds)
+	on("Account lock: %d wrong passwords within %d minutes lock the account for %d minutes",
+		schema.LockoutMaxFailures, int(schema.LockoutWindow.Minutes()), int(schema.LockoutDuration.Minutes()))
 	on("Request logs kept %d days, with the user ID of each request", LogRetentionDays)
 	on("No public sign-up: an organisation admin creates every account")
 	on("Session lengths: field users 24 hours, staff 4 hours, superusers 30 minutes")

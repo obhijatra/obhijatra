@@ -1,6 +1,9 @@
 package setup_test
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,9 +15,12 @@ import (
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tests"
 
+	"github.com/obhijatra/obhijatra/server/internal/audit"
 	"github.com/obhijatra/obhijatra/server/internal/obhijatra"
 	"github.com/obhijatra/obhijatra/server/internal/schema"
 	"github.com/obhijatra/obhijatra/server/internal/setup"
+	"github.com/obhijatra/obhijatra/server/internal/testutil"
+	"github.com/obhijatra/obhijatra/server/internal/version"
 )
 
 const (
@@ -95,8 +101,8 @@ func TestInitSetsUpTheSecurityBaseline(t *testing.T) {
 		t.Error("rate limiter is not enabled")
 	}
 	rule, ok := s.RateLimits.FindRateLimitRule([]string{"*:auth"})
-	if !ok || rule.MaxRequests != 2 || rule.Duration != 3 {
-		t.Errorf("login rate limit rule = %+v, want 2 per 3 s", rule)
+	if !ok || rule.MaxRequests != 30 || rule.Duration != 60 {
+		t.Errorf("sign-in rate limit rule = %+v, want 30 per 60 s", rule)
 	}
 	if s.Logs.MaxDays != 365 || !s.Logs.LogAuthId {
 		t.Errorf("logs: %d days, auth id %v; want 365 days with auth id", s.Logs.MaxDays, s.Logs.LogAuthId)
@@ -110,7 +116,7 @@ func TestInitSetsUpTheSecurityBaseline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if settings.GetString("organisation_name") != "Test NGO" || settings.GetString("hosting_country") != "BD" || settings.GetInt("schema_version") != 1 {
+	if settings.GetString("organisation_name") != "Test NGO" || settings.GetString("hosting_country") != "BD" || settings.GetInt("schema_version") != version.SchemaVersion {
 		t.Errorf("settings record wrong: %q %q %d", settings.GetString("organisation_name"), settings.GetString("hosting_country"), settings.GetInt("schema_version"))
 	}
 	admin, err := app.FindAuthRecordByEmail(schema.StaffUsers, "admin@example.org")
@@ -141,35 +147,107 @@ func TestInitSetsUpTheSecurityBaseline(t *testing.T) {
 	}
 }
 
-func TestInitLoginRateLimitIsEnforced(t *testing.T) {
+// A branch office of 30 staff behind one internet connection can all sign
+// in within the same minute; the 31st attempt from that address in the
+// minute is refused with 429 until the minute is over.
+func TestInitSignInRateLimitFitsABranchOffice(t *testing.T) {
 	app := newFreshApp(t)
 	defer app.Cleanup()
 
 	if _, err := setup.Run(app, options(filepath.Join(t.TempDir(), setup.EnvFileName))); err != nil {
 		t.Fatal(err)
 	}
+	root, err := app.FindFirstRecordByFilter(schema.Locations, "parent = ''")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	login := func(name string, status int) *tests.ApiScenario {
-		return &tests.ApiScenario{
-			Name:   name,
-			Method: http.MethodPost, URL: "/api/collections/staff_users/auth-with-password",
-			// No password: refused by validation before any password hashing,
-			// so the requests are fast; the rate limiter counts them anyway.
-			Body:           strings.NewReader(`{"identity":"admin@example.org"}`),
-			ExpectedStatus: status, ExpectedContent: []string{`"status":`},
+	type login struct{ email, password string }
+	logins := []login{{"admin@example.org", adminPassword}}
+	for i := 2; i <= setup.LoginRateLimitRequests; i++ {
+		email := fmt.Sprintf("staff%02d@example.org", i)
+		testutil.User(t, app, schema.StaffUsers, email, schema.RoleSupervisor, root, true)
+		logins = append(logins, login{email, testutil.Password})
+	}
+
+	signIn := func(name string, l login, status int, content string) {
+		body, _ := json.Marshal(map[string]string{"identity": l.email, "password": l.password})
+		(&tests.ApiScenario{
+			Name: name, Method: http.MethodPost, URL: "/api/collections/staff_users/auth-with-password",
+			Body: bytes.NewReader(body), ExpectedStatus: status, ExpectedContent: []string{content},
 			TestAppFactory: func(testing.TB) *tests.TestApp { return app }, DisableTestAppCleanup: true,
-		}
+		}).Test(t)
 	}
-	start := time.Now()
-	login("first login attempt", 400).Test(t)
-	login("second login attempt", 400).Test(t)
 
-	// On a very slow machine two requests could outlast the 3-second
-	// window; the settings test above still covers the configuration.
-	if elapsed := time.Since(start); elapsed > 2*time.Second {
-		t.Skipf("two requests took %s, too slow to test a 3-second window here", elapsed)
+	// The limiter's window is 60 s from the first attempt; 31 sign-ins
+	// take a few seconds even on a slow machine.
+	start := time.Now()
+	for i, l := range logins {
+		signIn(fmt.Sprintf("staff member %d of %d signs in", i+1, len(logins)), l, 200, `"token":`)
 	}
-	login("third login within 3 seconds is rate limited", 429).Test(t)
+	if elapsed := time.Since(start); elapsed > 50*time.Second {
+		t.Fatalf("30 sign-ins took %s; this machine is too slow to test a 60-second window", elapsed)
+	}
+	signIn("the 31st attempt within the minute is rate limited", logins[0], 429, `"status":429`)
+}
+
+// A server set up before schema version 2 had the first baseline: 2
+// sign-ins per 3 s per IP. Upgrading widens it, unless the organisation
+// changed the rule itself, and records the new schema version.
+func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
+	for _, c := range []struct {
+		name         string
+		requests     int
+		seconds      int64
+		wantRequests int
+		wantSeconds  int64
+	}{
+		{"first baseline is widened", 2, 3, setup.LoginRateLimitRequests, setup.LoginRateLimitSeconds},
+		{"an organisation's own rule is kept", 5, 10, 5, 10},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			app := newFreshApp(t)
+			defer app.Cleanup()
+			if _, err := setup.Run(app, options(filepath.Join(t.TempDir(), setup.EnvFileName))); err != nil {
+				t.Fatal(err)
+			}
+
+			// Wind the server back to before the migration.
+			s, _ := app.Settings().Clone()
+			for i := range s.RateLimits.Rules {
+				if s.RateLimits.Rules[i].Label == "*:auth" {
+					s.RateLimits.Rules[i].MaxRequests, s.RateLimits.Rules[i].Duration = c.requests, c.seconds
+				}
+			}
+			if err := app.Save(s); err != nil {
+				t.Fatal(err)
+			}
+			settings, _ := app.FindFirstRecordByFilter(schema.Settings, "")
+			settings.Set("schema_version", 1)
+			if err := app.Save(settings); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%'").Execute(); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := app.RunAllMigrations(); err != nil {
+				t.Fatalf("upgrade: %v", err)
+			}
+
+			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
+			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
+				t.Errorf("after the upgrade the rule is %+v, want %d per %d s", rule, c.wantRequests, c.wantSeconds)
+			}
+			settings, _ = app.FindFirstRecordByFilter(schema.Settings, "")
+			if settings.GetInt("schema_version") != version.SchemaVersion {
+				t.Errorf("schema_version %d after the upgrade, want %d", settings.GetInt("schema_version"), version.SchemaVersion)
+			}
+			if r, err := audit.Verify(app); err != nil || !r.OK {
+				t.Errorf("audit chain after the upgrade: %+v %v", r, err)
+			}
+		})
+	}
 }
 
 func TestInitRejectsWeakInput(t *testing.T) {

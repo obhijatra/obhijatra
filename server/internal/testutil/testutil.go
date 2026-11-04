@@ -51,6 +51,7 @@ type Org struct {
 	Donor  *core.Record // donor_readonly at the root
 	Sup1   *core.Record // supervisor, branch 1
 	Sup2   *core.Record // supervisor, branch 2
+	ME1    *core.Record // monitoring and evaluation officer, branch 1
 	Field1 *core.Record // field officer, branch 1
 	Peer1  *core.Record // a second field officer, branch 1
 	Field2 *core.Record // field officer, branch 2
@@ -74,6 +75,7 @@ func SeedOrg(t testing.TB, app core.App) *Org {
 	o.Donor = User(t, app, schema.StaffUsers, "donor@example.org", schema.RoleDonorReadonly, o.Root, true)
 	o.Sup1 = User(t, app, schema.StaffUsers, "sup1@example.org", schema.RoleSupervisor, o.Branch1, true)
 	o.Sup2 = User(t, app, schema.StaffUsers, "sup2@example.org", schema.RoleSupervisor, o.Branch2, true)
+	o.ME1 = User(t, app, schema.StaffUsers, "me1@example.org", schema.RoleME, o.Branch1, true)
 	o.Field1 = User(t, app, schema.FieldUsers, "field1@example.org", schema.RoleFieldOfficer, o.Branch1, true)
 	o.Peer1 = User(t, app, schema.FieldUsers, "peer1@example.org", schema.RoleFieldOfficer, o.Branch1, true)
 	o.Field2 = User(t, app, schema.FieldUsers, "field2@example.org", schema.RoleFieldOfficer, o.Branch2, true)
@@ -156,6 +158,41 @@ func Token(t testing.TB, r *core.Record) string {
 		t.Fatal(err)
 	}
 	return token
+}
+
+// FileToken returns a short-lived file token for r, as POST /api/files/token
+// would.
+func FileToken(t testing.TB, r *core.Record) string {
+	t.Helper()
+
+	token, err := r.NewFileToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return token
+}
+
+// FormVersionUpload builds a records-API request body that uploads xform as
+// a version of the form record formID.
+func FormVersionUpload(t testing.TB, formID, version string, xform []byte, published bool) (body *bytes.Buffer, contentType string) {
+	t.Helper()
+
+	body = &bytes.Buffer{}
+	w := multipart.NewWriter(body)
+	for k, v := range map[string]string{"form": formID, "version": version, "published": fmt.Sprint(published)} {
+		if err := w.WriteField(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	part, err := w.CreateFormFile("xform", "form.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	part.Write(xform)
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return body, w.FormDataContentType()
 }
 
 // Superuser creates a superuser and returns it.

@@ -3,7 +3,10 @@
 // use one definition.
 package schema
 
-import "regexp"
+import (
+	"regexp"
+	"time"
+)
 
 // Collection names.
 const (
@@ -16,17 +19,25 @@ const (
 	Submissions  = "submissions"
 	Devices      = "devices"
 	Sessions     = "sessions"
+	LoginLocks   = "login_locks"
 	Audit        = "audit"
 
 	// Superusers is PocketBase's built-in superuser collection.
 	Superusers = "_superusers"
+
+	// LoginFailuresTable holds recent wrong passwords per account. It is a
+	// plain table, not a collection: the server's own counter (like
+	// PocketBase's rate limiter), invisible to the API and the Dashboard,
+	// and not in the audit chain, so unauthenticated traffic cannot grow
+	// the chain. The locks themselves are login_locks records, which are.
+	LoginFailuresTable = "_obhijatra_login_failures"
 )
 
 // CoreCollections cannot be renamed or deleted, because the API rules,
 // hooks and routes refer to them by name.
 var CoreCollections = []string{
 	Settings, Locations, FieldUsers, StaffUsers, Forms, FormVersions,
-	Submissions, Devices, Sessions, Audit,
+	Submissions, Devices, Sessions, LoginLocks, Audit,
 }
 
 // IsCoreCollection reports whether name is one of CoreCollections.
@@ -43,7 +54,10 @@ func IsCoreCollection(name string) bool {
 const (
 	mib = 1 << 20
 
-	// MaxXMLSize caps an XForm definition or a submission instance.
+	// MaxXMLSize caps an XForm definition or a submission instance. It is
+	// checked by the hooks on both file fields and by package xform, which
+	// reads every XML document in full; real XForms with several languages
+	// stay well under 1 MiB, and submission instances are a few KiB.
 	MaxXMLSize = 10 * mib
 	// MaxAttachmentSize caps one media file sent with a submission.
 	MaxAttachmentSize = 100 * mib
@@ -75,6 +89,32 @@ const (
 
 // ReviewStates lists every review state, in workflow order.
 var ReviewStates = []string{ReviewReceived, ReviewEdited, ReviewHasIssues, ReviewApproved, ReviewRejected}
+
+// ReviewFields are the only submission fields a reviewer may change; the
+// guards hook refuses a change to any other field, for superusers too.
+var ReviewFields = []string{"review_state", "review_comment"}
+
+// MaxReviewComment caps a reviewer's comment, in characters.
+const MaxReviewComment = 2000
+
+// Sign-in protection (see docs/decisions/0002-obhijatra-server.md).
+const (
+	// AuthRateLimitRequests sign-in attempts per AuthRateLimitSeconds from
+	// one IP address, per user collection: enough for a branch office of
+	// about 30 staff behind one internet connection to sign in together.
+	AuthRateLimitRequests = 30
+	AuthRateLimitSeconds  = 60
+
+	// LockoutMaxFailures wrong passwords for one account within
+	// LockoutWindow lock it for LockoutDuration.
+	LockoutMaxFailures = 10
+	LockoutWindow      = 15 * time.Minute
+	LockoutDuration    = 15 * time.Minute
+)
+
+// LockableCollections are the auth collections whose accounts can be
+// locked after repeated wrong passwords.
+var LockableCollections = []string{FieldUsers, StaffUsers, Superusers}
 
 // Device values.
 const (
@@ -124,9 +164,17 @@ const (
 		`" || @request.auth.role = "` + RoleBranchManager +
 		`" || @request.auth.role = "` + RoleME + `"))`
 
-	// staffReviewer: staff roles that may change a submission's review state.
+	// staffReviewer: staff roles that may set a submission's review state
+	// and comment, within their part of the organisation tree.
 	staffReviewer = `(` + isStaff + ` && (@request.auth.role = "` + RoleSupervisor +
-		`" || @request.auth.role = "` + RoleBranchManager + `"))`
+		`" || @request.auth.role = "` + RoleBranchManager +
+		`" || @request.auth.role = "` + RoleME +
+		`" || @request.auth.role = "` + RoleOrgAdmin + `"))`
+
+	// formManager: staff roles that may create forms and upload and publish
+	// form versions (forms are organisation-wide, not location-scoped).
+	formManager = `(` + isStaff + ` && (@request.auth.role = "` + RoleME +
+		`" || @request.auth.role = "` + RoleOrgAdmin + `"))`
 
 	// inScope: the record's location_path lies under the user's own.
 	// The empty-path guard stops "~ ''" (which would match everything).
@@ -189,17 +237,19 @@ var (
 // token is issued: deactivated accounts cannot log in.
 const AuthRule = `active = true`
 
-// Form rules: field users see published versions only.
+// Form rules: M&E staff and org admins manage forms; everyone else sees
+// published versions only. The XForm file is protected, so downloading it
+// needs a file token and passes FormVersionsRead.
 const (
 	FormsRead  = AnyActiveUser
-	FormsWrite = OrgAdminOnly
+	FormsWrite = Active + ` && ` + formManager
 
-	FormVersionsRead   = Active + ` && (published = true || ` + isOrgAdmin + `)`
-	FormVersionsCreate = OrgAdminOnly
+	FormVersionsRead   = Active + ` && (published = true || ` + formManager + `)`
+	FormVersionsCreate = Active + ` && ` + formManager
 	// Once published a version is immutable; the guards hook enforces the
 	// same for superusers.
-	FormVersionsUpdate = OrgAdminOnly + ` && published = false`
-	FormVersionsDelete = OrgAdminOnly + ` && published = false`
+	FormVersionsUpdate = Active + ` && ` + formManager + ` && published = false`
+	FormVersionsDelete = Active + ` && ` + formManager + ` && published = false`
 )
 
 // Submission rules. Create happens only through POST
@@ -209,9 +259,9 @@ var (
 		`(` + isField + ` && submitted_by = @request.auth.id)` +
 		` || ` + isOrgAdmin +
 		` || (` + staffReader + ` && ` + inScope + `))`
-	// Only review_state may change; the guards hook rejects anything else,
+	// Only ReviewFields may change; the guards hook rejects anything else,
 	// for superusers too.
-	SubmissionsUpdate = Active + ` && (` + isOrgAdmin + ` || (` + staffReviewer + ` && ` + inScope + `))`
+	SubmissionsUpdate = Active + ` && ` + staffReviewer + ` && ` + inScope
 )
 
 // Device rules: a user sees their own devices; enrolment is an org-admin
@@ -231,6 +281,14 @@ var (
 		` || (` + isStaff + ` && staff_user = @request.auth.id)` +
 		` || ` + isOrgAdmin + `)`
 	SessionsUpdate = OrgAdminOnly + ` && @request.body.revoked = true`
+)
+
+// Login lock rules: rows are written by the server when an account is
+// locked; an org admin may unlock early (the guards in package lockout
+// allow no other change and no delete, for superusers too).
+const (
+	LoginLocksRead   = OrgAdminOnly
+	LoginLocksUpdate = OrgAdminOnly + ` && @request.body.unlocked = true`
 )
 
 // Audit rules: readable by org admins only; no create, update or delete

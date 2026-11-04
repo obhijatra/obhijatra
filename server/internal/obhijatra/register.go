@@ -9,15 +9,18 @@ import (
 	"github.com/obhijatra/obhijatra/server/internal/api"
 	"github.com/obhijatra/obhijatra/server/internal/audit"
 	"github.com/obhijatra/obhijatra/server/internal/guards"
+	"github.com/obhijatra/obhijatra/server/internal/lockout"
 
 	// Registers the Go migrations with PocketBase.
 	_ "github.com/obhijatra/obhijatra/server/internal/migrations"
 )
 
-// Register binds the audit chain, the integrity guards and the
-// /api/obhijatra/v1 routes to app. Call it once, before the app starts.
+// Register binds the audit chain, the integrity guards, the sign-in
+// lockout and the /api/obhijatra/v1 routes to app. Call it once, before the
+// app starts.
 func Register(app core.App) {
 	audit.Register(app)
 	guards.Register(app)
+	lockout.Register(app)
 	api.Register(app)
 }

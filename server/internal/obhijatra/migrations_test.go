@@ -29,6 +29,7 @@ func TestMigrationsApplyOnFreshDataDir(t *testing.T) {
 		schema.Submissions:  core.CollectionTypeBase,
 		schema.Devices:      core.CollectionTypeBase,
 		schema.Sessions:     core.CollectionTypeBase,
+		schema.LoginLocks:   core.CollectionTypeBase,
 		schema.Audit:        core.CollectionTypeBase,
 	}
 	for name, typ := range wantType {
@@ -104,6 +105,30 @@ func TestMigrationsApplyOnFreshDataDir(t *testing.T) {
 	subs, _ := app.FindCollectionByNameOrId(schema.Submissions)
 	if subs.CreateRule != nil || subs.DeleteRule != nil {
 		t.Error("submissions must have no create or delete API rule")
+	}
+
+	// XML files are checked by content in hooks, never by MIME type, and
+	// are downloadable only with a file token.
+	for collection, field := range map[string]string{schema.FormVersions: "xform", schema.Submissions: "xml"} {
+		c, _ := app.FindCollectionByNameOrId(collection)
+		f, ok := c.Fields.GetByName(field).(*core.FileField)
+		if !ok || !f.Protected || len(f.MimeTypes) != 0 || f.MaxSize != schema.MaxXMLSize {
+			t.Errorf("%s.%s must be protected, %d bytes at most, with no MIME-type list", collection, field, schema.MaxXMLSize)
+		}
+	}
+	if subs.Fields.GetByName("review_comment") == nil {
+		t.Error("submissions.review_comment is missing")
+	}
+
+	// Login locks: written by the server, unlocked by an org admin, never
+	// created or deleted through the API.
+	locks, _ := app.FindCollectionByNameOrId(schema.LoginLocks)
+	if locks.CreateRule != nil || locks.DeleteRule != nil || locks.UpdateRule == nil ||
+		!strings.Contains(*locks.UpdateRule, "@request.body.unlocked = true") || *locks.ListRule != schema.OrgAdminOnly {
+		t.Errorf("login_locks rules are wrong: %v %v %v", locks.CreateRule, locks.UpdateRule, locks.DeleteRule)
+	}
+	if !app.HasTable(schema.LoginFailuresTable) {
+		t.Error("the login failures table is missing")
 	}
 
 	for collection, index := range map[string]string{

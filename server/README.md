@@ -29,6 +29,14 @@ To skip the questions, use `--non-interactive` with the flags shown by `init --h
 
 `./obhijatra-server audit verify` re-checks the tamper-evident audit chain. Exit status 0 means intact.
 
+## If someone cannot sign in
+
+- 10 wrong passwords within 15 minutes lock that account for 15 minutes. Waiting 15 minutes is enough; an organisation admin can also unlock it sooner.
+- Up to 30 people can sign in each minute from one internet connection. If more try at once, the app says the server is busy and tries again a minute later.
+- If the server runs behind a reverse proxy, set PocketBase's trusted-proxy setting, or everyone shares one allowance.
+
+Details: `docs/decisions/0002-obhijatra-server.md`, "Sign-in protection".
+
 ## Tests
 
 `go test ./... && go vet ./...`

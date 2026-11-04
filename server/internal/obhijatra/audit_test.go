@@ -232,12 +232,12 @@ func TestAuditAttributionAndAtomicity(t *testing.T) {
 		},
 		{
 			Name: "superuser edits form metadata in the Dashboard", Method: http.MethodPatch,
-			URL:  "/api/collections/forms/records/" + o.Form.Id, Body: strings.NewReader(`{"title":"Household visit v2"}`),
+			URL: "/api/collections/forms/records/" + o.Form.Id, Body: strings.NewReader(`{"title":"Household visit v2"}`),
 			Headers: auth(t, su), ExpectedStatus: 200, ExpectedContent: []string{`"title":"Household visit v2"`},
 		},
 		{
 			Name: "a published form version cannot be changed, even by a superuser", Method: http.MethodPatch,
-			URL:  "/api/collections/form_versions/records/" + o.Version.Id, Body: strings.NewReader(`{"published":false}`),
+			URL: "/api/collections/form_versions/records/" + o.Version.Id, Body: strings.NewReader(`{"published":false}`),
 			Headers: auth(t, su), ExpectedStatus: 400, ExpectedContent: []string{`"status":400`},
 		},
 	})
