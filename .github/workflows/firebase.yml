@@ -1,0 +1,173 @@
+name: Firebase (distribute and test)
+
+# What this does (plain English):
+#   - Builds the field app as a test APK (the Android install file).
+#   - On every push to main, or when you press "Run workflow": sends it to the
+#     "core-testers" group in Firebase App Distribution.
+#   - Once a day, or when you press "Run workflow": runs ONE automatic "Robo"
+#     test on a low-end virtual Android phone in Firebase Test Lab.
+# The apps contain NO Firebase code. Firebase is used only from here, with synthetic data.
+# If the four repository variables are missing, everything is skipped with a notice.
+# Setup guide: docs/setup/firebase.md
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *" # 03:17 UTC every day, once a day to stay inside the free quota
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write # lets this job prove to Google Cloud who it is, without any stored password
+
+concurrency:
+  group: firebase-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.9"
+  FIREBASE_TOOLS_VERSION: "15.34.2" # exact version, checked on the npm registry on 4 November 2026
+
+# Third-party actions are pinned by full commit SHA; the version is in the comment on each line.
+
+jobs:
+  firebase:
+    name: Build, distribute and test (field app)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      FIREBASE_ANDROID_APP_ID: ${{ vars.FIREBASE_ANDROID_APP_ID }}
+    steps:
+      - name: Check the Firebase settings exist
+        id: cfg
+        shell: bash
+        run: |
+          missing=""
+          for n in GCP_PROJECT_ID GCP_WORKLOAD_IDENTITY_PROVIDER GCP_SERVICE_ACCOUNT FIREBASE_ANDROID_APP_ID; do
+            if [ -z "${!n}" ]; then missing="$missing $n"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Firebase skipped::Repository variables not set:${missing}. Follow docs/setup/firebase.md to add them. Nothing was built or sent."
+            echo "### Firebase skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "These repository variables are not set:${missing}. See docs/setup/firebase.md." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.cfg.outputs.configured == 'true'
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        if: steps.cfg.outputs.configured == 'true'
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Build field debug APK
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          flutter pub get
+          cd apps/field
+          flutter build apk --debug
+
+      # Keyless sign-in (Workload Identity Federation): GitHub hands this job a short-lived
+      # proof of identity; Google Cloud swaps it for a short-lived access token.
+      # No password or key file is stored anywhere. Done by hand so no extra third-party action is needed.
+      - name: Sign in to Google Cloud (keyless)
+        if: steps.cfg.outputs.configured == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The audience text must match --allowed-audiences in the setup script.
+          curl -sS --fail -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=obhijatra-ci" | python3 -c 'import sys,json; print(json.load(sys.stdin)["value"], end="")' > "$RUNNER_TEMP/github-oidc-token.txt"
+          gcloud iam workload-identity-pools create-cred-config "${GCP_WORKLOAD_IDENTITY_PROVIDER}" \
+            --service-account="${GCP_SERVICE_ACCOUNT}" \
+            --credential-source-file="$RUNNER_TEMP/github-oidc-token.txt" \
+            --credential-source-type=text \
+            --output-file="$RUNNER_TEMP/gcp-credentials.json"
+          gcloud auth login --cred-file="$RUNNER_TEMP/gcp-credentials.json" --quiet
+          gcloud config set project "${GCP_PROJECT_ID}"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-credentials.json" >> "$GITHUB_ENV"
+
+      - name: Send to core-testers (App Distribution)
+        if: steps.cfg.outputs.configured == 'true' && github.event_name != 'schedule'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git log -1 --pretty=%B | head -c 1000 > "$RUNNER_TEMP/release-notes.txt"
+          npx --yes "firebase-tools@${FIREBASE_TOOLS_VERSION}" appdistribution:distribute \
+            apps/field/build/app/outputs/flutter-apk/app-debug.apk \
+            --app "${FIREBASE_ANDROID_APP_ID}" \
+            --groups "core-testers" \
+            --release-notes-file "$RUNNER_TEMP/release-notes.txt"
+          {
+            echo "### Sent to testers"
+            echo "Build from commit \`${GITHUB_SHA::7}\` sent to the **core-testers** group. Open the Firebase App Tester app on your phone to install it."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Choose a low-end virtual phone
+        id: device
+        if: steps.cfg.outputs.configured == 'true' && github.event_name != 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud firebase test android models list --filter="form=VIRTUAL" --format=json > "$RUNNER_TEMP/models.json"
+          python3 - "$RUNNER_TEMP/models.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          models = json.load(open(sys.argv[1]))
+          best = None
+          for m in models:
+              versions = [int(v) for v in m.get("supportedVersionIds", []) if str(v).isdigit() and 26 <= int(v) <= 30]
+              if not versions:
+                  continue
+              # Smallest RAM if the catalogue reports it; otherwise fewest screen pixels as a stand-in.
+              ram = m.get("ram") or m.get("ramMb") or m.get("memoryMb")
+              if ram:
+                  key, basis = (0, float(str(ram).split()[0])), "RAM"
+              else:
+                  key, basis = (1, float(m.get("screenX", 0)) * float(m.get("screenY", 0))), "screen pixels (RAM not listed)"
+              if best is None or key < best[0]:
+                  best = (key, m["id"], max(versions), basis)
+          if best is None:
+              sys.exit("No virtual device with Android API 26-30 found in the catalogue.")
+          print(f"model={best[1]}")
+          print(f"version={best[2]}")
+          print(f"basis={best[3]}")
+          PY
+
+      - name: Robo test on Firebase Test Lab
+        if: steps.cfg.outputs.configured == 'true' && github.event_name != 'push'
+        shell: bash
+        env:
+          MODEL: ${{ steps.device.outputs.model }}
+          VERSION: ${{ steps.device.outputs.version }}
+          BASIS: ${{ steps.device.outputs.basis }}
+        run: |
+          set +e
+          gcloud firebase test android run \
+            --type robo \
+            --app apps/field/build/app/outputs/flutter-apk/app-debug.apk \
+            --device "model=${MODEL},version=${VERSION}" \
+            --timeout 180s \
+            --results-dir "field-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --client-details "matrixLabel=obhijatra-field-${GITHUB_RUN_ID}" 2>&1 | tee "$RUNNER_TEMP/testlab.log"
+          status=${PIPESTATUS[0]}
+          {
+            echo "### Test Lab (Robo test)"
+            echo "- Virtual phone chosen: \`${MODEL}\`, Android API ${VERSION} (lowest by ${BASIS})"
+            echo "- Result: $([ "$status" -eq 0 ] && echo passed || echo "did not pass (exit code $status)")"
+            echo "- Result links:"
+            grep -Eo 'https://(console\.firebase\.google\.com|console\.developers\.google\.com|storage\.cloud\.google\.com)[^ ]*' "$RUNNER_TEMP/testlab.log" | sort -u | sed 's/^/  - /'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
