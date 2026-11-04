@@ -51,9 +51,32 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - name: dart test
+      - name: dart test (unit)
         working-directory: packages/obhijatra_core
-        run: dart test
+        run: dart test -x e2e
+
+  phase1-gate:
+    name: Phase 1 gate (offline form reaches the real server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: server/go.mod
+      - name: Build the server binary the gate test starts
+        working-directory: server
+        env:
+          CGO_ENABLED: "0"
+        run: go build -trimpath -o dist/obhijatra-server_0.1.0-dev_linux_amd64 ./cmd/obhijatra-server
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: dart test (e2e gate)
+        working-directory: packages/obhijatra_core
+        run: dart test -t e2e
 
   manager-web:
     name: Manager app (web, Wasm)
@@ -116,7 +139,7 @@ jobs:
 
   manager-macos:
     name: Manager app (macOS, unsigned)
-    runs-on: macos-26
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -131,7 +154,7 @@ jobs:
 
   field-ios:
     name: Field app (iOS, no code signing)
-    runs-on: macos-26
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
