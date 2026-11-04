@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Household visit: a short sample form written for Obhijatra's own tests.
+  It is not taken from any organisation's questionnaire.
+  Licence: AGPL-3.0-only, as the rest of this repository.
+-->
+<h:html xmlns="http://www.w3.org/2002/xforms"
+    xmlns:h="http://www.w3.org/1999/xhtml"
+    xmlns:jr="http://openrosa.org/javarosa"
+    xmlns:orx="http://openrosa.org/xforms"
+    xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>Household visit</h:title>
+    <model odk:xforms-version="1.0.0">
+      <itext>
+        <translation lang="English (en)" default="true()">
+          <text id="/data/visit_date:label"><value>Date of visit</value></text>
+          <text id="/data/visit_date:constraintMsg"><value>The visit date cannot be in the future.</value></text>
+          <text id="/data/visit_outcome:label"><value>What happened at the visit?</value></text>
+          <text id="/data/visit_outcome/met:label"><value>Met the household</value></text>
+          <text id="/data/visit_outcome/not_home:label"><value>Nobody was at home</value></text>
+          <text id="/data/visit_outcome/declined:label"><value>The household declined the visit</value></text>
+          <text id="/data/reason_not_met:label"><value>Why could the visit not go ahead?</value></text>
+          <text id="/data/household_head:label"><value>Name of the household head</value></text>
+          <text id="/data/household_size:label"><value>How many people live in the household?</value></text>
+          <text id="/data/household_size:hint"><value>Count everyone who usually eats and sleeps here.</value></text>
+          <text id="/data/household_size:constraintMsg"><value>Enter a number from 1 to 30.</value></text>
+          <text id="/data/children_under_five:label"><value>How many of them are under five years old?</value></text>
+          <text id="/data/children_under_five:constraintMsg"><value>This cannot be more than the number of people in the household.</value></text>
+          <text id="/data/notes:label"><value>Notes (optional)</value></text>
+        </translation>
+        <translation lang="Bangla (bn)">
+          <text id="/data/visit_date:label"><value>পরিদর্শনের তারিখ</value></text>
+          <text id="/data/visit_date:constraintMsg"><value>পরিদর্শনের তারিখ ভবিষ্যতের হতে পারে না।</value></text>
+          <text id="/data/visit_outcome:label"><value>পরিদর্শনে কী হলো?</value></text>
+          <text id="/data/visit_outcome/met:label"><value>খানার সাথে দেখা হয়েছে</value></text>
+          <text id="/data/visit_outcome/not_home:label"><value>বাড়িতে কেউ ছিল না</value></text>
+          <text id="/data/visit_outcome/declined:label"><value>খানা পরিদর্শনে রাজি হয়নি</value></text>
+          <text id="/data/reason_not_met:label"><value>কেন পরিদর্শন করা যায়নি?</value></text>
+          <text id="/data/household_head:label"><value>খানা প্রধানের নাম</value></text>
+          <text id="/data/household_size:label"><value>খানায় কতজন থাকেন?</value></text>
+          <text id="/data/household_size:hint"><value>যারা সাধারণত এখানে খান ও ঘুমান, তাদের সবাইকে গুনুন।</value></text>
+          <text id="/data/household_size:constraintMsg"><value>১ থেকে ৩০ এর মধ্যে একটি সংখ্যা লিখুন।</value></text>
+          <text id="/data/children_under_five:label"><value>তাদের মধ্যে কতজনের বয়স পাঁচ বছরের কম?</value></text>
+          <text id="/data/children_under_five:constraintMsg"><value>এই সংখ্যা খানার মোট সদস্য সংখ্যার চেয়ে বেশি হতে পারে না।</value></text>
+          <text id="/data/notes:label"><value>মন্তব্য (ঐচ্ছিক)</value></text>
+        </translation>
+      </itext>
+      <instance>
+        <data id="household_visit" version="2026110401">
+          <visit_date/>
+          <visit_outcome/>
+          <reason_not_met/>
+          <household_head/>
+          <household_size/>
+          <children_under_five/>
+          <notes/>
+          <meta>
+            <instanceID/>
+          </meta>
+        </data>
+      </instance>
+      <bind nodeset="/data/visit_date" type="date" required="true()"
+          constraint=". &lt;= today()"
+          jr:constraintMsg="jr:itext('/data/visit_date:constraintMsg')"/>
+      <bind nodeset="/data/visit_outcome" type="string" required="true()"/>
+      <bind nodeset="/data/reason_not_met" type="string" required="true()"
+          relevant="/data/visit_outcome != 'met'"/>
+      <bind nodeset="/data/household_head" type="string" required="true()"
+          relevant="/data/visit_outcome = 'met'"/>
+      <bind nodeset="/data/household_size" type="int" required="true()"
+          relevant="/data/visit_outcome = 'met'"
+          constraint=". &gt;= 1 and . &lt;= 30"
+          jr:constraintMsg="jr:itext('/data/household_size:constraintMsg')"/>
+      <bind nodeset="/data/children_under_five" type="int"
+          relevant="/data/visit_outcome = 'met'"
+          constraint=". &gt;= 0 and . &lt;= /data/household_size"
+          jr:constraintMsg="jr:itext('/data/children_under_five:constraintMsg')"/>
+      <bind nodeset="/data/notes" type="string"/>
+      <bind nodeset="/data/meta/instanceID" type="string" readonly="true()"
+          jr:preload="uid"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/visit_date">
+      <label ref="jr:itext('/data/visit_date:label')"/>
+    </input>
+    <select1 ref="/data/visit_outcome">
+      <label ref="jr:itext('/data/visit_outcome:label')"/>
+      <item>
+        <label ref="jr:itext('/data/visit_outcome/met:label')"/>
+        <value>met</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/data/visit_outcome/not_home:label')"/>
+        <value>not_home</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/data/visit_outcome/declined:label')"/>
+        <value>declined</value>
+      </item>
+    </select1>
+    <input ref="/data/reason_not_met">
+      <label ref="jr:itext('/data/reason_not_met:label')"/>
+    </input>
+    <input ref="/data/household_head">
+      <label ref="jr:itext('/data/household_head:label')"/>
+    </input>
+    <input ref="/data/household_size">
+      <label ref="jr:itext('/data/household_size:label')"/>
+      <hint ref="jr:itext('/data/household_size:hint')"/>
+    </input>
+    <input ref="/data/children_under_five">
+      <label ref="jr:itext('/data/children_under_five:label')"/>
+    </input>
+    <input ref="/data/notes">
+      <label ref="jr:itext('/data/notes:label')"/>
+    </input>
+  </h:body>
+</h:html>

@@ -1,0 +1,9 @@
+# Test configuration for obhijatra_core.
+#
+#   dart test           every test, including the end-to-end gate test
+#   dart test -x e2e    unit tests only (no server binary needed)
+#   dart test -t e2e    only the end-to-end gate test
+tags:
+  e2e:
+    # Starts the real server twice; allow for slow CI machines.
+    timeout: 4x
