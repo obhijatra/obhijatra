@@ -3,10 +3,10 @@
     "short_name": "Obhijatra",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
+    "background_color": "#F5F8FB",
+    "theme_color": "#23384A",
     "description": "Obhijatra Manager: programme oversight for managers.",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

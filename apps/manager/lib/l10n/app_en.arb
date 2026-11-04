@@ -1,13 +1,947 @@
 {
   "@@locale": "en",
   "appTitle": "Obhijatra Manager",
-  "@appTitle": { "description": "The app name shown under the icon and in the app switcher." },
-  "homeHeading": "Welcome to Obhijatra",
-  "@homeHeading": { "description": "Heading on the home screen." },
-  "homeIntro": "Programme oversight for managers: forms, reports and field teams in one place. This is an early preview; nothing is stored yet.",
-  "@homeIntro": { "description": "Short introduction on the home screen." },
-  "homeStatus": "Pre-alpha, Phase 1",
-  "@homeStatus": { "description": "Development status label on the home screen." },
-  "languageToggle": "বাংলা",
-  "@languageToggle": { "description": "Button that switches the app to the other language. Shows the NAME OF THE OTHER LANGUAGE written in that language." }
+  "@appTitle": {
+    "description": "The app name shown in the browser tab and the app switcher."
+  },
+  "navMain": "Main menu",
+  "@navMain": {
+    "description": "Spoken name of the navigation menu, for screen readers."
+  },
+  "navForms": "Forms",
+  "@navForms": {
+    "description": "Menu item: forms."
+  },
+  "navSubmissions": "Submissions",
+  "@navSubmissions": {
+    "description": "Menu item: submissions (answers sent in from the field)."
+  },
+  "navSettings": "Settings",
+  "@navSettings": {
+    "description": "Menu item: settings."
+  },
+  "navAbout": "About",
+  "@navAbout": {
+    "description": "Menu item: about this app."
+  },
+  "badgeWebApp": "Web app",
+  "@badgeWebApp": {
+    "description": "Small label in the top bar when the app runs in a web browser."
+  },
+  "badgeDesktopApp": "Desktop app",
+  "@badgeDesktopApp": {
+    "description": "Small label in the top bar when the app runs on Windows or macOS."
+  },
+  "languageSwitch": "Language",
+  "@languageSwitch": {
+    "description": "Spoken name of the English/Bangla switch."
+  },
+  "accountMenu": "Account menu",
+  "@accountMenu": {
+    "description": "Spoken name of the button that opens the account menu."
+  },
+  "menuSignOut": "Sign out",
+  "@menuSignOut": {
+    "description": "Menu item and button: sign out."
+  },
+  "loading": "Loading",
+  "@loading": {
+    "description": "Spoken and visible label while data loads."
+  },
+  "offlineTitle": "You are offline",
+  "@offlineTitle": {
+    "description": "Banner title when the internet is not reachable."
+  },
+  "offlineBody": "Check your internet connection. Your data will appear again when it is back.",
+  "@offlineBody": {
+    "description": "Banner text when the internet is not reachable."
+  },
+  "actionTryAgain": "Try again",
+  "@actionTryAgain": {
+    "description": "Button: try the same thing again."
+  },
+  "actionSignInAgain": "Sign in again",
+  "@actionSignInAgain": {
+    "description": "Button: go back to the sign-in screen."
+  },
+  "actionClose": "Close",
+  "@actionClose": {
+    "description": "Button: close a message or dialog."
+  },
+  "actionChooseFile": "Choose another file",
+  "@actionChooseFile": {
+    "description": "Button: pick a different file."
+  },
+  "actionCancel": "Cancel",
+  "@actionCancel": {
+    "description": "Button: cancel."
+  },
+  "unknownValue": "Unknown",
+  "@unknownValue": {
+    "description": "Shown when a name (collector, location) is not available."
+  },
+  "problemOffline": "We can’t reach the server. Check your internet connection and try again.",
+  "@problemOffline": {
+    "description": "Plain sentence for a network failure."
+  },
+  "problemTimeout": "The server took too long to answer. Try again in a moment.",
+  "@problemTimeout": {
+    "description": "Plain sentence for a time-out."
+  },
+  "problemServerBusy": "The server is busy right now. Wait a minute, then try again.",
+  "@problemServerBusy": {
+    "description": "Plain sentence for HTTP 429."
+  },
+  "problemServerError": "The server had a problem. Try again. If it keeps happening, tell your organisation admin.",
+  "@problemServerError": {
+    "description": "Plain sentence for HTTP 5xx."
+  },
+  "problemSignInRequired": "Your session has ended. Sign in again to carry on.",
+  "@problemSignInRequired": {
+    "description": "Plain sentence for HTTP 401."
+  },
+  "problemSignInFailed": "The email or password is not right, or this account is switched off. Check them and try again.",
+  "@problemSignInFailed": {
+    "description": "Plain sentence for a failed sign-in."
+  },
+  "problemNotAllowed": "Your account is not allowed to do this. Ask your organisation admin if you need access.",
+  "@problemNotAllowed": {
+    "description": "Plain sentence for HTTP 403."
+  },
+  "problemNotFound": "We could not find this. It may have been removed, or your account may not have access to it.",
+  "@problemNotFound": {
+    "description": "Plain sentence for HTTP 404."
+  },
+  "problemTooLarge": "This file is too big. Forms and submissions can be up to 10 MB.",
+  "@problemTooLarge": {
+    "description": "Plain sentence for HTTP 413 or a file over the limit."
+  },
+  "problemRejected": "The server did not accept this. Check what you entered and try again.",
+  "@problemRejected": {
+    "description": "Plain sentence for HTTP 400."
+  },
+  "problemVersionExists": "This version of the form was already uploaded. Change the version number in your form tool, then upload the file again.",
+  "@problemVersionExists": {
+    "description": "Plain sentence when a form version already exists."
+  },
+  "problemCommentNotSaved": "Your decision was saved, but this server can’t keep comments yet. Ask your organisation admin to update the server.",
+  "@problemCommentNotSaved": {
+    "description": "Plain sentence when the server has no review comment field."
+  },
+  "problemUnreadableFile": "We could not read this file. Check that it is an XForm (.xml) file and try again.",
+  "@problemUnreadableFile": {
+    "description": "Plain sentence for a file that cannot be read."
+  },
+  "problemFormUnavailable": "We could not load this form’s definition, so the answers are hidden to keep protected answers safe.",
+  "@problemFormUnavailable": {
+    "description": "Plain sentence when answers cannot be shown safely."
+  },
+  "problemUnknown": "Something went wrong. Try again. If it keeps happening, tell your organisation admin.",
+  "@problemUnknown": {
+    "description": "Plain sentence for any other problem."
+  },
+  "signInTitle": "Sign in",
+  "@signInTitle": {
+    "description": "Heading of the sign-in screen."
+  },
+  "signInIntro": "Use the email and password your organisation admin gave you.",
+  "@signInIntro": {
+    "description": "Intro under the sign-in heading."
+  },
+  "signInEmail": "Email",
+  "@signInEmail": {
+    "description": "Label of the email field."
+  },
+  "signInPassword": "Password",
+  "@signInPassword": {
+    "description": "Label of the password field."
+  },
+  "signInShowPassword": "Show password",
+  "@signInShowPassword": {
+    "description": "Spoken name of the button that shows the password."
+  },
+  "signInHidePassword": "Hide password",
+  "@signInHidePassword": {
+    "description": "Spoken name of the button that hides the password."
+  },
+  "signInServer": "Server address",
+  "@signInServer": {
+    "description": "Label of the server address field (desktop app only)."
+  },
+  "signInServerHelp": "The web address of your organisation’s Obhijatra server, for example https://data.example.org",
+  "@signInServerHelp": {
+    "description": "Help text under the server address field."
+  },
+  "signInButton": "Sign in",
+  "@signInButton": {
+    "description": "Button: sign in."
+  },
+  "signInWorking": "Signing in…",
+  "@signInWorking": {
+    "description": "Button text while signing in."
+  },
+  "fieldRequired": "Please fill this in.",
+  "@fieldRequired": {
+    "description": "Error under an empty required field."
+  },
+  "serverInvalid": "Enter a full web address that starts with http:// or https://",
+  "@serverInvalid": {
+    "description": "Error under a wrong server address."
+  },
+  "formsTitle": "Forms",
+  "@formsTitle": {
+    "description": "Page heading."
+  },
+  "formsUploadTitle": "Upload a form",
+  "@formsUploadTitle": {
+    "description": "Heading of the upload card and dialog."
+  },
+  "formsUploadHelp": "Choose an XForm (.xml) file. Files made in Kobo or ODK work too.",
+  "@formsUploadHelp": {
+    "description": "Help text on the upload card."
+  },
+  "formsChooseFile": "Choose a file",
+  "@formsChooseFile": {
+    "description": "Button: choose a file."
+  },
+  "formsYourForms": "Your forms",
+  "@formsYourForms": {
+    "description": "Heading above the list of forms."
+  },
+  "formsVersionCount": "{count, plural, =1{1 version} other{{count} versions}}",
+  "@formsVersionCount": {
+    "description": "Number of versions of a form.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "formsPublishedSummary": "Version {version}, published",
+  "@formsPublishedSummary": {
+    "description": "Summary under a form that has a published version.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "formsDraftSummary": "Draft, not published yet",
+  "@formsDraftSummary": {
+    "description": "Summary under a form with no published version."
+  },
+  "formsNoVersions": "No versions yet",
+  "@formsNoVersions": {
+    "description": "Summary under a form with no versions you can see."
+  },
+  "formsEmptyTitle": "No forms yet",
+  "@formsEmptyTitle": {
+    "description": "Title when there are no forms."
+  },
+  "formsEmptyBodyAdmin": "Upload your first form to get started.",
+  "@formsEmptyBodyAdmin": {
+    "description": "Text when there are no forms and you can upload."
+  },
+  "formsEmptyBodyViewer": "Your organisation admin has not published a form yet.",
+  "@formsEmptyBodyViewer": {
+    "description": "Text when there are no forms and you cannot upload."
+  },
+  "formsSelectPrompt": "Choose a form on the left to see its versions.",
+  "@formsSelectPrompt": {
+    "description": "Text in the right panel when no form is chosen."
+  },
+  "formsSelectVersion": "Choose a version to see its checks.",
+  "@formsSelectVersion": {
+    "description": "Text in the right panel when a form but no version is chosen."
+  },
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "description": "Name of a version.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "versionUploaded": "Uploaded {date}",
+  "@versionUploaded": {
+    "description": "When a version was uploaded.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "versionPublished": "Published {date}",
+  "@versionPublished": {
+    "description": "When a version was published.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "badgePublished": "Published",
+  "@badgePublished": {
+    "description": "Badge on a published version."
+  },
+  "badgeDraft": "Draft",
+  "@badgeDraft": {
+    "description": "Badge on a version that is not published."
+  },
+  "badgeNeedsFix": "Needs a fix",
+  "@badgeNeedsFix": {
+    "description": "Badge on a draft that fails a check."
+  },
+  "versionHeading": "{form}, version {version}",
+  "@versionHeading": {
+    "description": "Heading of the version panel.",
+    "placeholders": {
+      "form": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "publishCheckTitle": "Publish check",
+  "@publishCheckTitle": {
+    "description": "Heading of the checks list for a draft."
+  },
+  "formCheckTitle": "Form check",
+  "@formCheckTitle": {
+    "description": "Heading of the checks list for a published version."
+  },
+  "publishCheckedQuestions": "{count, plural, =0{We found no questions.} =1{We checked 1 question.} other{We checked {count} questions.}}",
+  "@publishCheckedQuestions": {
+    "description": "Sentence about how many questions were checked.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "publishFixCount": "{count, plural, =1{Fix 1 thing before you publish.} other{Fix {count} things before you publish.}}",
+  "@publishFixCount": {
+    "description": "Sentence about how many problems must be fixed.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "publishAllClear": "Nothing to fix. You can publish this version.",
+  "@publishAllClear": {
+    "description": "Sentence when all checks pass."
+  },
+  "checkKindFix": "Fix before publishing",
+  "@checkKindFix": {
+    "description": "Label above a check that must be fixed."
+  },
+  "checkKindProtected": "Protected",
+  "@checkKindProtected": {
+    "description": "Label above the list of protected answers."
+  },
+  "checkKindPassed": "Passed",
+  "@checkKindPassed": {
+    "description": "Label above a check that passed."
+  },
+  "checkKindNote": "Good to know",
+  "@checkKindNote": {
+    "description": "Label above a note that does not block publishing."
+  },
+  "checkUnreadable": "This file can’t be read as a form. It may be damaged. Export it again from your form tool and upload the new file.",
+  "@checkUnreadable": {
+    "description": "Check: the XML is not well formed."
+  },
+  "checkNotXForm": "This file is XML, but it is not an XForm. Upload the XForm (.xml) file exported from your form tool.",
+  "@checkNotXForm": {
+    "description": "Check: the XML is not an XForm."
+  },
+  "checkWellFormed": "The file is a readable form.",
+  "@checkWellFormed": {
+    "description": "Check passed: the XML is well formed."
+  },
+  "checkVersionMissing": "The form has no version number. Add a version in your form tool, export it again and upload the new file.",
+  "@checkVersionMissing": {
+    "description": "Check: no version."
+  },
+  "checkVersionOk": "The form has a version number: {version}.",
+  "@checkVersionOk": {
+    "description": "Check passed: version present.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "checkFormIdMissing": "The form has no form id. Set a form id in your form tool, export it again and upload the new file.",
+  "@checkFormIdMissing": {
+    "description": "Check: no form id."
+  },
+  "checkFormIdOk": "The form has a form id: {formId}.",
+  "@checkFormIdOk": {
+    "description": "Check passed: form id present.",
+    "placeholders": {
+      "formId": {
+        "type": "String"
+      }
+    }
+  },
+  "checkVersionExists": "Version {version} of this form was already uploaded. Change the version number in your form tool and upload the file again.",
+  "@checkVersionExists": {
+    "description": "Check: this version already exists.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "checkKoboMatrix": "Kobo ‘question matrix’ isn’t supported — use one ‘select one’ question per row instead.",
+  "@checkKoboMatrix": {
+    "description": "Check: Kobo question matrix is not supported."
+  },
+  "checkKoboScore": "Kobo ‘rating’ questions aren’t supported — use one ‘select one’ question per item instead.",
+  "@checkKoboScore": {
+    "description": "Check: Kobo rating questions are not supported."
+  },
+  "checkKoboRank": "Kobo ‘ranking’ questions aren’t supported — use ‘select one’ questions such as ‘first choice’ and ‘second choice’ instead.",
+  "@checkKoboRank": {
+    "description": "Check: Kobo ranking questions are not supported."
+  },
+  "checkWhere": "{count, plural, =1{Question: {names}} other{Questions: {names}}}",
+  "@checkWhere": {
+    "description": "Where a problem was found.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "checkProtectedList": "{count, plural, =1{1 answer will be protected: {names}.} other{{count} answers will be protected: {names}.}}",
+  "@checkProtectedList": {
+    "description": "Check: the answers marked as protected.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "checkLanguagesOk": "Every question has a label in both languages.",
+  "@checkLanguagesOk": {
+    "description": "Check passed: labels in two languages."
+  },
+  "checkLanguagesPartial": "{count, plural, =1{1 question is missing its label in one language.} other{{count} questions are missing their label in one language.}}",
+  "@checkLanguagesPartial": {
+    "description": "Note: some questions lack a label in one language.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "checkSingleLanguage": "The form is written in one language only.",
+  "@checkSingleLanguage": {
+    "description": "Note: the form has one language."
+  },
+  "uploadXlsNotice": "Spreadsheet (.xlsx) forms can’t be uploaded yet. Converting them arrives in Phase 2. For now, upload the XForm (.xml) file. Kobo and ODK can export one.",
+  "@uploadXlsNotice": {
+    "description": "Said plainly in the upload dialog: spreadsheet forms are not supported yet."
+  },
+  "uploadChoosePrompt": "Choose the XForm (.xml) file from your computer. Spreadsheet (.xlsx) forms are not supported yet: converting them arrives in Phase 2.",
+  "@uploadChoosePrompt": {
+    "description": "Prompt in the upload dialog before a file is chosen."
+  },
+  "uploadFile": "File: {name}",
+  "@uploadFile": {
+    "description": "Shows the name of the chosen file.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "uploadReady": "This file passed every check. It is saved as a draft first, and you can publish it afterwards.",
+  "@uploadReady": {
+    "description": "Sentence when the chosen file passes all checks."
+  },
+  "uploadBlocked": "This file can’t be uploaded yet. Fix the things below, then choose the fixed file.",
+  "@uploadBlocked": {
+    "description": "Sentence when the chosen file fails a check."
+  },
+  "uploadButton": "Upload as draft",
+  "@uploadButton": {
+    "description": "Button: upload the chosen file."
+  },
+  "uploadUploading": "Uploading…",
+  "@uploadUploading": {
+    "description": "Button text while uploading."
+  },
+  "uploadDone": "Uploaded as a draft. Check it over, then publish when you are ready.",
+  "@uploadDone": {
+    "description": "Message after a successful upload."
+  },
+  "publishButton": "Publish",
+  "@publishButton": {
+    "description": "Button: publish a version."
+  },
+  "publishHint": "You can publish when nothing is left to fix.",
+  "@publishHint": {
+    "description": "Help text beside the Publish button when it is switched off."
+  },
+  "publishConfirmTitle": "Publish version {version}?",
+  "@publishConfirmTitle": {
+    "description": "Title of the publish confirmation.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "publishConfirmBody": "Once a version is published it can’t be changed. To change the form later, you will upload a new version.",
+  "@publishConfirmBody": {
+    "description": "Body of the publish confirmation."
+  },
+  "publishConfirmNo": "Not yet",
+  "@publishConfirmNo": {
+    "description": "Button: do not publish yet."
+  },
+  "publishDone": "Version {version} is published.",
+  "@publishDone": {
+    "description": "Message after publishing.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "publishedReadOnly": "This version is published, so it can’t be changed. To change the form, upload a new version.",
+  "@publishedReadOnly": {
+    "description": "Note on a published version."
+  },
+  "adminOnlyForms": "Only an organisation admin can upload or publish forms.",
+  "@adminOnlyForms": {
+    "description": "Note shown to people who cannot upload forms."
+  },
+  "subsTitle": "Submissions",
+  "@subsTitle": {
+    "description": "Page heading."
+  },
+  "subsCount": "{count, plural, =0{No submissions match} =1{1 submission} other{{count} submissions}}",
+  "@subsCount": {
+    "description": "How many submissions match the filters.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "filterForm": "Form",
+  "@filterForm": {
+    "description": "Label of the form filter."
+  },
+  "filterAllForms": "All forms",
+  "@filterAllForms": {
+    "description": "Filter choice: every form."
+  },
+  "filterDates": "Dates",
+  "@filterDates": {
+    "description": "Label of the date filter."
+  },
+  "filterLast7": "Last 7 days",
+  "@filterLast7": {
+    "description": "Date filter choice."
+  },
+  "filterLast30": "Last 30 days",
+  "@filterLast30": {
+    "description": "Date filter choice."
+  },
+  "filterAllTime": "All time",
+  "@filterAllTime": {
+    "description": "Date filter choice."
+  },
+  "filterChoose": "Choose dates…",
+  "@filterChoose": {
+    "description": "Date filter choice that opens a calendar."
+  },
+  "filterRange": "{from} to {to}",
+  "@filterRange": {
+    "description": "Text of a custom date range.",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "filterReviewState": "Review state",
+  "@filterReviewState": {
+    "description": "Spoken name of the review state tabs."
+  },
+  "reviewAll": "All",
+  "@reviewAll": {
+    "description": "Review state tab: everything."
+  },
+  "stateReceived": "Received",
+  "@stateReceived": {
+    "description": "Review state word."
+  },
+  "stateEdited": "Edited",
+  "@stateEdited": {
+    "description": "Review state word."
+  },
+  "stateHasIssues": "Has issues",
+  "@stateHasIssues": {
+    "description": "Review state word."
+  },
+  "stateApproved": "Approved",
+  "@stateApproved": {
+    "description": "Review state word."
+  },
+  "stateRejected": "Rejected",
+  "@stateRejected": {
+    "description": "Review state word."
+  },
+  "colDate": "Date",
+  "@colDate": {
+    "description": "Table column."
+  },
+  "colForm": "Form",
+  "@colForm": {
+    "description": "Table column."
+  },
+  "colCollector": "Collector",
+  "@colCollector": {
+    "description": "Table column: the field officer who collected the answers."
+  },
+  "colLocation": "Location",
+  "@colLocation": {
+    "description": "Table column."
+  },
+  "colReview": "Review",
+  "@colReview": {
+    "description": "Table column."
+  },
+  "dateToday": "Today, {time}",
+  "@dateToday": {
+    "description": "A time today.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dateYesterday": "Yesterday, {time}",
+  "@dateYesterday": {
+    "description": "A time yesterday.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "dateOther": "{date}, {time}",
+  "@dateOther": {
+    "description": "A date and time.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "subsEmptyTitle": "No submissions here",
+  "@subsEmptyTitle": {
+    "description": "Title when no submission matches."
+  },
+  "subsEmptyBody": "Nothing matches these filters. Try a wider date range or another review state.",
+  "@subsEmptyBody": {
+    "description": "Text when no submission matches."
+  },
+  "pagingRange": "Showing {from}–{to} of {total}",
+  "@pagingRange": {
+    "description": "Which rows are on the page.",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "to": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "pagingPage": "Page {page} of {pages}",
+  "@pagingPage": {
+    "description": "Current page.",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "pages": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "pagingPrevious": "Previous page",
+  "@pagingPrevious": {
+    "description": "Button: previous page."
+  },
+  "pagingNext": "Next page",
+  "@pagingNext": {
+    "description": "Button: next page."
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Button: reload the list."
+  },
+  "detailClose": "Close details",
+  "@detailClose": {
+    "description": "Spoken name of the button that closes the details panel."
+  },
+  "detailMeta": "{collector} · {location} · {date}",
+  "@detailMeta": {
+    "description": "Line under the heading of the details panel.",
+    "placeholders": {
+      "collector": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "detailProtectedNote": "This app can’t show protected answers, so they stay safe even on a shared computer.",
+  "@detailProtectedNote": {
+    "description": "Note in the details panel about protected answers."
+  },
+  "protectedAnswer": "Protected — open in the Obhijatra desktop app to view",
+  "@protectedAnswer": {
+    "description": "Shown instead of a protected answer. Never replaced by the answer on this app."
+  },
+  "detailAnswers": "Answers",
+  "@detailAnswers": {
+    "description": "Heading above the answers."
+  },
+  "detailNoAnswers": "This submission has no answers to show.",
+  "@detailNoAnswers": {
+    "description": "Text when a submission has no answers."
+  },
+  "detailComment": "Review note",
+  "@detailComment": {
+    "description": "Heading above the review note."
+  },
+  "actionApprove": "Approve",
+  "@actionApprove": {
+    "description": "Button: approve a submission."
+  },
+  "actionHasIssues": "Has issues",
+  "@actionHasIssues": {
+    "description": "Button: mark a submission as having issues."
+  },
+  "actionReject": "Reject",
+  "@actionReject": {
+    "description": "Button: reject a submission."
+  },
+  "reviewReadOnly": "Your role can read submissions but can’t review them.",
+  "@reviewReadOnly": {
+    "description": "Note shown to people who cannot review."
+  },
+  "reviewIssuesTitle": "Mark as having issues",
+  "@reviewIssuesTitle": {
+    "description": "Dialog title."
+  },
+  "reviewIssuesLabel": "What needs checking?",
+  "@reviewIssuesLabel": {
+    "description": "Dialog field label."
+  },
+  "reviewRejectTitle": "Reject this submission",
+  "@reviewRejectTitle": {
+    "description": "Dialog title."
+  },
+  "reviewRejectLabel": "Why are you rejecting it?",
+  "@reviewRejectLabel": {
+    "description": "Dialog field label."
+  },
+  "reviewConfirmIssues": "Mark as having issues",
+  "@reviewConfirmIssues": {
+    "description": "Dialog button."
+  },
+  "reviewCommentHelp": "Your note is saved with the submission and others can read it.",
+  "@reviewCommentHelp": {
+    "description": "Dialog help text."
+  },
+  "reviewCommentRequired": "Please write a short note.",
+  "@reviewCommentRequired": {
+    "description": "Error when the note is empty."
+  },
+  "reviewCommentTooLong": "Keep it under {max} characters.",
+  "@reviewCommentTooLong": {
+    "description": "Error when the note is too long.",
+    "placeholders": {
+      "max": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "reviewSaved": "Saved: {state}.",
+  "@reviewSaved": {
+    "description": "Message after saving a review decision.",
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewSaving": "Saving…",
+  "@reviewSaving": {
+    "description": "Button text while saving."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Page heading."
+  },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": {
+    "description": "Heading of the language card."
+  },
+  "settingsLanguageHelp": "This changes the language of the whole app. We remember your choice on this computer.",
+  "@settingsLanguageHelp": {
+    "description": "Help text under the language switch."
+  },
+  "settingsAccount": "Your account",
+  "@settingsAccount": {
+    "description": "Heading of the account card."
+  },
+  "accountName": "Name",
+  "@accountName": {
+    "description": "Account detail label."
+  },
+  "accountEmail": "Email",
+  "@accountEmail": {
+    "description": "Account detail label."
+  },
+  "accountRole": "Role",
+  "@accountRole": {
+    "description": "Account detail label."
+  },
+  "accountOrganisation": "Organisation",
+  "@accountOrganisation": {
+    "description": "Account detail label."
+  },
+  "accountServer": "Server",
+  "@accountServer": {
+    "description": "Account detail label."
+  },
+  "settingsSignOutHelp": "You will need your email and password to sign in again.",
+  "@settingsSignOutHelp": {
+    "description": "Help text beside the sign-out button."
+  },
+  "roleSupervisor": "Supervisor",
+  "@roleSupervisor": {
+    "description": "Role name."
+  },
+  "roleBranchManager": "Branch manager",
+  "@roleBranchManager": {
+    "description": "Role name."
+  },
+  "roleMe": "Monitoring and evaluation",
+  "@roleMe": {
+    "description": "Role name."
+  },
+  "roleOrgAdmin": "Organisation admin",
+  "@roleOrgAdmin": {
+    "description": "Role name."
+  },
+  "roleDonorReadonly": "Donor (read only)",
+  "@roleDonorReadonly": {
+    "description": "Role name."
+  },
+  "aboutTitle": "About",
+  "@aboutTitle": {
+    "description": "Page heading."
+  },
+  "aboutVersion": "Version {version}",
+  "@aboutVersion": {
+    "description": "App version.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutPreAlpha": "Pre-alpha. Not ready for real use yet.",
+  "@aboutPreAlpha": {
+    "description": "Status note."
+  },
+  "aboutLicenceTitle": "Licence",
+  "@aboutLicenceTitle": {
+    "description": "Heading."
+  },
+  "aboutLicenceBody": "Obhijatra is free software. You can use it, study it, share it and change it under the GNU Affero General Public License, version 3 (AGPL-3.0). It comes with no warranty. If you run a changed version for other people over a network, you must offer them the source code of your changes.",
+  "@aboutLicenceBody": {
+    "description": "AGPL-3.0 notice."
+  },
+  "aboutSourceTitle": "Source code",
+  "@aboutSourceTitle": {
+    "description": "Heading."
+  },
+  "aboutSourceOpen": "Open the source code",
+  "@aboutSourceOpen": {
+    "description": "Link text."
+  },
+  "aboutSourceFailed": "We couldn’t open the link. The address is {url}",
+  "@aboutSourceFailed": {
+    "description": "Message when the link cannot be opened.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutLicencesTitle": "Open-source licences",
+  "@aboutLicencesTitle": {
+    "description": "Heading."
+  },
+  "aboutLicencesHelp": "The other free software Obhijatra is built with, and the licence of each.",
+  "@aboutLicencesHelp": {
+    "description": "Help text."
+  },
+  "aboutLicencesButton": "See the licences",
+  "@aboutLicencesButton": {
+    "description": "Button."
+  },
+  "aboutMadeBy": "Made by Aninda Studio",
+  "@aboutMadeBy": {
+    "description": "Credit line, plain text."
+  }
 }

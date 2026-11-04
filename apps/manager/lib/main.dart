@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_manager/src/app.dart';
+import 'package:obhijatra_manager/src/state/preferences.dart';
+import 'package:obhijatra_manager/src/state/providers.dart';
 
-void main() {
-  runApp(const ProviderScope(child: ObhijatraManagerApp()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final language = await Preferences.loadLanguage();
+  final server = await Preferences.loadServer();
+  runApp(
+    ManagerRoot(
+      overrides: [
+        initialLocaleProvider.overrideWithValue(Locale(language ?? 'en')),
+        initialServerUrlProvider.overrideWithValue(server ?? ''),
+      ],
+    ),
+  );
 }

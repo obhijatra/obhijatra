@@ -14,10 +14,17 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: 0.20.3
-  obhijatra_core: any
   obhijatra_ui: any
   flutter_riverpod: 3.4.3
-  drift: 2.35.3
+  # Same version as obhijatra_core pins; the manager talks to the server with
+  # it directly because core's barrel is not web-safe (dart:io, sodium, sqlite).
+  pocketbase: 0.25.3
+  http: 1.6.0
+  http_parser: 4.1.2
+  xml: 7.0.1
+  shared_preferences: 2.5.6
+  file_selector: 1.1.0
+  url_launcher: 6.3.3
 
 dev_dependencies:
   flutter_test:
