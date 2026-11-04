@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
+import 'package:obhijatra_core/testing.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
 import 'package:obhijatra_field/src/screens/connect_screen.dart';
 import 'package:obhijatra_field/src/screens/sign_in_screen.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
 
-import 'support/fake_server.dart';
 import 'support/harness.dart';
 
 Finder _button(String label) => find.widgetWithText(PrimaryButton, label);
@@ -163,7 +163,7 @@ void main() {
     ) async {
       final env = TestEnv()
         ..server.meta = <String, Object?>{
-          ...FakeServer().meta,
+          ...FakeObhijatraServer().meta,
           'min_client_version': '9.0.0',
         };
       await pumpScreen(
@@ -193,7 +193,7 @@ void main() {
       WidgetTester tester,
       String language,
       double scale, {
-      FakeServer? server,
+      FakeObhijatraServer? server,
     }) async {
       final env = TestEnv(server: server);
       await tester.runAsync(() => env.seedSignedIn(signedIn: false));
@@ -259,7 +259,7 @@ void main() {
         tester,
         language,
         scale,
-        server: FakeServer()..signInGlitch = const NoConnection(),
+        server: FakeObhijatraServer()..signInGlitch = const NoConnection(),
       );
       await tester.enterText(
         await reveal(tester, find.byKey(const Key('email-field'))),

@@ -465,13 +465,25 @@
   "@summaryReady": {
     "description": "Shown above the summary when all is answered."
   },
-  "validationTitle": "One answer needs fixing",
+  "validationTitle": "{count, plural, =1{One answer needs fixing} other{{count} answers need fixing}}",
   "@validationTitle": {
-    "description": "Title of the box that lists what to fix."
+    "description": "Title of the box that lists what to fix; count is the number of questions to fix.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   },
-  "validationMessage": "Fix it, then send again.",
+  "validationMessage": "{count, plural, =1{Fix it, then send again.} other{Fix each one, then send again.}}",
   "@validationMessage": {
-    "description": "Text in the box that lists what to fix."
+    "description": "Text in the box that lists what to fix; count is the number of questions to fix.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   },
   "validationItem": "{question}: {reason}",
   "@validationItem": {
@@ -704,6 +716,10 @@
   "problem_serverNotSetUp": "The server is not ready yet. Please ask your organisation's administrator.",
   "@problem_serverNotSetUp": {
     "description": "Plain-language explanation of the problem code \"serverNotSetUp\". Shown to a field officer."
+  },
+  "problem_clockSkew": "The date or time on this phone is wrong, so forms cannot be sent. Open the phone's Settings, set the right date and time (turn on automatic date and time if you can), then come back to the app. Your forms are kept on this phone.",
+  "@problem_clockSkew": {
+    "description": "Plain-language explanation of the problem code \"clockSkew\": the phone's clock is more than 10 minutes away from the server's. Shown to a field officer."
   },
   "problem_duplicateInstance": "The server already has a different form with the same code. Your answers are kept. Please tell your organisation.",
   "@problem_duplicateInstance": {

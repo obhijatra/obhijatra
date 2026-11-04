@@ -90,13 +90,9 @@ Future<void> pickToday(WidgetTester tester, AppLocalizations l) async {
 
 Finder get _field => find.byType(EditableText);
 
-/// The "question N of T" line for [n], whatever the total estimate is.
-Finder progress(AppLocalizations l, int n) {
-  final options = <String>{
-    for (var t = n; t <= 30; t++) l.questionProgress(n, t),
-  };
-  return find.byWidgetPredicate((w) => w is Text && options.contains(w.data));
-}
+/// The "question [n] of [total]" line.
+Finder progress(AppLocalizations l, int n, int total) =>
+    find.text(l.questionProgress(n, total));
 
 void main() {
   group('Form entry: household visit', () {
@@ -109,10 +105,36 @@ void main() {
       final env = await openForm(tester, language, scale);
       final w = _wordsOf(language);
       expect(await reveal(tester, find.textContaining(w.date)), findsWidgets);
-      expect(await reveal(tester, progress(l, 1)), findsOneWidget);
+      // Date, outcome, the reason for not meeting, and notes apply so far.
+      expect(await reveal(tester, progress(l, 1, 4)), findsOneWidget);
       // The second question is not on screen yet.
       expect(find.textContaining(w.outcome), findsNothing);
       await expectAccessibleTargets(tester);
+      await endTest(tester, env);
+    });
+
+    matrix('"question N of M" counts the questions that apply now', (
+      tester,
+      language,
+      scale,
+      l,
+    ) async {
+      final env = await openForm(tester, language, scale);
+      final w = _wordsOf(language);
+      expect(await reveal(tester, progress(l, 1, 4)), findsOneWidget);
+      await pickToday(tester, l);
+      await next(tester, l);
+      expect(await reveal(tester, progress(l, 2, 4)), findsOneWidget);
+      // Choosing "met" swaps one question for three, at once.
+      await tester.tap(await reveal(tester, find.text(w.met)));
+      await settleApp(tester);
+      expect(await reveal(tester, progress(l, 2, 6)), findsOneWidget);
+      await next(tester, l);
+      expect(await reveal(tester, find.textContaining(w.head)), findsWidgets);
+      expect(await reveal(tester, progress(l, 3, 6)), findsOneWidget);
+      await tester.tap(find.widgetWithText(PrimaryButton, l.entryBack));
+      await settleApp(tester);
+      expect(await reveal(tester, progress(l, 2, 6)), findsOneWidget);
       await endTest(tester, env);
     });
 
@@ -125,7 +147,7 @@ void main() {
       final env = await openForm(tester, language, scale);
       await next(tester, l);
       expect(await reveal(tester, find.text(l.issueRequired)), findsOneWidget);
-      expect(await reveal(tester, progress(l, 1)), findsOneWidget);
+      expect(await reveal(tester, progress(l, 1, 4)), findsOneWidget);
       await endTest(tester, env);
     });
 
@@ -198,7 +220,8 @@ void main() {
       await tester.tap(find.widgetWithText(PrimaryButton, l.entryBack));
       await settleApp(tester);
       expect(await reveal(tester, find.textContaining(w.date)), findsWidgets);
-      expect(await reveal(tester, progress(l, 1)), findsOneWidget);
+      // "Met the household" made the household questions apply.
+      expect(await reveal(tester, progress(l, 1, 6)), findsOneWidget);
       await endTest(tester, env);
     });
 
@@ -303,12 +326,14 @@ void main() {
         xform: kitchenSinkXForm,
         formId: 'kitchen_sink',
       );
-      // Note.
+      // Note. It counts as a question: nine in all.
       expect(
         await reveal(tester, find.textContaining('Welcome to the visit.')),
         findsWidgets,
       );
+      expect(await reveal(tester, progress(l, 1, 9)), findsOneWidget);
       await next(tester, l);
+      expect(await reveal(tester, progress(l, 2, 9)), findsOneWidget);
       // Select one (required).
       expect(
         await reveal(

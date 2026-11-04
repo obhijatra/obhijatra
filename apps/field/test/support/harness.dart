@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
+import 'package:obhijatra_core/testing.dart';
 import 'package:obhijatra_field/l10n/app_localizations.dart';
 import 'package:obhijatra_field/l10n/app_localizations_bn.dart';
 import 'package:obhijatra_field/l10n/app_localizations_en.dart';
@@ -19,8 +20,6 @@ import 'package:obhijatra_field/src/app.dart';
 import 'package:obhijatra_field/src/app_info.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/sync_providers.dart';
-
-import 'fake_server.dart';
 
 /// The core's sample form (English and Bangla labels, select_one, integer
 /// with a constraint, text, date, a skip rule and required questions).
@@ -88,9 +87,9 @@ const List<double> testScales = <double>[1.0, 2.0];
 /// Every test makes its own in-memory database, so drift's "two databases"
 /// warning does not apply.
 class TestEnv {
-  TestEnv({String? xform, FakeServer? server})
+  TestEnv({String? xform, FakeObhijatraServer? server})
     : db = _newDatabase(),
-      server = server ?? FakeServer(xform: xform);
+      server = server ?? FakeObhijatraServer(xform: xform);
 
   static DeviceDatabase _newDatabase() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -98,7 +97,7 @@ class TestEnv {
   }
 
   final DeviceDatabase db;
-  final FakeServer server;
+  final FakeObhijatraServer server;
 
   /// A controllable connectivity stream.
   final StreamController<bool> online = StreamController<bool>.broadcast();
@@ -130,12 +129,15 @@ class TestEnv {
   /// optionally a signed-in user) already saved, as after first use.
   Future<void> seedSignedIn({bool signedIn = true}) async {
     final settings = SettingsRepository(db);
-    await settings.write(serverUrlSettingKey0, FakeServer.baseUrl.toString());
+    await settings.write(
+      serverUrlSettingKey0,
+      FakeObhijatraServer.baseUrl.toString(),
+    );
     if (signedIn) {
       // Sign in through a real client so the saved session is genuine.
       final store = await settings.authStore();
       final client = ObhijatraServer(
-        baseUrl: FakeServer.baseUrl,
+        baseUrl: FakeObhijatraServer.baseUrl,
         appVersion: appReleaseVersion,
         authStore: store,
         httpClientFactory: server.client,

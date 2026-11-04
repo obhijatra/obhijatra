@@ -367,10 +367,34 @@ class AppLocalizationsBn extends AppLocalizations {
       'সব উত্তর দেওয়া হয়েছে। আপনি ফর্মটি পাঠাতে পারেন।';
 
   @override
-  String get validationTitle => 'একটি উত্তর ঠিক করতে হবে';
+  String validationTitle(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি উত্তর ঠিক করতে হবে',
+      one: 'একটি উত্তর ঠিক করতে হবে',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get validationMessage => 'এটি ঠিক করুন, তারপর আবার পাঠান।';
+  String validationMessage(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'প্রতিটি ঠিক করুন, তারপর আবার পাঠান।',
+      one: 'এটি ঠিক করুন, তারপর আবার পাঠান।',
+    );
+    return '$_temp0';
+  }
 
   @override
   String validationItem(String question, String reason) {
@@ -552,6 +576,10 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get problem_serverNotSetUp =>
       'সার্ভার এখনও প্রস্তুত নয়। আপনার প্রতিষ্ঠানের অ্যাডমিনকে জানান।';
+
+  @override
+  String get problem_clockSkew =>
+      'এই ফোনের তারিখ বা সময় ভুল, তাই ফর্ম পাঠানো যাচ্ছে না। ফোনের সেটিংস খুলে তারিখ ও সময় ঠিক করুন (পারলে স্বয়ংক্রিয় তারিখ ও সময় চালু করুন), তারপর অ্যাপে ফিরে আসুন। আপনার ফর্ম এই ফোনে রাখা আছে।';
 
   @override
   String get problem_duplicateInstance =>

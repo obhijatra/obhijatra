@@ -704,17 +704,17 @@ abstract class AppLocalizations {
   /// **'Everything is answered. You can send this form.'**
   String get summaryReady;
 
-  /// Title of the box that lists what to fix.
+  /// Title of the box that lists what to fix; count is the number of questions to fix.
   ///
   /// In en, this message translates to:
-  /// **'One answer needs fixing'**
-  String get validationTitle;
+  /// **'{count, plural, =1{One answer needs fixing} other{{count} answers need fixing}}'**
+  String validationTitle(int count);
 
-  /// Text in the box that lists what to fix.
+  /// Text in the box that lists what to fix; count is the number of questions to fix.
   ///
   /// In en, this message translates to:
-  /// **'Fix it, then send again.'**
-  String get validationMessage;
+  /// **'{count, plural, =1{Fix it, then send again.} other{Fix each one, then send again.}}'**
+  String validationMessage(int count);
 
   /// One line of the box that lists what to fix.
   ///
@@ -1003,6 +1003,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server is not ready yet. Please ask your organisation\'s administrator.'**
   String get problem_serverNotSetUp;
+
+  /// Plain-language explanation of the problem code "clockSkew": the phone's clock is more than 10 minutes away from the server's. Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'The date or time on this phone is wrong, so forms cannot be sent. Open the phone\'s Settings, set the right date and time (turn on automatic date and time if you can), then come back to the app. Your forms are kept on this phone.'**
+  String get problem_clockSkew;
 
   /// Plain-language explanation of the problem code "duplicateInstance". Shown to a field officer.
   ///

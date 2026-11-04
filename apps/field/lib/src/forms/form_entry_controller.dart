@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show min;
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
@@ -54,6 +55,7 @@ class FormEntryState {
     required this.step,
     required this.total,
     required this.answered,
+    required this.answerable,
     required this.canGoBack,
     required this.startedAt,
     required this.errors,
@@ -67,14 +69,19 @@ class FormEntryState {
   /// What to show.
   final FormScreen screen;
 
-  /// The position of the first question on the screen (1 is the first).
+  /// The number of the first question on the screen among the [total]
+  /// (1 is the first; at the end of the form it is [total]).
   final int step;
 
-  /// How many questions apply to this person's answers so far.
+  /// How many questions apply to this person's answers now, notes
+  /// included; it changes as answers turn questions on and off.
   final int total;
 
-  /// How many of them have an answer.
+  /// How many of the questions that take an answer have one.
   final int answered;
+
+  /// How many questions that apply take an answer (notes left out).
+  final int answerable;
 
   /// Whether there is an earlier screen.
   final bool canGoBack;
@@ -106,10 +113,14 @@ final class FinishQueued extends FinishResult {
   final String instanceId;
 }
 
-/// A question must be fixed first; the form now shows it.
+/// Questions must be fixed first; the form has not moved.
 final class FinishBlocked extends FinishResult {
   /// Creates the result.
-  const FinishBlocked();
+  const FinishBlocked(this.failures);
+
+  /// Every question to fix, in form order; open one with
+  /// [FormEntryController.jumpTo].
+  final List<FailedQuestion> failures;
 }
 
 /// Chooses the form language that matches [locale], or `null` to keep the
@@ -152,13 +163,9 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
   late FormEntrySession _session;
   late DeviceDatabase _db;
   late DateTime _startedAt;
-  final List<int> _history = <int>[];
   final Map<String, ValidationMessage> _errors = <String, ValidationMessage>{};
   DateTime? _savedAt;
   int _revision = 0;
-  // Where the question count starts after a jump (the engine has no
-  // "position", so after a failed finish it is estimated from the answers).
-  int _base = 0;
   Timer? _saveTimer;
   bool _dirty = false;
   bool _completed = false;
@@ -222,18 +229,17 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
 
   FormEntryState _snapshot() {
     final progress = _session.progress;
-    final screen = _session.screen;
-    final done = _history.fold<int>(0, (a, b) => a + b);
-    final total = progress.total;
-    var step = _base + done + 1;
-    if (total > 0 && step > total) step = total;
+    final position = _session.position;
+    final total = _session.total;
     return FormEntryState(
       title: _session.title,
-      screen: screen,
-      step: step,
+      screen: _session.screen,
+      // "Question N of M": N counts from 1; at the end it stays at M.
+      step: total == 0 ? 0 : min(position + 1, total),
       total: total,
       answered: progress.answered,
-      canGoBack: _history.isNotEmpty,
+      answerable: progress.total,
+      canGoBack: position > 0,
       startedAt: _startedAt,
       errors: Map<String, ValidationMessage>.unmodifiable(_errors),
       revision: ++_revision,
@@ -244,11 +250,6 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
   void _publish() {
     if (_closed) return;
     state = AsyncData<FormEntryState>(_snapshot());
-  }
-
-  int _questionsOnScreen() {
-    final screen = _session.screen;
-    return screen is QuestionScreen ? screen.questions.length : 0;
   }
 
   /// Records the answer to [question] ([text] is the XML text form, `null`
@@ -281,7 +282,6 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
 
   /// Checks the screen and moves on. Returns `true` when it moved.
   Future<bool> next() async {
-    final before = _questionsOnScreen();
     final result = _session.next();
     switch (result) {
       case Blocked(:final messages):
@@ -296,7 +296,6 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
         _publish();
         return false;
       case Moved():
-        _history.add(before);
         _errors.clear();
         await saveNow();
         _publish();
@@ -306,8 +305,7 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
 
   /// Goes to the previous screen.
   Future<void> back() async {
-    if (_history.isEmpty) return;
-    _history.removeLast();
+    if (_session.position == 0) return;
     _errors.clear();
     _session.back();
     await saveNow();
@@ -316,30 +314,52 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
 
   /// At a repeat prompt: adds another copy of the repeated group.
   Future<void> addRepeat() async {
-    final before = _questionsOnScreen();
     _session.addRepeat();
-    _history.add(before);
     await saveNow();
     _publish();
   }
 
-  /// Checks everything and puts the form in the outbox.
+  /// Opens the screen with the question [questionKey] (from a
+  /// [FinishBlocked] failure), keeping the messages to fix. Returns `false`
+  /// when that question no longer applies.
+  bool jumpTo(String questionKey) {
+    final moved = _session.jumpTo(questionKey);
+    if (moved) _publish();
+    return moved;
+  }
+
+  /// Checks every question and, when all pass, puts the form in the outbox.
+  /// When some fail, nothing moves: [FinishBlocked] lists them all and
+  /// their messages wait on the questions.
   Future<FinishResult> finish() async {
+    final failures = _session.validateAll();
+    if (failures.isNotEmpty) return _blocked(failures);
     final result = _session.finalise();
     switch (result) {
       case FinaliseBlocked(:final message):
-        _errors
-          ..clear()
-          ..[message.questionKey] = message;
-        _history.clear();
-        _base = _session.progress.answered;
-        _publish();
-        return const FinishBlocked();
+        // validateAll() found nothing, so this should not happen; the
+        // engine now shows the question, and the person is sent to it.
+        final screen = _session.screen;
+        return _blocked(<FailedQuestion>[
+          if (screen is QuestionScreen)
+            for (final q in screen.questions)
+              if (q.key == message.questionKey) FailedQuestion(q, message),
+        ]);
       case Finalised(:final instance):
         _completed = true;
         _saveTimer?.cancel();
         await OutboxRepository(_db).enqueue(instance);
         return FinishQueued(instance.instanceId);
     }
+  }
+
+  FinishBlocked _blocked(List<FailedQuestion> failures) {
+    _errors
+      ..clear()
+      ..addAll(<String, ValidationMessage>{
+        for (final f in failures) f.question.key: f.message,
+      });
+    _publish();
+    return FinishBlocked(failures);
   }
 }

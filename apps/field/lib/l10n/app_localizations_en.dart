@@ -375,10 +375,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get summaryReady => 'Everything is answered. You can send this form.';
 
   @override
-  String get validationTitle => 'One answer needs fixing';
+  String validationTitle(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString answers need fixing',
+      one: 'One answer needs fixing',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get validationMessage => 'Fix it, then send again.';
+  String validationMessage(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Fix each one, then send again.',
+      one: 'Fix it, then send again.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String validationItem(String question, String reason) {
@@ -572,6 +596,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get problem_serverNotSetUp =>
       'The server is not ready yet. Please ask your organisation\'s administrator.';
+
+  @override
+  String get problem_clockSkew =>
+      'The date or time on this phone is wrong, so forms cannot be sent. Open the phone\'s Settings, set the right date and time (turn on automatic date and time if you can), then come back to the app. Your forms are kept on this phone.';
 
   @override
   String get problem_duplicateInstance =>

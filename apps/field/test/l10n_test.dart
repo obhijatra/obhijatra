@@ -88,6 +88,18 @@ void main() {
     expect(en.formMetaDrafts(1), '1 draft saved');
     expect(en.formMetaDrafts(2), '2 drafts saved');
     expect(bn.summaryAnsweredValue(11, 12), '১২টির মধ্যে ১১টি');
+    expect(en.validationTitle(1), 'One answer needs fixing');
+    expect(en.validationTitle(3), '3 answers need fixing');
+    expect(bn.validationTitle(1), 'একটি উত্তর ঠিক করতে হবে');
+    expect(bn.validationTitle(3), '৩টি উত্তর ঠিক করতে হবে');
+  });
+
+  test('a wrong phone clock is explained as an action to take', () {
+    expect(en.problem_clockSkew, contains('date and time'));
+    expect(en.problem_clockSkew, contains('Settings'));
+    expect(bn.problem_clockSkew, contains('তারিখ ও সময়'));
+    final meta = _arb('bn')['@problem_clockSkew']! as Map<String, Object?>;
+    expect(meta['x-translation-status'], contains('draft'));
   });
 
   test('no screen text mentions the device code or encryption yet', () {

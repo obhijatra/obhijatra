@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
+import 'package:obhijatra_core/testing.dart';
 import 'package:obhijatra_field/src/screens/about_screen.dart';
 import 'package:obhijatra_field/src/screens/more_screen.dart';
 import 'package:obhijatra_field/src/screens/settings_screen.dart';
@@ -8,7 +9,6 @@ import 'package:obhijatra_field/src/screens/splash_screen.dart';
 import 'package:obhijatra_field/src/screens/startup_problem_screen.dart';
 import 'package:obhijatra_field/src/widgets/bottom_nav.dart';
 
-import 'support/fake_server.dart';
 import 'support/harness.dart';
 
 void main() {

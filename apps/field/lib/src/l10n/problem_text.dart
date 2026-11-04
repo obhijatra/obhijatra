@@ -21,6 +21,7 @@ String problemText(AppLocalizations l10n, ProblemCode code) => switch (code) {
   ProblemCode.appUpdateRequired => l10n.problem_appUpdateRequired,
   ProblemCode.serverIncompatible => l10n.problem_serverIncompatible,
   ProblemCode.serverNotSetUp => l10n.problem_serverNotSetUp,
+  ProblemCode.clockSkew => l10n.problem_clockSkew,
   ProblemCode.duplicateInstance => l10n.problem_duplicateInstance,
   ProblemCode.formNotOnServer => l10n.problem_formNotOnServer,
   ProblemCode.submissionInvalid => l10n.problem_submissionInvalid,

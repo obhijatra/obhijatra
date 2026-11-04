@@ -4,10 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
+import 'package:obhijatra_core/testing.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
 
 import 'finish_flow_test.dart' show fillHousehold, settleLong;
-import 'support/fake_server.dart';
 import 'support/harness.dart';
 
 Finder _button(String label) => find.widgetWithText(PrimaryButton, label);
@@ -16,7 +16,7 @@ void main() {
   matrix(
     'connect, sign in, fill the form, finish offline, then it sends by itself',
     (tester, language, scale, l) async {
-      final server = FakeServer(xform: householdVisitXForm);
+      final server = FakeObhijatraServer(xform: householdVisitXForm);
       final env = TestEnv(server: server);
       await pumpApp(tester, env, language: language, textScale: scale);
 

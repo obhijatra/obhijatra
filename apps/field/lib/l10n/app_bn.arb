@@ -405,11 +405,11 @@
   "@summaryReady": {
     "x-translation-status": "draft: owner to check"
   },
-  "validationTitle": "একটি উত্তর ঠিক করতে হবে",
+  "validationTitle": "{count, plural, =1{একটি উত্তর ঠিক করতে হবে} other{{count}টি উত্তর ঠিক করতে হবে}}",
   "@validationTitle": {
     "x-translation-status": "draft: owner to check"
   },
-  "validationMessage": "এটি ঠিক করুন, তারপর আবার পাঠান।",
+  "validationMessage": "{count, plural, =1{এটি ঠিক করুন, তারপর আবার পাঠান।} other{প্রতিটি ঠিক করুন, তারপর আবার পাঠান।}}",
   "@validationMessage": {
     "x-translation-status": "draft: owner to check"
   },
@@ -603,6 +603,10 @@
   },
   "problem_serverNotSetUp": "সার্ভার এখনও প্রস্তুত নয়। আপনার প্রতিষ্ঠানের অ্যাডমিনকে জানান।",
   "@problem_serverNotSetUp": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_clockSkew": "এই ফোনের তারিখ বা সময় ভুল, তাই ফর্ম পাঠানো যাচ্ছে না। ফোনের সেটিংস খুলে তারিখ ও সময় ঠিক করুন (পারলে স্বয়ংক্রিয় তারিখ ও সময় চালু করুন), তারপর অ্যাপে ফিরে আসুন। আপনার ফর্ম এই ফোনে রাখা আছে।",
+  "@problem_clockSkew": {
     "x-translation-status": "draft: owner to check"
   },
   "problem_duplicateInstance": "সার্ভারে একই কোডের আরেকটি ভিন্ন ফর্ম আগে থেকেই আছে। আপনার উত্তর রাখা আছে। আপনার প্রতিষ্ঠানকে জানান।",

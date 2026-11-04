@@ -41,7 +41,8 @@ class FinishScreen extends ConsumerStatefulWidget {
 
 class _FinishScreenState extends ConsumerState<FinishScreen> {
   bool _sending = false;
-  bool _blocked = false;
+  // The questions to fix, after Send found some; null before.
+  List<FailedQuestion>? _failures;
 
   FormEntryController get _controller =>
       ref.read(formEntryProvider(widget.args).notifier);
@@ -52,8 +53,13 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
       final result = await _controller.finish();
       if (!mounted) return;
       switch (result) {
-        case FinishBlocked():
-          setState(() => _blocked = true);
+        case FinishBlocked(:final failures):
+          if (failures.isEmpty) {
+            // The form already shows the question to fix.
+            Navigator.of(context).pop(FinishExit.fix);
+          } else {
+            setState(() => _failures = failures);
+          }
         case FinishQueued(:final instanceId):
           final outcome = await _syncAndJudge(instanceId);
           if (!mounted) return;
@@ -124,39 +130,28 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
     final state = ref.watch(formEntryProvider(widget.args)).value;
     final title = state?.title;
 
+    final failures = _failures;
     ValidationSummary? summary;
-    if (state != null &&
-        state.screen is QuestionScreen &&
-        state.errors.isNotEmpty) {
-      final screen = state.screen as QuestionScreen;
-      final entries = <ValidationSummaryItem>[];
-      for (final q in screen.questions) {
-        final message = state.errors[q.key];
-        if (message == null) continue;
-        final reason = message.formMessage?.trim().isNotEmpty ?? false
-            ? message.formMessage!
-            : switch (message.issue) {
-                ValidationIssue.required => l.issueRequired,
-                ValidationIssue.constraint => l.issueConstraint,
-                ValidationIssue.invalidValue => l.issueInvalidText,
-              };
-        entries.add(
-          ValidationSummaryItem(
-            label: l.validationItem(q.label ?? '', reason),
-            // The form is already on that question; going back shows it.
-            onTap: () => Navigator.of(context).pop(FinishExit.fix),
-          ),
-        );
-      }
-      if (entries.isNotEmpty) {
-        summary = ValidationSummary(
-          title: l.validationTitle,
-          message: l.validationMessage,
-          items: entries,
-        );
-      }
+    if (failures != null && failures.isNotEmpty) {
+      summary = ValidationSummary(
+        title: l.validationTitle(failures.length),
+        message: l.validationMessage(failures.length),
+        items: <ValidationSummaryItem>[
+          for (final failure in failures)
+            ValidationSummaryItem(
+              label: l.validationItem(
+                failure.question.label ?? '',
+                _reason(l, failure.message),
+              ),
+              // Straight to that question, with its message showing.
+              onTap: () {
+                _controller.jumpTo(failure.question.key);
+                Navigator.of(context).pop(FinishExit.fix);
+              },
+            ),
+        ],
+      );
     }
-    final showSummary = _blocked && summary != null;
 
     return ScreenFrame(
       topBar: TopBar(
@@ -169,7 +164,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
       body: ListView(
         padding: const EdgeInsets.all(Spacing.space4),
         children: <Widget>[
-          if (showSummary) ...<Widget>[
+          if (summary != null) ...<Widget>[
             summary,
             const SizedBox(height: Spacing.space4),
           ] else ...<Widget>[
@@ -192,7 +187,10 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                   const SizedBox(height: Spacing.space2),
                   _Row(
                     label: l.summaryAnswered,
-                    value: l.summaryAnsweredValue(state.answered, state.total),
+                    value: l.summaryAnsweredValue(
+                      state.answered,
+                      state.answerable,
+                    ),
                   ),
                   Divider(color: p.border),
                   _Row(
@@ -225,6 +223,18 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
       ),
     );
   }
+}
+
+/// Why a question failed, in plain words: the form's own message when it
+/// has one.
+String _reason(AppLocalizations l, ValidationMessage message) {
+  final own = message.formMessage?.trim();
+  if (own != null && own.isNotEmpty) return own;
+  return switch (message.issue) {
+    ValidationIssue.required => l.issueRequired,
+    ValidationIssue.constraint => l.issueConstraint,
+    ValidationIssue.invalidValue => l.issueInvalidText,
+  };
 }
 
 class _Row extends StatelessWidget {

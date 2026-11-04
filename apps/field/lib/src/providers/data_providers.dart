@@ -14,16 +14,11 @@ final cachedFormsProvider = StreamProvider<List<CachedForm>>((ref) async* {
 /// Drafts, most recently saved first, kept up to date.
 final draftsProvider = StreamProvider<List<Draft>>((ref) async* {
   final db = await ref.watch(deviceDatabaseProvider.future);
-  yield* (db.select(
-    db.drafts,
-  )..orderBy([(d) => OrderingTerm.desc(d.updatedAt)])).watch();
+  yield* DraftRepository(db).watchDrafts();
 });
 
 /// Finished forms (sent or not), newest first, kept up to date.
 final outboxEntriesProvider = StreamProvider<List<OutboxEntry>>((ref) async* {
   final db = await ref.watch(deviceDatabaseProvider.future);
-  yield* (db.select(db.outbox)
-        ..orderBy([(e) => OrderingTerm.desc(e.createdAt)])
-        ..limit(100))
-      .watch();
+  yield* OutboxRepository(db).watchOutbox(limit: 100);
 });
