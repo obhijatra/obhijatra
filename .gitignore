@@ -1,0 +1,51 @@
+# Dart and Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.g.dart.tmp
+coverage/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+
+# Local and secret files
+*.env
+.env.*
+local.properties
+key.properties
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.mobileprovision
+google-services.json
+
+# Android / iOS / macOS build outputs
+**/android/.gradle/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/gradle-wrapper.jar
+**/ios/Pods/
+**/macos/Pods/
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/windows/flutter/ephemeral/
+**/ios/**/xcuserdata/
+**/macos/**/xcuserdata/
+
+# Server
+server/dist/
+pb_data/
+
+# Keep the vendored PocketBase source exactly as upstream shipped it
+!server/vendor/**/.env*
