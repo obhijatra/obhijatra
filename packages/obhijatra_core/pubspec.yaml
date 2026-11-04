@@ -1,0 +1,20 @@
+name: obhijatra_core
+description: Pure-Dart core of Obhijatra - models, PocketBase client, sync queue, form engine, field encryption and report definitions. No Flutter imports.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  dartrosa: 0.1.2
+  dartrosa_entities: 0.1.1
+  drift: 2.35.3
+  pocketbase: 0.25.3
+  riverpod: 3.4.3
+  sodium: 4.1.2+1
+
+dev_dependencies:
+  lints: 6.1.0
+  test: 1.31.1

@@ -1,0 +1,19 @@
+name: obhijatra_workspace
+description: Obhijatra monorepo root (pub workspace). Not published.
+publish_to: none
+
+environment:
+  sdk: ^3.13.7
+
+workspace:
+  - packages/obhijatra_core
+  - packages/obhijatra_ui
+  - apps/field
+  - apps/manager
+
+# Build-hook settings must live in the workspace root. This switches the
+# sqlite3 package to the SQLite3MultipleCiphers build (encrypted database).
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
