@@ -29,6 +29,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- Shown by iOS before Face ID unlocks the app. Bangla first; the Bangla
+	     is a draft for the owner to check. -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>অভিযাত্রা এই ফোনের ফর্মগুলো আনলক করতে ফেস আইডি ব্যবহার করে। Obhijatra uses Face ID to unlock the forms on this phone.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

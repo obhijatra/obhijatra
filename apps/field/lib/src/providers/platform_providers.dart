@@ -8,6 +8,7 @@ import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/src/platform/file_attachment_store.dart';
 import 'package:obhijatra_field/src/platform/multiple_ciphers_opener.dart';
 import 'package:obhijatra_field/src/platform/secure_storage_key_store.dart';
+import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -29,17 +30,25 @@ final databaseOpenerProvider = FutureProvider<DeviceDatabaseOpener>((
   );
 });
 
-/// The encrypted device database, opened once for the life of the app.
+/// The encrypted device database: opened only while the app lock allows it
+/// ([AppLockState.opensData]), and closed again when the app locks.
 ///
-/// Fails with an [ObhijatraException] (never deletes anything) when the key
-/// or the file is not usable.
+/// While the app is locked it waits. Fails with an [ObhijatraException]
+/// (never deletes anything) when the key or the file is not usable.
 final deviceDatabaseProvider = FutureProvider<DeviceDatabase>((ref) async {
+  final opens = ref.watch(
+    appLockProvider.select((lock) => lock.value?.opensData ?? false),
+  );
+  if (!opens) return Completer<DeviceDatabase>().future;
   final opener = await ref.watch(databaseOpenerProvider.future);
   final db = await openDeviceDatabase(
     keyStore: ref.watch(keyStoreProvider),
     opener: opener,
   );
   ref.onDispose(() => unawaited(db.close()));
+  // An online sign-in made while the database was closed brings a session.
+  final session = ref.read(appLockProvider.notifier).takePendingSession();
+  if (session != null) await SettingsRepository(db).saveSession(session);
   return db;
 });
 

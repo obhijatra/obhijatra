@@ -534,6 +534,121 @@ class AppLocalizationsBn extends AppLocalizations {
   String get aboutLicences => 'ওপেন-সোর্স লাইসেন্স';
 
   @override
+  String get lockTitle => 'আপনার তথ্য লক করা আছে';
+
+  @override
+  String get lockDeviceBody =>
+      'অ্যাপ খুলতে ফোনের স্ক্রিন লক (পিন, প্যাটার্ন, পাসওয়ার্ড বা আঙুলের ছাপ) ব্যবহার করুন।';
+
+  @override
+  String get lockUnlock => 'আনলক করুন';
+
+  @override
+  String get lockPromptTitle => 'অভিযাত্রা আনলক করুন';
+
+  @override
+  String get lockDeviceReason =>
+      'এই ফোনের ফর্মগুলো খুলতে নিশ্চিত করুন যে এটি আপনি।';
+
+  @override
+  String get lockDeviceCancelled =>
+      'ফোন অ্যাপটি আনলক করেনি। আবার চেষ্টা করতে \"আনলক করুন\" চাপুন।';
+
+  @override
+  String get lockDeviceLockedOut =>
+      'অনেকবার চেষ্টার পর ফোনের লক কিছুক্ষণের জন্য বন্ধ আছে। একটু অপেক্ষা করে আবার \"আনলক করুন\" চাপুন।';
+
+  @override
+  String get lockPinBody => 'আপনার ৬ সংখ্যার অ্যাপ পিন লিখুন।';
+
+  @override
+  String get pinLabel => 'অ্যাপ পিন';
+
+  @override
+  String pinWrong(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'পিন ভুল হয়েছে। অল্প সময় অপেক্ষা করার আগে আর $countString বার চেষ্টা করতে পারবেন।';
+  }
+
+  @override
+  String pinWaitSeconds(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'অনেকবার ভুল চেষ্টা হয়েছে। $countString সেকেন্ড পরে আবার চেষ্টা করুন।';
+  }
+
+  @override
+  String pinWaitMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'অনেকবার ভুল চেষ্টা হয়েছে। $countString মিনিট পরে আবার চেষ্টা করুন।';
+  }
+
+  @override
+  String get pinNeedsSixDigits => '৬টি সংখ্যা লিখুন।';
+
+  @override
+  String get pinForgot => 'পিন ভুলে গেছেন?';
+
+  @override
+  String get pinChecking => 'যাচাই করা হচ্ছে…';
+
+  @override
+  String get pinSetTitle => 'একটি অ্যাপ পিন বেছে নিন';
+
+  @override
+  String get pinSetBody =>
+      'এই ফোনে কোনো স্ক্রিন লক নেই, তাই অ্যাপের নিজের একটি পিন দরকার। এমন ৬টি সংখ্যা বেছে নিন যা অন্যরা আন্দাজ করতে পারবে না। প্রতিবার অ্যাপ খোলার সময় এটি লিখতে হবে।';
+
+  @override
+  String get pinNew => 'নতুন পিন (৬ সংখ্যা)';
+
+  @override
+  String get pinConfirm => 'একই পিন আবার লিখুন';
+
+  @override
+  String get pinMismatch => 'দুটি পিন এক নয়। পিনটি আবার লিখুন।';
+
+  @override
+  String get pinSave => 'পিন সেভ করুন';
+
+  @override
+  String get pinSaving => 'সেভ করা হচ্ছে…';
+
+  @override
+  String get reSignInExpired =>
+      'এই ফোনে শেষবার ইন্টারনেট দিয়ে সাইন ইন করার পর ৩০ দিনের বেশি পার হয়েছে, অথবা ফোনের তারিখ বদলে গেছে। তথ্য খুলতে ইন্টারনেটে যুক্ত হয়ে সাইন ইন করুন।';
+
+  @override
+  String get reSignInNoLock =>
+      'এই ফোনে কোনো স্ক্রিন লক বা অ্যাপ পিন নেই। ইন্টারনেটে যুক্ত হয়ে সাইন ইন করুন, তারপর একটি অ্যাপ পিন বেছে নিন।';
+
+  @override
+  String get reSignInForgotPin =>
+      'ইন্টারনেটে যুক্ত হয়ে আপনার অ্যাকাউন্ট দিয়ে সাইন ইন করুন। তারপর নতুন অ্যাপ পিন বেছে নিতে পারবেন।';
+
+  @override
+  String get reSignInWrongAccount =>
+      'এই ফোনের তথ্য অন্য একটি অ্যাকাউন্টের। যে অ্যাকাউন্ট দিয়ে শেষবার এই ফোন ব্যবহার করা হয়েছে, সেটি দিয়ে সাইন ইন করুন।';
+
+  @override
+  String get reSignInBack => 'পিনে ফিরে যান';
+
+  @override
+  String get aboutSecurityHeading => 'তথ্য নিরাপদ রাখা';
+
+  @override
+  String get aboutSecurityBody =>
+      'অ্যাপটি ৫ মিনিট ব্যাকগ্রাউন্ডে থাকলে নিজে থেকেই লক হয়ে যায়। ফোনের স্ক্রিন লক দিয়ে, অথবা ফোনে স্ক্রিন লক না থাকলে অ্যাপ পিন দিয়ে এটি খুলুন। ৩০ দিন ইন্টারনেট দিয়ে সাইন ইন না করলে আবার সাইন ইন না করা পর্যন্ত অ্যাপটি লক থাকবে। প্রতি জনের জন্য একটি করে ফোন ব্যবহার করুন: যতদিন অ্যাপটি প্রত্যেকের তথ্য আলাদা রাখতে পারছে না, ততদিন যে কেউ এই ফোনে অ্যাপটি খুলতে পারলে এতে থাকা ফর্মগুলো দেখতে পারবে।';
+
+  @override
   String get problem_offline =>
       'এখন ইন্টারনেট সংযোগ নেই। আপনার কাজ এই ফোনে নিরাপদ আছে, সিগন্যাল ফিরলে পাঠানো হবে।';
 
@@ -624,6 +739,10 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get problem_unexpectedResponse =>
       'সার্ভার এমনভাবে উত্তর দিয়েছে যা অ্যাপ বুঝতে পারছে না। আমরা পরে আবার চেষ্টা করব।';
+
+  @override
+  String get problem_redirected =>
+      'সার্ভারের ঠিকানা অ্যাপটিকে অন্য একটি ঠিকানায় পাঠিয়ে দিয়েছে, তাই কিছু পাঠানো হয়নি। পাবলিক ওয়াই-ফাই ব্যবহার করলে আগে তার সাইন-ইন পেজ খুলুন। না হলে আপনার প্রতিষ্ঠানের কাছ থেকে সার্ভারের ঠিকানা মিলিয়ে নিন। আমরা পরে আবার চেষ্টা করব।';
 
   @override
   String get problem_unknown =>

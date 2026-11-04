@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
 
 /// A text field with its label above it, for sign-in and server address
@@ -18,6 +19,7 @@ class LabeledField extends StatelessWidget {
     this.onSubmitted,
     this.onChanged,
     this.autocorrect = false,
+    this.inputFormatters,
     this.fieldKey,
     super.key,
   });
@@ -58,6 +60,9 @@ class LabeledField extends StatelessWidget {
   /// Whether the keyboard may correct the text.
   final bool autocorrect;
 
+  /// Limits what can be typed (for example digits only).
+  final List<TextInputFormatter>? inputFormatters;
+
   /// A key for the text field itself, for tests.
   final Key? fieldKey;
 
@@ -81,6 +86,7 @@ class LabeledField extends StatelessWidget {
           onSubmitted: onSubmitted,
           onChanged: onChanged,
           autocorrect: autocorrect,
+          inputFormatters: inputFormatters,
           enableSuggestions: !obscureText,
           style: Theme.of(context).textTheme.bodyLarge,
           decoration: InputDecoration(

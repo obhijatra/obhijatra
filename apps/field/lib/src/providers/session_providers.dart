@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/src/app_info.dart';
+import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 
 /// Reads and writes this device's settings.
@@ -37,7 +38,10 @@ class ServerNotifier extends AsyncNotifier<ServerConnection?> {
     final settings = await ref.watch(settingsRepositoryProvider.future);
     final address = await settings.read(serverUrlSettingKey);
     if (address == null) return null;
-    return _connection = await _create(Uri.parse(address), settings);
+    final uri = Uri.parse(address);
+    // The app lock needs the address to sign in before the database opens.
+    await ref.read(appLockProvider.notifier).rememberServerAddress(uri);
+    return _connection = await _create(uri, settings);
   }
 
   Future<ServerConnection> _create(
@@ -59,6 +63,7 @@ class ServerNotifier extends AsyncNotifier<ServerConnection?> {
   Future<void> setAddress(Uri address) async {
     final settings = await ref.read(settingsRepositoryProvider.future);
     await settings.write(serverUrlSettingKey, address.toString());
+    await ref.read(appLockProvider.notifier).rememberServerAddress(address);
     final next = await _create(address, settings);
     _connection?.server.close();
     _connection = next;
@@ -89,9 +94,12 @@ class SessionNotifier extends Notifier<SignedInUser?> {
   SignedInUser? build() => ref.watch(serverProvider).value?.server.currentUser;
 
   /// Signs in. Throws an [ObhijatraException] with a plain-language code.
+  /// The app lock records the online sign-in (and may ask for an app PIN).
   Future<void> signIn({required String email, required String password}) async {
     final server = ref.read(serverProvider).requireValue!.server;
-    state = await server.signIn(email: email, password: password);
+    final user = await server.signIn(email: email, password: password);
+    state = user;
+    await ref.read(appLockProvider.notifier).signedInOnline(user);
   }
 
   /// Forgets the session on this phone. Unsent forms stay.

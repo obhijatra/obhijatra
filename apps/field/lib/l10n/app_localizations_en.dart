@@ -554,6 +554,141 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutLicences => 'Open-source licences';
 
   @override
+  String get lockTitle => 'Your data is locked';
+
+  @override
+  String get lockDeviceBody =>
+      'Use your phone\'s screen lock (PIN, pattern, password or fingerprint) to open the app.';
+
+  @override
+  String get lockUnlock => 'Unlock';
+
+  @override
+  String get lockPromptTitle => 'Unlock Obhijatra';
+
+  @override
+  String get lockDeviceReason =>
+      'Confirm it is you to open the forms on this phone.';
+
+  @override
+  String get lockDeviceCancelled =>
+      'The phone did not unlock the app. Press Unlock to try again.';
+
+  @override
+  String get lockDeviceLockedOut =>
+      'The phone\'s lock is paused after too many tries. Wait a little, then press Unlock again.';
+
+  @override
+  String get lockPinBody => 'Type your 6-digit app PIN.';
+
+  @override
+  String get pinLabel => 'App PIN';
+
+  @override
+  String pinWrong(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Wrong PIN. You can try $countString more times before a short wait.',
+      one: 'Wrong PIN. You can try 1 more time before a short wait.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pinWaitSeconds(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString seconds',
+      one: '1 second',
+    );
+    return 'Too many wrong tries. Try again in $_temp0.';
+  }
+
+  @override
+  String pinWaitMinutes(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString minutes',
+      one: '1 minute',
+    );
+    return 'Too many wrong tries. Try again in $_temp0.';
+  }
+
+  @override
+  String get pinNeedsSixDigits => 'Type 6 digits.';
+
+  @override
+  String get pinForgot => 'Forgot your PIN?';
+
+  @override
+  String get pinChecking => 'Checking…';
+
+  @override
+  String get pinSetTitle => 'Choose an app PIN';
+
+  @override
+  String get pinSetBody =>
+      'This phone has no screen lock, so the app needs its own PIN. Choose 6 digits that others cannot guess. You will type them each time you open the app.';
+
+  @override
+  String get pinNew => 'New PIN (6 digits)';
+
+  @override
+  String get pinConfirm => 'Type the same PIN again';
+
+  @override
+  String get pinMismatch =>
+      'The two PINs are not the same. Type the PIN again.';
+
+  @override
+  String get pinSave => 'Save PIN';
+
+  @override
+  String get pinSaving => 'Saving…';
+
+  @override
+  String get reSignInExpired =>
+      'It is more than 30 days since you last signed in with the internet on this phone, or the phone\'s date has changed. Connect to the internet and sign in to open your data.';
+
+  @override
+  String get reSignInNoLock =>
+      'This phone has no screen lock and no app PIN. Connect to the internet and sign in, then choose an app PIN.';
+
+  @override
+  String get reSignInForgotPin =>
+      'Connect to the internet and sign in with your account. Then you can choose a new app PIN.';
+
+  @override
+  String get reSignInWrongAccount =>
+      'The data on this phone belongs to another account. Sign in with the account that last used this phone.';
+
+  @override
+  String get reSignInBack => 'Back to the PIN';
+
+  @override
+  String get aboutSecurityHeading => 'Keeping the data safe';
+
+  @override
+  String get aboutSecurityBody =>
+      'The app locks when it has been in the background for 5 minutes. Open it with your phone\'s screen lock, or with the app PIN if the phone has no screen lock. If you have not signed in with the internet for 30 days, the app stays locked until you sign in again. Use one phone per person: until the app can keep each person\'s data apart, anyone who can open the app on this phone can see the forms on it.';
+
+  @override
   String get problem_offline =>
       'There is no internet connection right now. Your work is safe on this phone and will be sent when the signal returns.';
 
@@ -644,6 +779,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get problem_unexpectedResponse =>
       'The server answered in a way the app does not understand. We will try again later.';
+
+  @override
+  String get problem_redirected =>
+      'The server address sent the app to a different address, so nothing was sent. If you use public Wi-Fi, open its sign-in page first. Otherwise, check the server address with your organisation. We will try again later.';
 
   @override
   String get problem_unknown =>

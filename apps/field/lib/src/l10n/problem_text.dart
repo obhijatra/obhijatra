@@ -33,6 +33,7 @@ String problemText(AppLocalizations l10n, ProblemCode code) => switch (code) {
   ProblemCode.databaseFromNewerApp => l10n.problem_databaseFromNewerApp,
   ProblemCode.databaseUnavailable => l10n.problem_databaseUnavailable,
   ProblemCode.unexpectedResponse => l10n.problem_unexpectedResponse,
+  ProblemCode.redirected => l10n.problem_redirected,
   ProblemCode.unknown => l10n.problem_unknown,
 };
 

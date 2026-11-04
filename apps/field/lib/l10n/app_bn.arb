@@ -561,6 +561,122 @@
   "@aboutLicences": {
     "x-translation-status": "draft: owner to check"
   },
+  "lockTitle": "আপনার তথ্য লক করা আছে",
+  "@lockTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lockDeviceBody": "অ্যাপ খুলতে ফোনের স্ক্রিন লক (পিন, প্যাটার্ন, পাসওয়ার্ড বা আঙুলের ছাপ) ব্যবহার করুন।",
+  "@lockDeviceBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lockUnlock": "আনলক করুন",
+  "@lockUnlock": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lockPromptTitle": "অভিযাত্রা আনলক করুন",
+  "@lockPromptTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lockDeviceReason": "এই ফোনের ফর্মগুলো খুলতে নিশ্চিত করুন যে এটি আপনি।",
+  "@lockDeviceReason": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lockDeviceCancelled": "ফোন অ্যাপটি আনলক করেনি। আবার চেষ্টা করতে \"আনলক করুন\" চাপুন।",
+  "@lockDeviceCancelled": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lockDeviceLockedOut": "অনেকবার চেষ্টার পর ফোনের লক কিছুক্ষণের জন্য বন্ধ আছে। একটু অপেক্ষা করে আবার \"আনলক করুন\" চাপুন।",
+  "@lockDeviceLockedOut": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lockPinBody": "আপনার ৬ সংখ্যার অ্যাপ পিন লিখুন।",
+  "@lockPinBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinLabel": "অ্যাপ পিন",
+  "@pinLabel": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinWrong": "পিন ভুল হয়েছে। অল্প সময় অপেক্ষা করার আগে আর {count} বার চেষ্টা করতে পারবেন।",
+  "@pinWrong": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinWaitSeconds": "অনেকবার ভুল চেষ্টা হয়েছে। {count} সেকেন্ড পরে আবার চেষ্টা করুন।",
+  "@pinWaitSeconds": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinWaitMinutes": "অনেকবার ভুল চেষ্টা হয়েছে। {count} মিনিট পরে আবার চেষ্টা করুন।",
+  "@pinWaitMinutes": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinNeedsSixDigits": "৬টি সংখ্যা লিখুন।",
+  "@pinNeedsSixDigits": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinForgot": "পিন ভুলে গেছেন?",
+  "@pinForgot": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinChecking": "যাচাই করা হচ্ছে…",
+  "@pinChecking": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinSetTitle": "একটি অ্যাপ পিন বেছে নিন",
+  "@pinSetTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinSetBody": "এই ফোনে কোনো স্ক্রিন লক নেই, তাই অ্যাপের নিজের একটি পিন দরকার। এমন ৬টি সংখ্যা বেছে নিন যা অন্যরা আন্দাজ করতে পারবে না। প্রতিবার অ্যাপ খোলার সময় এটি লিখতে হবে।",
+  "@pinSetBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinNew": "নতুন পিন (৬ সংখ্যা)",
+  "@pinNew": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinConfirm": "একই পিন আবার লিখুন",
+  "@pinConfirm": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinMismatch": "দুটি পিন এক নয়। পিনটি আবার লিখুন।",
+  "@pinMismatch": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinSave": "পিন সেভ করুন",
+  "@pinSave": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pinSaving": "সেভ করা হচ্ছে…",
+  "@pinSaving": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "reSignInExpired": "এই ফোনে শেষবার ইন্টারনেট দিয়ে সাইন ইন করার পর ৩০ দিনের বেশি পার হয়েছে, অথবা ফোনের তারিখ বদলে গেছে। তথ্য খুলতে ইন্টারনেটে যুক্ত হয়ে সাইন ইন করুন।",
+  "@reSignInExpired": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "reSignInNoLock": "এই ফোনে কোনো স্ক্রিন লক বা অ্যাপ পিন নেই। ইন্টারনেটে যুক্ত হয়ে সাইন ইন করুন, তারপর একটি অ্যাপ পিন বেছে নিন।",
+  "@reSignInNoLock": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "reSignInForgotPin": "ইন্টারনেটে যুক্ত হয়ে আপনার অ্যাকাউন্ট দিয়ে সাইন ইন করুন। তারপর নতুন অ্যাপ পিন বেছে নিতে পারবেন।",
+  "@reSignInForgotPin": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "reSignInWrongAccount": "এই ফোনের তথ্য অন্য একটি অ্যাকাউন্টের। যে অ্যাকাউন্ট দিয়ে শেষবার এই ফোন ব্যবহার করা হয়েছে, সেটি দিয়ে সাইন ইন করুন।",
+  "@reSignInWrongAccount": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "reSignInBack": "পিনে ফিরে যান",
+  "@reSignInBack": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutSecurityHeading": "তথ্য নিরাপদ রাখা",
+  "@aboutSecurityHeading": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutSecurityBody": "অ্যাপটি ৫ মিনিট ব্যাকগ্রাউন্ডে থাকলে নিজে থেকেই লক হয়ে যায়। ফোনের স্ক্রিন লক দিয়ে, অথবা ফোনে স্ক্রিন লক না থাকলে অ্যাপ পিন দিয়ে এটি খুলুন। ৩০ দিন ইন্টারনেট দিয়ে সাইন ইন না করলে আবার সাইন ইন না করা পর্যন্ত অ্যাপটি লক থাকবে। প্রতি জনের জন্য একটি করে ফোন ব্যবহার করুন: যতদিন অ্যাপটি প্রত্যেকের তথ্য আলাদা রাখতে পারছে না, ততদিন যে কেউ এই ফোনে অ্যাপটি খুলতে পারলে এতে থাকা ফর্মগুলো দেখতে পারবে।",
+  "@aboutSecurityBody": {
+    "x-translation-status": "draft: owner to check"
+  },
   "problem_offline": "এখন ইন্টারনেট সংযোগ নেই। আপনার কাজ এই ফোনে নিরাপদ আছে, সিগন্যাল ফিরলে পাঠানো হবে।",
   "@problem_offline": {
     "x-translation-status": "draft: owner to check"
@@ -651,6 +767,10 @@
   },
   "problem_unexpectedResponse": "সার্ভার এমনভাবে উত্তর দিয়েছে যা অ্যাপ বুঝতে পারছে না। আমরা পরে আবার চেষ্টা করব।",
   "@problem_unexpectedResponse": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_redirected": "সার্ভারের ঠিকানা অ্যাপটিকে অন্য একটি ঠিকানায় পাঠিয়ে দিয়েছে, তাই কিছু পাঠানো হয়নি। পাবলিক ওয়াই-ফাই ব্যবহার করলে আগে তার সাইন-ইন পেজ খুলুন। না হলে আপনার প্রতিষ্ঠানের কাছ থেকে সার্ভারের ঠিকানা মিলিয়ে নিন। আমরা পরে আবার চেষ্টা করব।",
+  "@problem_redirected": {
     "x-translation-status": "draft: owner to check"
   },
   "problem_unknown": "কিছু একটা ভুল হয়েছে। আপনার কাজ এই ফোনে নিরাপদ আছে। আবার চেষ্টা করুন।",

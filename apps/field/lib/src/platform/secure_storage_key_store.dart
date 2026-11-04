@@ -1,19 +1,22 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 
+/// The operating system's protected storage as the app uses it: the
+/// Android Keystore or the iOS Keychain (this device only, never in
+/// backups).
+const FlutterSecureStorage protectedStorage = FlutterSecureStorage(
+  iOptions: IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  ),
+);
+
 /// Keeps the database key in the operating system's protected storage:
 /// the Android Keystore or the iOS Keychain (this device only, never in
 /// backups).
 final class SecureStorageKeyStore implements KeyStore {
   /// Creates the key store. Pass [storage] only in tests.
   SecureStorageKeyStore({FlutterSecureStorage? storage})
-    : _storage =
-          storage ??
-          const FlutterSecureStorage(
-            iOptions: IOSOptions(
-              accessibility: KeychainAccessibility.first_unlock_this_device,
-            ),
-          );
+    : _storage = storage ?? protectedStorage;
 
   final FlutterSecureStorage _storage;
 
@@ -39,4 +42,25 @@ final class SecureStorageKeyStore implements KeyStore {
     await _storage.write(key: entryName, value: key.toHex());
     return key;
   }
+}
+
+/// Keeps the app lock's small values (the app PIN's hash, wrong-PIN count,
+/// last online sign-in, server address) in the same protected storage as
+/// the database key, so they can be read before the database is opened.
+final class SecureStorageValues implements SecureValueStore {
+  /// Creates the store. Pass [storage] only in tests.
+  SecureStorageValues({FlutterSecureStorage? storage})
+    : _storage = storage ?? protectedStorage;
+
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<String?> read(String name) => _storage.read(key: name);
+
+  @override
+  Future<void> write(String name, String value) =>
+      _storage.write(key: name, value: value);
+
+  @override
+  Future<void> delete(String name) => _storage.delete(key: name);
 }

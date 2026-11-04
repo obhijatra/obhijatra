@@ -9,7 +9,8 @@ import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/widgets/screen_frame.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
 
-/// Version, free-software notice, source code and licences.
+/// Version, free-software notice, how the data is kept safe (one phone per
+/// person), source code and licences.
 class AboutScreen extends ConsumerWidget {
   /// Creates the screen.
   const AboutScreen({super.key});
@@ -80,6 +81,20 @@ class AboutScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: Spacing.space2),
                 Text(l.aboutLicenceBody, style: text.bodyMedium),
+              ],
+            ),
+          ),
+          const SizedBox(height: Spacing.space3),
+          Panel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Semantics(
+                  header: true,
+                  child: Text(l.aboutSecurityHeading, style: text.titleMedium),
+                ),
+                const SizedBox(height: Spacing.space2),
+                Text(l.aboutSecurityBody, style: text.bodyMedium),
               ],
             ),
           ),

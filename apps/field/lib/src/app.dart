@@ -3,10 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_field/l10n/app_localizations.dart';
 import 'package:obhijatra_field/src/l10n/problem_text.dart';
+import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:obhijatra_field/src/providers/locale_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
 import 'package:obhijatra_field/src/screens/connect_screen.dart';
+import 'package:obhijatra_field/src/screens/lock_screens.dart';
 import 'package:obhijatra_field/src/screens/main_shell.dart';
 import 'package:obhijatra_field/src/screens/sign_in_screen.dart';
 import 'package:obhijatra_field/src/screens/splash_screen.dart';
@@ -37,13 +39,18 @@ class ObhijatraFieldApp extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ObhijatraTheme.light(locale: locale),
       darkTheme: ObhijatraTheme.dark(locale: locale),
+      // The app lock sits above every screen: while it is locked, the lock
+      // screens replace the app's navigator entirely.
+      builder: (context, child) => LockLayer(child: child!),
       home: home,
     );
   }
 }
 
-/// Decides what to show: the splash while the saved data opens, then the
-/// connect screen, the sign-in screen or the app itself.
+/// Decides what to show once the app lock lets the data open: the splash
+/// while the saved data opens, then the connect screen, the sign-in screen
+/// or the app itself. On first use ([LockFresh]) the person always signs in
+/// online before anything else.
 class AppGate extends ConsumerWidget {
   /// Creates the gate.
   const AppGate({super.key});
@@ -67,7 +74,8 @@ class AppGate extends ConsumerWidget {
           ),
           data: (server) {
             if (server == null) return const ConnectScreen();
-            return ref.watch(sessionProvider) == null
+            final fresh = ref.watch(appLockProvider).value is LockFresh;
+            return fresh || ref.watch(sessionProvider) == null
                 ? const SignInScreen()
                 : const MainShell();
           },

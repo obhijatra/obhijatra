@@ -3,6 +3,7 @@ import 'dart:math' show min;
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/src/providers/locale_provider.dart';
@@ -207,7 +208,11 @@ class FormEntryController extends AsyncNotifier<FormEntryState> {
         _publish();
       }
     });
+    // Save as the app goes to the background: after five minutes there the
+    // app locks and closes the database, and this screen with it.
+    final lifecycle = AppLifecycleListener(onHide: () => unawaited(saveNow()));
     ref.onDispose(() {
+      lifecycle.dispose();
       _closed = true;
       _saveTimer?.cancel();
       unawaited(_flushAndClose());

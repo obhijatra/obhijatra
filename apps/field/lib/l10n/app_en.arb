@@ -673,6 +673,140 @@
   "@aboutLicences": {
     "description": "Row that opens the list of licences of the parts the app is built from."
   },
+  "lockTitle": "Your data is locked",
+  "@lockTitle": {
+    "description": "Title of the screens that ask the person to unlock the app."
+  },
+  "lockDeviceBody": "Use your phone's screen lock (PIN, pattern, password or fingerprint) to open the app.",
+  "@lockDeviceBody": {
+    "description": "Text of the unlock screen on a phone that has a screen lock."
+  },
+  "lockUnlock": "Unlock",
+  "@lockUnlock": {
+    "description": "Button that unlocks the app."
+  },
+  "lockPromptTitle": "Unlock Obhijatra",
+  "@lockPromptTitle": {
+    "description": "Title of the phone's own unlock prompt (Android). Obhijatra is the app's name."
+  },
+  "lockDeviceReason": "Confirm it is you to open the forms on this phone.",
+  "@lockDeviceReason": {
+    "description": "Why the app asks for the phone's screen lock; shown inside the phone's own prompt."
+  },
+  "lockDeviceCancelled": "The phone did not unlock the app. Press Unlock to try again.",
+  "@lockDeviceCancelled": {
+    "description": "Shown when the phone's unlock prompt was closed or did not work."
+  },
+  "lockDeviceLockedOut": "The phone's lock is paused after too many tries. Wait a little, then press Unlock again.",
+  "@lockDeviceLockedOut": {
+    "description": "Shown when the phone itself refuses to unlock for a while after too many wrong tries."
+  },
+  "lockPinBody": "Type your 6-digit app PIN.",
+  "@lockPinBody": {
+    "description": "Text of the unlock screen on a phone without a screen lock."
+  },
+  "pinLabel": "App PIN",
+  "@pinLabel": {
+    "description": "Label of the field where the app PIN is typed."
+  },
+  "pinWrong": "{count, plural, =1{Wrong PIN. You can try 1 more time before a short wait.} other{Wrong PIN. You can try {count} more times before a short wait.}}",
+  "@pinWrong": {
+    "description": "Shown after a wrong app PIN; count is how many tries are left before the app makes the person wait.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "pinWaitSeconds": "Too many wrong tries. Try again in {count, plural, =1{1 second} other{{count} seconds}}.",
+  "@pinWaitSeconds": {
+    "description": "Shown while the app makes the person wait after too many wrong PINs; the number counts down.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "pinWaitMinutes": "Too many wrong tries. Try again in {count, plural, =1{1 minute} other{{count} minutes}}.",
+  "@pinWaitMinutes": {
+    "description": "Shown while the app makes the person wait (more than a minute and a half) after too many wrong PINs.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "pinNeedsSixDigits": "Type 6 digits.",
+  "@pinNeedsSixDigits": {
+    "description": "Shown when the typed PIN is not 6 digits."
+  },
+  "pinForgot": "Forgot your PIN?",
+  "@pinForgot": {
+    "description": "Quiet button on the PIN screen; leads to signing in with the internet to choose a new PIN."
+  },
+  "pinChecking": "Checking…",
+  "@pinChecking": {
+    "description": "Shown on the unlock button while the PIN is checked."
+  },
+  "pinSetTitle": "Choose an app PIN",
+  "@pinSetTitle": {
+    "description": "Title of the screen where the app PIN is chosen."
+  },
+  "pinSetBody": "This phone has no screen lock, so the app needs its own PIN. Choose 6 digits that others cannot guess. You will type them each time you open the app.",
+  "@pinSetBody": {
+    "description": "Text of the screen where the app PIN is chosen."
+  },
+  "pinNew": "New PIN (6 digits)",
+  "@pinNew": {
+    "description": "Label of the first PIN field when choosing a PIN."
+  },
+  "pinConfirm": "Type the same PIN again",
+  "@pinConfirm": {
+    "description": "Label of the second PIN field when choosing a PIN."
+  },
+  "pinMismatch": "The two PINs are not the same. Type the PIN again.",
+  "@pinMismatch": {
+    "description": "Shown when the two typed PINs differ."
+  },
+  "pinSave": "Save PIN",
+  "@pinSave": {
+    "description": "Button that saves the chosen PIN."
+  },
+  "pinSaving": "Saving…",
+  "@pinSaving": {
+    "description": "Shown on the save button while the PIN is saved."
+  },
+  "reSignInExpired": "It is more than 30 days since you last signed in with the internet on this phone, or the phone's date has changed. Connect to the internet and sign in to open your data.",
+  "@reSignInExpired": {
+    "description": "Why the person must sign in again: the offline limit of 30 days has passed."
+  },
+  "reSignInNoLock": "This phone has no screen lock and no app PIN. Connect to the internet and sign in, then choose an app PIN.",
+  "@reSignInNoLock": {
+    "description": "Why the person must sign in again: there is no way to unlock the app on this phone."
+  },
+  "reSignInForgotPin": "Connect to the internet and sign in with your account. Then you can choose a new app PIN.",
+  "@reSignInForgotPin": {
+    "description": "Shown after Forgot your PIN."
+  },
+  "reSignInWrongAccount": "The data on this phone belongs to another account. Sign in with the account that last used this phone.",
+  "@reSignInWrongAccount": {
+    "description": "Shown when someone signs in with a different account to unlock the app."
+  },
+  "reSignInBack": "Back to the PIN",
+  "@reSignInBack": {
+    "description": "Quiet button that goes back from signing in to typing the PIN."
+  },
+  "aboutSecurityHeading": "Keeping the data safe",
+  "@aboutSecurityHeading": {
+    "description": "Heading of the security notes on the About screen."
+  },
+  "aboutSecurityBody": "The app locks when it has been in the background for 5 minutes. Open it with your phone's screen lock, or with the app PIN if the phone has no screen lock. If you have not signed in with the internet for 30 days, the app stays locked until you sign in again. Use one phone per person: until the app can keep each person's data apart, anyone who can open the app on this phone can see the forms on it.",
+  "@aboutSecurityBody": {
+    "description": "Security notes on the About screen, including the advice to use one phone per person until each person's data can be kept apart."
+  },
   "problem_offline": "There is no internet connection right now. Your work is safe on this phone and will be sent when the signal returns.",
   "@problem_offline": {
     "description": "Plain-language explanation of the problem code \"offline\". Shown to a field officer."
@@ -764,6 +898,10 @@
   "problem_unexpectedResponse": "The server answered in a way the app does not understand. We will try again later.",
   "@problem_unexpectedResponse": {
     "description": "Plain-language explanation of the problem code \"unexpectedResponse\". Shown to a field officer."
+  },
+  "problem_redirected": "The server address sent the app to a different address, so nothing was sent. If you use public Wi-Fi, open its sign-in page first. Otherwise, check the server address with your organisation. We will try again later.",
+  "@problem_redirected": {
+    "description": "Plain-language explanation of the problem code \"redirected\": the server answered with a redirect, which the app never follows (often a public Wi-Fi sign-in page). Shown to a field officer."
   },
   "problem_unknown": "Something went wrong. Your work is safe on this phone. Please try again.",
   "@problem_unknown": {

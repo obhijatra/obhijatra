@@ -11,22 +11,95 @@ import 'package:obhijatra_ui/obhijatra_ui.dart';
 
 /// Sign in as a field user. Needs the internet once; after that the app
 /// works offline.
-class SignInScreen extends ConsumerStatefulWidget {
+class SignInScreen extends ConsumerWidget {
   /// Creates the screen.
   const SignInScreen({super.key});
 
   @override
-  ConsumerState<SignInScreen> createState() => _SignInScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    return SignInForm(
+      host: ref.watch(serverProvider).value?.address.host,
+      secondaryLabel: l.signInChangeServer,
+      onSecondary: () => ref.read(serverProvider.notifier).forgetAddress(),
+      onSignIn: (email, password) async {
+        try {
+          await ref
+              .read(sessionProvider.notifier)
+              .signIn(email: email, password: password);
+          return null;
+        } on ObhijatraException catch (e) {
+          return SignInProblem.of(l, e.code);
+        } on Object {
+          return SignInProblem.of(l, ProblemCode.unknown);
+        }
+      },
+    );
+  }
 }
 
-class _SignInScreenState extends ConsumerState<SignInScreen> {
+/// Why a sign-in did not work, in plain words.
+@immutable
+class SignInProblem {
+  /// Creates the problem.
+  const SignInProblem(this.message, {this.isConnection = false});
+
+  /// The plain-language sentence for [code].
+  factory SignInProblem.of(AppLocalizations l, ProblemCode code) =>
+      SignInProblem(
+        problemText(l, code),
+        isConnection:
+            code == ProblemCode.offline || code == ProblemCode.timeout,
+      );
+
+  /// What to tell the person.
+  final String message;
+
+  /// Whether it is about the connection (shown as information, not as a
+  /// warning).
+  final bool isConnection;
+}
+
+/// The sign-in form: server, email, password and the sign-in button. Used by
+/// the first sign-in and by the app lock's online sign-in.
+class SignInForm extends StatefulWidget {
+  /// Creates the form. [onSignIn] returns `null` when it worked.
+  const SignInForm({
+    required this.onSignIn,
+    this.host,
+    this.notice,
+    this.secondaryLabel,
+    this.onSecondary,
+    super.key,
+  });
+
+  /// Signs in; returns the problem to show, or `null`.
+  final Future<SignInProblem?> Function(String email, String password) onSignIn;
+
+  /// The server's host name, shown at the top.
+  final String? host;
+
+  /// Why the person is asked to sign in, shown under the server.
+  final String? notice;
+
+  /// The words of the quiet button under the form.
+  final String? secondaryLabel;
+
+  /// What the quiet button does.
+  final VoidCallback? onSecondary;
+
+  @override
+  State<SignInForm> createState() => _SignInFormState();
+}
+
+class _SignInFormState extends State<SignInForm> {
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
   bool _show = false;
   bool _busy = false;
   String? _emailError;
   String? _passwordError;
-  ProblemCode? _problem;
+  SignInProblem? _problem;
 
   @override
   void dispose() {
@@ -47,13 +120,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     if (emailMissing || passwordMissing) return;
     setState(() => _busy = true);
     try {
-      await ref
-          .read(sessionProvider.notifier)
-          .signIn(email: _email.text, password: _password.text);
-    } on ObhijatraException catch (e) {
-      if (mounted) setState(() => _problem = e.code);
-    } on Object {
-      if (mounted) setState(() => _problem = ProblemCode.unknown);
+      final problem = await widget.onSignIn(_email.text, _password.text);
+      if (mounted) setState(() => _problem = problem);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -64,10 +132,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final l = AppLocalizations.of(context);
     final p = context.palette;
     final text = Theme.of(context).textTheme;
-    final address = ref.watch(serverProvider).value?.address;
-    final host = address?.host;
-    final offlineLike =
-        _problem == ProblemCode.offline || _problem == ProblemCode.timeout;
+    final host = widget.host;
+    final problem = _problem;
+    final connection = problem?.isConnection ?? false;
     return ScreenFrame(
       topBar: TopBar(title: l.signInTitle),
       body: ListView(
@@ -94,6 +161,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ],
               ),
             ),
+          if (widget.notice != null) ...<Widget>[
+            const SizedBox(height: Spacing.space4),
+            Panel(
+              color: p.infoSubtle,
+              borderColor: p.info,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(top: Spacing.space1),
+                    child: Icon(LucideIcons.lock, color: p.info),
+                  ),
+                  const SizedBox(width: Spacing.space3),
+                  Expanded(child: Text(widget.notice!, style: text.bodyMedium)),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: Spacing.space4),
           Text(
             l.signInNeedsInternet,
@@ -132,15 +217,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               onPressed: () => setState(() => _show = !_show),
             ),
           ),
-          if (_problem != null) ...<Widget>[
+          if (problem != null) ...<Widget>[
             const SizedBox(height: Spacing.space4),
             Panel(
-              color: offlineLike ? p.infoSubtle : p.warningSubtle,
-              borderColor: offlineLike ? p.info : p.warning,
+              color: connection ? p.infoSubtle : p.warningSubtle,
+              borderColor: connection ? p.info : p.warning,
               child: Semantics(
                 liveRegion: true,
                 container: true,
-                label: problemText(l, _problem!),
+                label: problem.message,
                 child: ExcludeSemantics(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,18 +233,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       Padding(
                         padding: const EdgeInsets.only(top: Spacing.space1),
                         child: Icon(
-                          offlineLike
+                          connection
                               ? LucideIcons.wifiOff
                               : LucideIcons.triangleAlert,
-                          color: offlineLike ? p.info : p.warning,
+                          color: connection ? p.info : p.warning,
                         ),
                       ),
                       const SizedBox(width: Spacing.space3),
                       Expanded(
-                        child: Text(
-                          problemText(l, _problem!),
-                          style: text.bodyMedium,
-                        ),
+                        child: Text(problem.message, style: text.bodyMedium),
                       ),
                     ],
                   ),
@@ -167,14 +249,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ),
             ),
           ],
-          const SizedBox(height: Spacing.space4),
-          PrimaryButton(
-            label: l.signInChangeServer,
-            variant: PrimaryButtonVariant.ghost,
-            onPressed: _busy
-                ? null
-                : () => ref.read(serverProvider.notifier).forgetAddress(),
-          ),
+          if (widget.secondaryLabel != null) ...<Widget>[
+            const SizedBox(height: Spacing.space4),
+            PrimaryButton(
+              label: widget.secondaryLabel!,
+              variant: PrimaryButtonVariant.ghost,
+              onPressed: _busy ? null : widget.onSecondary,
+            ),
+          ],
         ],
       ),
       bottom: BottomActions(

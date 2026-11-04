@@ -16,3 +16,7 @@ const String serverUrlSettingKey = 'server.base_url';
 
 /// The settings key that remembers the language the person chose.
 const String languageSettingKey = 'ui.language';
+
+/// The protected-store entry that keeps a copy of the chosen language, for
+/// the lock screens shown before the database opens.
+const String languageSecureKey = 'obhijatra.ui_language.v1';

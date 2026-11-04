@@ -6,6 +6,35 @@ import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/src/platform/file_attachment_store.dart';
 import 'package:obhijatra_field/src/platform/multiple_ciphers_opener.dart';
 import 'package:obhijatra_field/src/platform/secure_storage_key_store.dart';
+import 'package:sqlite3/sqlite3.dart';
+
+final Matcher _missing = throwsA(
+  isA<ObhijatraException>().having(
+    (e) => e.code,
+    'code',
+    ProblemCode.attachmentMissing,
+  ),
+);
+
+/// A plain SQLite, as far as the opener can tell: it ignores pragmas it does
+/// not know (`hexkey`, `cipher`) and so would write a readable file.
+class _PlainSqlite implements Database {
+  final List<String> statements = <String>[];
+
+  @override
+  void execute(String sql, [List<Object?> parameters = const <Object?>[]]) =>
+      statements.add(sql);
+
+  @override
+  ResultSet select(String sql, [List<Object?> parameters = const <Object?>[]]) {
+    statements.add(sql);
+    return ResultSet(<String>[], null, <List<Object?>>[]);
+  }
+
+  @override
+  Object? noSuchMethod(Invocation invocation) =>
+      throw UnsupportedError('${invocation.memberName} on a plain SQLite');
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +49,16 @@ void main() {
       expect(read, isNotNull);
       expect(read!.toHex(), created.toHex());
       expect(created.toHex(), hasLength(64));
+    });
+
+    test('the app lock keeps its values in the same storage', () async {
+      FlutterSecureStorage.setMockInitialValues(<String, String>{});
+      final values = SecureStorageValues();
+      expect(await values.read('a'), isNull);
+      await values.write('a', '1');
+      expect(await const FlutterSecureStorage().read(key: 'a'), '1');
+      await values.delete('a');
+      expect(await values.read('a'), isNull);
     });
 
     test('a stored value that is not a key counts as no key', () async {
@@ -62,19 +101,86 @@ void main() {
       addTearDown(outside.deleteSync);
       final store = FileAttachmentStore(root);
       for (final path in <String>[outside.path, '../obhijatra_outside.txt']) {
-        await expectLater(
-          store.read(path),
-          throwsA(
-            isA<ObhijatraException>().having(
-              (e) => e.code,
-              'code',
-              ProblemCode.attachmentMissing,
-            ),
-          ),
-          reason: path,
-        );
+        await expectLater(store.read(path), _missing, reason: path);
       }
     });
+
+    test(
+      'a folder whose name only starts like the root is outside it',
+      () async {
+        // root: /tmp/obhijatra_att_X; sibling: /tmp/obhijatra_att_X-evil
+        final sibling = Directory('${root.path}-evil')..createSync();
+        addTearDown(() => sibling.deleteSync(recursive: true));
+        final secret = File('${sibling.path}/secret.jpg')
+          ..writeAsBytesSync(<int>[9]);
+        final store = FileAttachmentStore(root);
+        final name = sibling.path.split(Platform.pathSeparator).last;
+        for (final path in <String>[secret.path, '../$name/secret.jpg']) {
+          await expectLater(store.read(path), _missing, reason: path);
+          await store.delete(path);
+          expect(secret.existsSync(), isTrue, reason: path);
+        }
+      },
+    );
+
+    test('a symbolic link out of the folder is refused', () async {
+      final outside = Directory.systemTemp.createTempSync('obhijatra_out_');
+      addTearDown(() => outside.deleteSync(recursive: true));
+      final secret = File('${outside.path}/secret.jpg')
+        ..writeAsBytesSync(<int>[9]);
+      Link('${root.path}/photo.jpg').createSync(secret.path);
+      Link('${root.path}/media').createSync(outside.path);
+      final store = FileAttachmentStore(root);
+      for (final path in <String>[
+        'photo.jpg',
+        '${root.path}/photo.jpg',
+        'media/secret.jpg',
+      ]) {
+        await expectLater(store.read(path), _missing, reason: path);
+        await store.delete(path);
+        expect(secret.existsSync(), isTrue, reason: path);
+      }
+    });
+
+    test('a symbolic link that stays inside the folder is followed', () async {
+      Directory('${root.path}/2026').createSync();
+      File('${root.path}/2026/photo.jpg').writeAsBytesSync(<int>[1]);
+      Link('${root.path}/latest.jpg').createSync('${root.path}/2026/photo.jpg');
+      final store = FileAttachmentStore(root);
+      expect(await store.read('latest.jpg'), <int>[1]);
+      expect(await store.read('2026/../2026/photo.jpg'), <int>[1]);
+    });
+
+    test('the folder itself and folders in it are not files', () async {
+      Directory('${root.path}/sub').createSync();
+      final store = FileAttachmentStore(root);
+      for (final path in <String>['', '.', 'sub', root.path]) {
+        await expectLater(store.read(path), _missing, reason: '"$path"');
+      }
+    });
+
+    test('a root reached through a symbolic link still works', () async {
+      final parent = Directory.systemTemp.createTempSync('obhijatra_lnk_');
+      addTearDown(() => parent.deleteSync(recursive: true));
+      final linked = Link('${parent.path}/attachments')..createSync(root.path);
+      File('${root.path}/photo.jpg').writeAsBytesSync(<int>[5]);
+      final store = FileAttachmentStore(Directory(linked.path));
+      expect(await store.read('photo.jpg'), <int>[5]);
+      expect(await store.read('${linked.path}/photo.jpg'), <int>[5]);
+    });
+
+    test(
+      'removes a sent file inside the folder; a gone file is fine',
+      () async {
+        final photo = File('${root.path}/photo.jpg')
+          ..writeAsBytesSync(<int>[1]);
+        final store = FileAttachmentStore(root);
+        await store.delete('photo.jpg');
+        expect(photo.existsSync(), isFalse);
+        await store.delete('photo.jpg');
+        await store.delete('never-there.jpg');
+      },
+    );
   });
 
   group('MultipleCiphersOpener', () {
@@ -128,6 +234,90 @@ void main() {
         expect(file.existsSync(), isTrue);
       },
     );
+
+    test('the bundled SQLite is SQLite3MultipleCiphers', () {
+      // Fails if the workspace build hook (hooks: user_defines: sqlite3:
+      // source: sqlite3mc) ever falls back to a plain SQLite.
+      final db = sqlite3.openInMemory();
+      addTearDown(db.close);
+      final version = db.select('SELECT sqlite3mc_version() AS v');
+      expect(version.single['v'], startsWith('SQLite3 Multiple Ciphers'));
+      expect(db.select('PRAGMA cipher'), isNotEmpty);
+      expect(
+        () => MultipleCiphersOpener.requireMultipleCiphers(db),
+        returnsNormally,
+      );
+    });
+
+    test('a plain SQLite build fails closed before the file is used', () {
+      final plain = _PlainSqlite();
+      expect(
+        () => MultipleCiphersOpener.unlock(plain, 'ab' * 32, file),
+        throwsA(
+          isA<ObhijatraException>().having(
+            (e) => e.code,
+            'code',
+            ProblemCode.databaseUnavailable,
+          ),
+        ),
+      );
+      // The key was set, the cipher asked for, and nothing else ran.
+      expect(plain.statements, <String>[
+        "PRAGMA hexkey = '${'ab' * 32}'",
+        'PRAGMA cipher',
+      ]);
+      expect(file.existsSync(), isFalse);
+    });
+
+    test('an unencrypted database file is refused and left alone', () async {
+      final plain = sqlite3.open(file.path)
+        ..execute('CREATE TABLE answers (text TEXT)')
+        ..execute("INSERT INTO answers VALUES ('Rahima Begum')");
+      plain.close();
+      final before = file.readAsBytesSync();
+      expect(String.fromCharCodes(before.take(15)), 'SQLite format 3');
+
+      FlutterSecureStorage.setMockInitialValues(<String, String>{
+        SecureStorageKeyStore.entryName: DatabaseKey.generate().toHex(),
+      });
+      await expectLater(
+        openDeviceDatabase(
+          keyStore: SecureStorageKeyStore(),
+          opener: MultipleCiphersOpener(file),
+        ),
+        throwsA(
+          isA<ObhijatraException>().having(
+            (e) => e.code,
+            'code',
+            ProblemCode.databaseUnavailable,
+          ),
+        ),
+      );
+      expect(file.readAsBytesSync(), before);
+      expect(
+        () => MultipleCiphersOpener.requireEncryptedFile(file),
+        throwsA(isA<ObhijatraException>()),
+      );
+    });
+
+    test('a new file is checked as soon as it exists; temporary data stays '
+        'in memory', () async {
+      FlutterSecureStorage.setMockInitialValues(<String, String>{});
+      final db = await openDeviceDatabase(
+        keyStore: SecureStorageKeyStore(),
+        opener: MultipleCiphersOpener(file),
+      );
+      addTearDown(db.close);
+      final tempStore = await db.customSelect('PRAGMA temp_store').getSingle();
+      expect(tempStore.data.values.single, 2, reason: '2 is MEMORY');
+      final cipher = await db.customSelect('PRAGMA cipher').get();
+      expect(cipher, isNotEmpty);
+      expect(file.lengthSync(), greaterThan(0));
+      expect(
+        () => MultipleCiphersOpener.requireEncryptedFile(file),
+        returnsNormally,
+      );
+    });
 
     test(
       'an existing database without its key is never given a new key',

@@ -938,6 +938,180 @@ abstract class AppLocalizations {
   /// **'Open-source licences'**
   String get aboutLicences;
 
+  /// Title of the screens that ask the person to unlock the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data is locked'**
+  String get lockTitle;
+
+  /// Text of the unlock screen on a phone that has a screen lock.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your phone\'s screen lock (PIN, pattern, password or fingerprint) to open the app.'**
+  String get lockDeviceBody;
+
+  /// Button that unlocks the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get lockUnlock;
+
+  /// Title of the phone's own unlock prompt (Android). Obhijatra is the app's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Obhijatra'**
+  String get lockPromptTitle;
+
+  /// Why the app asks for the phone's screen lock; shown inside the phone's own prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it is you to open the forms on this phone.'**
+  String get lockDeviceReason;
+
+  /// Shown when the phone's unlock prompt was closed or did not work.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone did not unlock the app. Press Unlock to try again.'**
+  String get lockDeviceCancelled;
+
+  /// Shown when the phone itself refuses to unlock for a while after too many wrong tries.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone\'s lock is paused after too many tries. Wait a little, then press Unlock again.'**
+  String get lockDeviceLockedOut;
+
+  /// Text of the unlock screen on a phone without a screen lock.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your 6-digit app PIN.'**
+  String get lockPinBody;
+
+  /// Label of the field where the app PIN is typed.
+  ///
+  /// In en, this message translates to:
+  /// **'App PIN'**
+  String get pinLabel;
+
+  /// Shown after a wrong app PIN; count is how many tries are left before the app makes the person wait.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Wrong PIN. You can try 1 more time before a short wait.} other{Wrong PIN. You can try {count} more times before a short wait.}}'**
+  String pinWrong(int count);
+
+  /// Shown while the app makes the person wait after too many wrong PINs; the number counts down.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong tries. Try again in {count, plural, =1{1 second} other{{count} seconds}}.'**
+  String pinWaitSeconds(int count);
+
+  /// Shown while the app makes the person wait (more than a minute and a half) after too many wrong PINs.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong tries. Try again in {count, plural, =1{1 minute} other{{count} minutes}}.'**
+  String pinWaitMinutes(int count);
+
+  /// Shown when the typed PIN is not 6 digits.
+  ///
+  /// In en, this message translates to:
+  /// **'Type 6 digits.'**
+  String get pinNeedsSixDigits;
+
+  /// Quiet button on the PIN screen; leads to signing in with the internet to choose a new PIN.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your PIN?'**
+  String get pinForgot;
+
+  /// Shown on the unlock button while the PIN is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get pinChecking;
+
+  /// Title of the screen where the app PIN is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an app PIN'**
+  String get pinSetTitle;
+
+  /// Text of the screen where the app PIN is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone has no screen lock, so the app needs its own PIN. Choose 6 digits that others cannot guess. You will type them each time you open the app.'**
+  String get pinSetBody;
+
+  /// Label of the first PIN field when choosing a PIN.
+  ///
+  /// In en, this message translates to:
+  /// **'New PIN (6 digits)'**
+  String get pinNew;
+
+  /// Label of the second PIN field when choosing a PIN.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the same PIN again'**
+  String get pinConfirm;
+
+  /// Shown when the two typed PINs differ.
+  ///
+  /// In en, this message translates to:
+  /// **'The two PINs are not the same. Type the PIN again.'**
+  String get pinMismatch;
+
+  /// Button that saves the chosen PIN.
+  ///
+  /// In en, this message translates to:
+  /// **'Save PIN'**
+  String get pinSave;
+
+  /// Shown on the save button while the PIN is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get pinSaving;
+
+  /// Why the person must sign in again: the offline limit of 30 days has passed.
+  ///
+  /// In en, this message translates to:
+  /// **'It is more than 30 days since you last signed in with the internet on this phone, or the phone\'s date has changed. Connect to the internet and sign in to open your data.'**
+  String get reSignInExpired;
+
+  /// Why the person must sign in again: there is no way to unlock the app on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone has no screen lock and no app PIN. Connect to the internet and sign in, then choose an app PIN.'**
+  String get reSignInNoLock;
+
+  /// Shown after Forgot your PIN.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to the internet and sign in with your account. Then you can choose a new app PIN.'**
+  String get reSignInForgotPin;
+
+  /// Shown when someone signs in with a different account to unlock the app.
+  ///
+  /// In en, this message translates to:
+  /// **'The data on this phone belongs to another account. Sign in with the account that last used this phone.'**
+  String get reSignInWrongAccount;
+
+  /// Quiet button that goes back from signing in to typing the PIN.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the PIN'**
+  String get reSignInBack;
+
+  /// Heading of the security notes on the About screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeping the data safe'**
+  String get aboutSecurityHeading;
+
+  /// Security notes on the About screen, including the advice to use one phone per person until each person's data can be kept apart.
+  ///
+  /// In en, this message translates to:
+  /// **'The app locks when it has been in the background for 5 minutes. Open it with your phone\'s screen lock, or with the app PIN if the phone has no screen lock. If you have not signed in with the internet for 30 days, the app stays locked until you sign in again. Use one phone per person: until the app can keep each person\'s data apart, anyone who can open the app on this phone can see the forms on it.'**
+  String get aboutSecurityBody;
+
   /// Plain-language explanation of the problem code "offline". Shown to a field officer.
   ///
   /// In en, this message translates to:
@@ -1075,6 +1249,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server answered in a way the app does not understand. We will try again later.'**
   String get problem_unexpectedResponse;
+
+  /// Plain-language explanation of the problem code "redirected": the server answered with a redirect, which the app never follows (often a public Wi-Fi sign-in page). Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'The server address sent the app to a different address, so nothing was sent. If you use public Wi-Fi, open its sign-in page first. Otherwise, check the server address with your organisation. We will try again later.'**
+  String get problem_redirected;
 
   /// Plain-language explanation of the problem code "unknown". Shown to a field officer.
   ///
