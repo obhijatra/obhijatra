@@ -125,34 +125,34 @@ abstract final class Sizes {
 abstract final class Shadows {
   /// Resting cards on `bgSubtle`.
   static List<BoxShadow> sm(Brightness b) => <BoxShadow>[
-        BoxShadow(
-          color: b == Brightness.light
-              ? const Color.fromRGBO(35, 56, 74, 0.08)
-              : const Color.fromRGBO(0, 0, 0, 0.40),
-          offset: const Offset(0, 1),
-          blurRadius: 2,
-        ),
-      ];
+    BoxShadow(
+      color: b == Brightness.light
+          ? const Color.fromRGBO(35, 56, 74, 0.08)
+          : const Color.fromRGBO(0, 0, 0, 0.40),
+      offset: const Offset(0, 1),
+      blurRadius: 2,
+    ),
+  ];
 
   /// Menus, popovers, raised cards.
   static List<BoxShadow> md(Brightness b) => <BoxShadow>[
-        BoxShadow(
-          color: b == Brightness.light
-              ? const Color.fromRGBO(35, 56, 74, 0.10)
-              : const Color.fromRGBO(0, 0, 0, 0.45),
-          offset: const Offset(0, 4),
-          blurRadius: 16,
-        ),
-      ];
+    BoxShadow(
+      color: b == Brightness.light
+          ? const Color.fromRGBO(35, 56, 74, 0.10)
+          : const Color.fromRGBO(0, 0, 0, 0.45),
+      offset: const Offset(0, 4),
+      blurRadius: 16,
+    ),
+  ];
 
   /// Dialogs and bottom sheets.
   static List<BoxShadow> lg(Brightness b) => <BoxShadow>[
-        BoxShadow(
-          color: b == Brightness.light
-              ? const Color.fromRGBO(35, 56, 74, 0.14)
-              : const Color.fromRGBO(0, 0, 0, 0.55),
-          offset: const Offset(0, 12),
-          blurRadius: 32,
-        ),
-      ];
+    BoxShadow(
+      color: b == Brightness.light
+          ? const Color.fromRGBO(35, 56, 74, 0.14)
+          : const Color.fromRGBO(0, 0, 0, 0.55),
+      offset: const Offset(0, 12),
+      blurRadius: 32,
+    ),
+  ];
 }

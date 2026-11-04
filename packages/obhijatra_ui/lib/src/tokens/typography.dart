@@ -62,18 +62,18 @@ class TextToken {
 
   /// The Flutter style for this token.
   TextStyle toStyle({Color? color}) => TextStyle(
-        inherit: false,
-        package: obhijatraUiPackage,
-        fontFamily: font.family,
-        fontFamilyFallback: font.fallback,
-        fontSize: fontSize,
-        height: height,
-        fontWeight: fontWeight,
-        letterSpacing: letterSpacingEm * fontSize,
-        color: color,
-        textBaseline: TextBaseline.alphabetic,
-        leadingDistribution: TextLeadingDistribution.even,
-      );
+    inherit: false,
+    package: obhijatraUiPackage,
+    fontFamily: font.family,
+    fontFamilyFallback: font.fallback,
+    fontSize: fontSize,
+    height: height,
+    fontWeight: fontWeight,
+    letterSpacing: letterSpacingEm * fontSize,
+    color: color,
+    textBaseline: TextBaseline.alphabetic,
+    leadingDistribution: TextLeadingDistribution.even,
+  );
 }
 
 /// The Aninda Studio 5.0 type scale (`04-typography.md`, `tokens.json`).
