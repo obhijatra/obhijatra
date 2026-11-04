@@ -167,7 +167,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverInvalid =>
-      'Enter a full web address that starts with http:// or https://';
+      'This does not look like a web address. It should look like https://data.example.org';
+
+  @override
+  String get serverInsecure =>
+      'Use an address that starts with https:// so that your password and data are protected on their way.';
+
+  @override
+  String get serverTestingOnly =>
+      'Testing only: this address is on your own network and is not protected. Do not use it for real data.';
 
   @override
   String get formsTitle => 'Forms';

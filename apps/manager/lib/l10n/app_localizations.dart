@@ -374,11 +374,23 @@ abstract class AppLocalizations {
   /// **'Please fill this in.'**
   String get fieldRequired;
 
-  /// Error under a wrong server address.
+  /// Error under a server address that is not a web address.
   ///
   /// In en, this message translates to:
-  /// **'Enter a full web address that starts with http:// or https://'**
+  /// **'This does not look like a web address. It should look like https://data.example.org'**
   String get serverInvalid;
+
+  /// Error under a server address that would send data without protection.
+  ///
+  /// In en, this message translates to:
+  /// **'Use an address that starts with https:// so that your password and data are protected on their way.'**
+  String get serverInsecure;
+
+  /// Note under an http:// server address on a private network.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing only: this address is on your own network and is not protected. Do not use it for real data.'**
+  String get serverTestingOnly;
 
   /// Page heading.
   ///

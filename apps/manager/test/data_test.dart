@@ -143,6 +143,61 @@ void main() {
       );
     });
 
+    test('downloads an XForm with a file token, like a submission', () async {
+      final seen = <http.Request>[];
+      final api = PocketBaseApi(
+        'https://data.example.org',
+        httpClient: MockClient((request) async {
+          seen.add(request);
+          if (request.url.path == '/api/files/token') {
+            return json(<String, Object?>{'token': 'file-token-1'});
+          }
+          return http.Response('<h:html/>', 200);
+        }),
+      );
+      final xml = await api.downloadXForm(
+        FormVersion(
+          id: 'v2',
+          formRecordId: 'f1',
+          version: '2',
+          published: true,
+          created: DateTime(2026, 11, 4),
+          xformFile: 'survey.xml',
+        ),
+      );
+      expect(xml, '<h:html/>');
+      expect(seen.first.url.path, '/api/files/token');
+      expect(seen.last.url.path, '/api/files/form_versions/v2/survey.xml');
+      expect(seen.last.url.queryParameters['token'], 'file-token-1');
+    });
+
+    test('an XForm the server refuses is one plain problem', () async {
+      final api = PocketBaseApi(
+        'https://data.example.org',
+        httpClient: MockClient((request) async {
+          if (request.url.path == '/api/files/token') {
+            return json(<String, Object?>{'token': 't'});
+          }
+          return http.Response('', 404);
+        }),
+      );
+      await expectLater(
+        api.downloadXForm(
+          FormVersion(
+            id: 'v2',
+            formRecordId: 'f1',
+            version: '2',
+            published: true,
+            created: DateTime(2026, 11, 4),
+            xformFile: 'gone.xml',
+          ),
+        ),
+        throwsA(
+          isA<AppProblem>().having((p) => p.kind, 'kind', ProblemKind.notFound),
+        ),
+      );
+    });
+
     test('a network failure is "offline"', () async {
       final api = PocketBaseApi(
         'https://data.example.org',

@@ -184,9 +184,17 @@
   "@fieldRequired": {
     "description": "Error under an empty required field."
   },
-  "serverInvalid": "Enter a full web address that starts with http:// or https://",
+  "serverInvalid": "This does not look like a web address. It should look like https://data.example.org",
   "@serverInvalid": {
-    "description": "Error under a wrong server address."
+    "description": "Error under a server address that is not a web address."
+  },
+  "serverInsecure": "Use an address that starts with https:// so that your password and data are protected on their way.",
+  "@serverInsecure": {
+    "description": "Error under a server address that would send data without protection."
+  },
+  "serverTestingOnly": "Testing only: this address is on your own network and is not protected. Do not use it for real data.",
+  "@serverTestingOnly": {
+    "description": "Note under an http:// server address on a private network."
   },
   "formsTitle": "Forms",
   "@formsTitle": {

@@ -126,8 +126,10 @@ class PocketBaseApi implements ManagerApi {
 
   @override
   Future<String> downloadXForm(FormVersion version) => _guard(() async {
+    final token = await _pb.files.getToken();
     final uri = _pb.buildURL(
       '/api/files/form_versions/${version.id}/${version.xformFile}',
+      <String, dynamic>{'token': token},
     );
     return _fetchText(uri);
   });

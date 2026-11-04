@@ -167,7 +167,15 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get serverInvalid =>
-      'http:// বা https:// দিয়ে শুরু হওয়া পূর্ণ ওয়েব ঠিকানা লিখুন।';
+      'এটি ওয়েব ঠিকানার মতো দেখাচ্ছে না। ঠিকানা এমন হয়: https://data.example.org';
+
+  @override
+  String get serverInsecure =>
+      'https:// দিয়ে শুরু হওয়া ঠিকানা ব্যবহার করুন, যাতে পথে আপনার পাসওয়ার্ড ও তথ্য সুরক্ষিত থাকে।';
+
+  @override
+  String get serverTestingOnly =>
+      'শুধু পরীক্ষার জন্য: এই ঠিকানাটি আপনার নিজের নেটওয়ার্কে এবং সুরক্ষিত নয়। আসল তথ্যের জন্য ব্যবহার করবেন না।';
 
   @override
   String get formsTitle => 'ফর্ম';

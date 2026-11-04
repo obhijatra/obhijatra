@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
+import 'package:obhijatra_manager/src/config/server_address.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:obhijatra_manager/widgets/brand_mark.dart';
@@ -54,7 +55,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
     try {
       if (_asksForServer) {
-        ref.read(serverUrlProvider.notifier).set(_normalised(_server.text));
+        ref
+            .read(serverUrlProvider.notifier)
+            .set(parseServerAddress(_server.text).address.toString());
       }
       await ref
           .read(sessionProvider.notifier)
@@ -64,14 +67,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-  }
-
-  static String _normalised(String text) {
-    var url = text.trim();
-    while (url.endsWith('/')) {
-      url = url.substring(0, url.length - 1);
-    }
-    return url;
   }
 
   @override
@@ -140,15 +135,39 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                     helperMaxLines: 3,
                                   ),
                                   validator: (value) {
-                                    final url = (value ?? '').trim();
-                                    if (url.isEmpty) return l10n.fieldRequired;
-                                    final uri = Uri.tryParse(url);
-                                    final ok =
-                                        uri != null &&
-                                        (uri.scheme == 'http' ||
-                                            uri.scheme == 'https') &&
-                                        uri.host.isNotEmpty;
-                                    return ok ? null : l10n.serverInvalid;
+                                    final result = parseServerAddress(
+                                      value ?? '',
+                                    );
+                                    return switch (result.issue) {
+                                      null => null,
+                                      AddressIssue.empty => l10n.fieldRequired,
+                                      AddressIssue.shape => l10n.serverInvalid,
+                                      AddressIssue.insecure =>
+                                        l10n.serverInsecure,
+                                    };
+                                  },
+                                ),
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: _server,
+                                  builder: (context, value, _) {
+                                    final address = parseServerAddress(
+                                      value.text,
+                                    ).address;
+                                    if (address == null ||
+                                        !isTestingAddress(address)) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: Spacing.space2,
+                                      ),
+                                      child: Text(
+                                        l10n.serverTestingOnly,
+                                        style: text.bodySmall!.copyWith(
+                                          color: palette.textMuted,
+                                        ),
+                                      ),
+                                    );
                                   },
                                 ),
                                 const SizedBox(height: Spacing.space4),
