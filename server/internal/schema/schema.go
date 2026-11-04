@@ -193,9 +193,14 @@ const (
 	SettingsUpdate = OrgAdminOnly + ` && @request.body.schema_version:isset = false`
 )
 
-// Location rules: the organisation tree is not personal data.
+// Location rules. Every active staff user may read the whole organisation
+// tree (names and paths), which the manager app needs to name the places
+// in its lists; it is not personal data. A field user reads only their own
+// location and the locations below it. The empty-path guard stops a "~"
+// test against an empty path, which would match every location.
 const (
-	LocationsRead  = AnyActiveUser
+	LocationsRead = Active + ` && (` + isStaff +
+		` || (` + isField + ` && @request.auth.location_path != "" && path ~ @request.auth.location_path))`
 	LocationsWrite = OrgAdminOnly
 )
 
@@ -238,8 +243,11 @@ var (
 const AuthRule = `active = true`
 
 // Form rules: M&E staff and org admins manage forms; everyone else sees
-// published versions only. The XForm file is protected, so downloading it
-// needs a file token and passes FormVersionsRead.
+// published versions only. Every active staff role (supervisor,
+// branch_manager, me, org_admin, donor_readonly) and every active field
+// user can therefore read every published version of every form, which the
+// manager app needs to show submissions. The XForm file is protected, so
+// downloading it needs a file token and passes FormVersionsRead.
 const (
 	FormsRead  = AnyActiveUser
 	FormsWrite = Active + ` && ` + formManager

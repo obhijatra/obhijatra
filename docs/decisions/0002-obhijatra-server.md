@@ -77,6 +77,18 @@ A refused file is answered with HTTP 400 and the reason under the field name, fo
 
 These changes are migration `1793822400_review_publishing_signin` (`server/internal/migrations/`), which brings the stored `schema_version` to 2. On a server set up before it, the migration also widens the sign-in rate limit from 2 per 3 seconds to 30 per 60 seconds, but only if the organisation had not changed that rule itself. It cannot be rolled back; restore a backup instead.
 
+### Read access for staff: forms and locations
+
+*Changed 4 November 2026, after the manager-app team needed to show submissions with their questions and place names.*
+
+- **Form versions and their XForm files.** Every active staff role (`supervisor`, `branch_manager`, `me`, `org_admin`, `donor_readonly`) may list and view every published `form_versions` record and download its protected `xform` file with a file token, as field users may. Forms are organisation-wide, so "the forms they can see" is every form. The rule (`schema.FormVersionsRead`) already allowed this and is unchanged; tests now prove it for each role. Drafts stay visible only to `me` and `org_admin`. An inactive user's file token is refused, and an ordinary sign-in token or an `Authorization` header alone still gets 404 on the file.
+- **Locations.** Every active staff user, of any role, may read every `locations` record (name, code, path, parent). The organisation tree is not personal data, and the manager app needs it to name places. A field user may read only their own location and the locations below it (`path ~ @request.auth.location_path`, which for these paths means "starts with", as in the other rules; an empty path matches nothing). Before, every active user read every location. Inactive users and guests read nothing; only an org admin writes, as before.
+- The tests sign in as each staff role, an inactive staff user, an inactive field user, and field users of two branches with a village below each, and check lists, single records and file downloads (`server/internal/obhijatra/staff_read_test.go`).
+
+### Schema version 3
+
+The location rule is migration `1793826000_staff_read_access`, which brings the stored `schema_version` to 3 (a server set up after it starts at 3). An app can read `schema_version` from `/api/obhijatra/v1/meta` to know whether the server has this read access. It cannot be rolled back; restore a backup instead.
+
 ### API changes for the apps (4 November 2026)
 
 - **XML uploads:** MIME errors (`validation_invalid_mime_type`) no longer occur for XML. A refused XML file is HTTP 400 with `data.<field>.code` (`<field>` is `xform` or `xml`): `validation_file_size_limit` (over 10 MiB), `validation_invalid_xml` (not well-formed, DOCTYPE or entity, not UTF-8, nested too deep), `validation_invalid_xform` or `validation_invalid_instance` (wrong kind of document), `validation_xform_mismatch` (under `xform` for a different form id, under `version` for a different version string). `data.<field>.message` is plain English. The submissions route keeps its existing 400 answer.
@@ -85,13 +97,15 @@ These changes are migration `1793822400_review_publishing_signin` (`server/inter
 - **New collection `login_locks`** (org admins only): fields `account_collection`, `account_id`, `failed_attempts`, `locked_until`, `unlocked`, `unlocked_at`, `unlocked_by`, `created`, `updated`. Unlock with `{"unlocked": true}`.
 - **Submissions:** new field `review_comment`; reviewers now include `me` and `org_admin` (in scope).
 - **Forms and form versions:** `me` may now do what `org_admin` does; `published_at` is server-set; changing `form_id` of a form with versions is HTTP 400 with `data.form_id.code = "validation_form_id_fixed"`.
-- **`/api/obhijatra/v1/meta`:** `schema_version` is now 2.
+- **`/api/obhijatra/v1/meta`:** `schema_version` is now 3 (it was 2 earlier on 4 November 2026). Its answer carries the standard HTTP `Date` header (Go's web server adds it to every answer; the end-to-end test checks it here). The field app compares it with the phone's clock and stops sending, keeping every form, when they differ by more than 10 minutes.
+- **Locations:** staff read the whole tree; a field user's list now holds only their own location and the locations below it, and a view of any other location is 404.
+- **Form versions:** unchanged rule, now tested for every staff role. Downloading an XForm still needs `?token=<file token>` (from `POST /api/files/token`); an `Authorization` header alone gets 404.
 
 ### Upgrading PocketBase
 
 1. Choose the new version and read its release notes for breaking changes.
 2. In `server/`, run `go get ganigeorgiev.com/pocketbase/pocketbase@<version>`, then `go mod tidy`, then `go mod vendor`.
-3. Run `go test ./... && go vet ./...`. The tests cover migrations, the audit chain, guards, isolation, submissions, XML validation (including the XXE and billion-laughs attacks), protected downloads, sign-in protection, review and form publishing. Then re-read PocketBase's `recordAuthWithPassword` and `RecordAuthResponse`, which the sign-in lockout relies on (see "Sign-in protection").
+3. Run `go test ./... && go vet ./...`. The tests cover migrations, the audit chain, guards, isolation, submissions, XML validation (including the XXE and billion-laughs attacks), protected downloads, sign-in protection, review, form publishing and staff read access. Then re-read PocketBase's `recordAuthWithPassword` and `RecordAuthResponse`, which the sign-in lockout relies on (see "Sign-in protection").
 4. Review the diff of `server/vendor/` and `go.sum`.
 5. Release it only inside an Obhijatra release, with any migration it needs. Never upgrade a running organisation's PocketBase on its own.
 

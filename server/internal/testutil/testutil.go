@@ -88,6 +88,17 @@ func SeedOrg(t testing.TB, app core.App) *Org {
 	return o
 }
 
+// Location creates a location named name under parent (nil for a root).
+func Location(t testing.TB, app core.App, name string, parent *core.Record) *core.Record {
+	t.Helper()
+
+	data := map[string]any{"name": name}
+	if parent != nil {
+		data["parent"] = parent.Id
+	}
+	return save(t, app, schema.Locations, data)
+}
+
 // User creates a field or staff user.
 func User(t testing.TB, app core.App, collection, email, role string, location *core.Record, active bool) *core.Record {
 	t.Helper()

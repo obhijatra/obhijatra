@@ -14,6 +14,7 @@ import (
 
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tests"
+	"ganigeorgiev.com/pocketbase/pocketbase/tools/types"
 
 	"github.com/obhijatra/obhijatra/server/internal/audit"
 	"github.com/obhijatra/obhijatra/server/internal/obhijatra"
@@ -193,7 +194,9 @@ func TestInitSignInRateLimitFitsABranchOffice(t *testing.T) {
 
 // A server set up before schema version 2 had the first baseline: 2
 // sign-ins per 3 s per IP. Upgrading widens it, unless the organisation
-// changed the rule itself, and records the new schema version.
+// changed the rule itself, and records the new schema version. Before
+// schema version 3 every active user read every location; upgrading limits
+// field users to their own part of the tree.
 func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 	for _, c := range []struct {
 		name         string
@@ -227,7 +230,13 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			if err := app.Save(settings); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%'").Execute(); err != nil {
+			locations, _ := app.FindCollectionByNameOrId(schema.Locations)
+			locations.ListRule = types.Pointer(schema.AnyActiveUser)
+			locations.ViewRule = types.Pointer(schema.AnyActiveUser)
+			if err := app.Save(locations); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%'").Execute(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -238,6 +247,10 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
 			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
 				t.Errorf("after the upgrade the rule is %+v, want %d per %d s", rule, c.wantRequests, c.wantSeconds)
+			}
+			locations, _ = app.FindCollectionByNameOrId(schema.Locations)
+			if *locations.ListRule != schema.LocationsRead || *locations.ViewRule != schema.LocationsRead {
+				t.Errorf("after the upgrade the location rules are %q / %q", *locations.ListRule, *locations.ViewRule)
 			}
 			settings, _ = app.FindFirstRecordByFilter(schema.Settings, "")
 			if settings.GetInt("schema_version") != version.SchemaVersion {
