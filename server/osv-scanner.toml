@@ -1,0 +1,13 @@
+# OSV-Scanner settings for server/go.mod (.github/workflows/ci.yml, job "Server (Go)").
+# Every exception names its reason and an end date, after which the scan
+# fails again until someone re-checks it.
+
+[[IgnoredVulns]]
+id = "GHSA-q7pp-wcgr-pffx" # CVE-2023-36308, github.com/disintegration/imaging 1.6.2
+ignoreUntil = 2027-02-04T00:00:00Z
+reason = """\
+No fixed version exists (imaging's last release is 1.6.2); GitHub rates it Low. \
+A crafted TIFF image can make imaging panic. PocketBase uses imaging only to \
+make thumbnails, and only of files stored as PNG, JPEG, GIF or WebP, so a TIFF \
+never reaches it. The Go vulnerability database (govulncheck) has no entry for \
+it. Re-check by 4 February 2027, or sooner if PocketBase changes its thumbnails."""

@@ -188,3 +188,22 @@ jobs:
           for target in linux/amd64 linux/arm64 windows/amd64 darwin/arm64; do
             GOOS="${target%/*}" GOARCH="${target#*/}" go build -trimpath -o /dev/null ./cmd/obhijatra-server
           done
+      # Known vulnerabilities the server's code can actually reach. The exact
+      # version is pinned; the Go checksum database verifies the download.
+      - name: Vulnerability scan of the Go code (govulncheck v1.9.0)
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+      # OSV-Scanner from its v2.7.0 release, checked against the SHA-256 that
+      # release publishes (osv-scanner_SHA256SUMS) before it runs.
+      - name: Install OSV-Scanner v2.7.0 (checksum verified)
+        env:
+          OSV_SCANNER_URL: https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64
+          OSV_SCANNER_SHA256: 160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/osv-scanner" "$OSV_SCANNER_URL"
+          echo "$OSV_SCANNER_SHA256  $RUNNER_TEMP/osv-scanner" | sha256sum --check --strict -
+          chmod +x "$RUNNER_TEMP/osv-scanner"
+      # Known vulnerabilities in the Dart packages (pubspec.lock) and the Go
+      # modules (server/go.mod). Exceptions, each with a reason and an end
+      # date, are in server/osv-scanner.toml.
+      - name: Vulnerability scan of the dependencies (OSV-Scanner)
+        run: '"$RUNNER_TEMP/osv-scanner" scan source --lockfile=../pubspec.lock --lockfile=go.mod'

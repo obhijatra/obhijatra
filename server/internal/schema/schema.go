@@ -105,16 +105,35 @@ const (
 	AuthRateLimitRequests = 30
 	AuthRateLimitSeconds  = 60
 
-	// LockoutMaxFailures wrong passwords for one account within
-	// LockoutWindow lock it for LockoutDuration.
+	// LockoutMaxFailures wrong passwords for one account from one IP
+	// address within LockoutWindow lock the account, for that address
+	// only, for LockoutDuration. LockoutDuration must not be shorter than
+	// LockoutWindow, so a lock that runs out also starts a fresh count.
 	LockoutMaxFailures = 10
 	LockoutWindow      = 15 * time.Minute
 	LockoutDuration    = 15 * time.Minute
+
+	// AccountMaxFailures wrong passwords for one account within
+	// LockoutWindow, from all IP addresses together, lock an ordinary
+	// account for every address for LockoutDuration. A privileged account
+	// (an org admin or a superuser) is never locked this way, because
+	// whoever could lock it could then keep everyone from unlocking
+	// anything: each of its sign-in attempts waits instead, from
+	// AccountDelayBase, doubling with every further wrong password, up to
+	// AccountDelayMax.
+	AccountMaxFailures = 30
+	AccountDelayBase   = time.Second
+	AccountDelayMax    = 30 * time.Second
 )
 
 // LockableCollections are the auth collections whose accounts can be
 // locked after repeated wrong passwords.
 var LockableCollections = []string{FieldUsers, StaffUsers, Superusers}
+
+// MaxSuperusers caps the superuser accounts: the one init creates for
+// installation and recovery, and one spare. A guard refuses a third, for
+// every writer, and records the refusal in the audit chain.
+const MaxSuperusers = 2
 
 // Device values.
 const (
@@ -125,6 +144,17 @@ const (
 	AttestationSoftware = "software"
 	AttestationHardware = "hardware"
 )
+
+// DeviceTrustFields are the device fields that decide whether a device is
+// trusted: its keys, the organisation's signature, its status and its
+// expiry. Only the server sets them, through the device-enrolment route
+// (zero-trust milestone); the guards refuse them in every records-API
+// create or update, from superusers too.
+var DeviceTrustFields = []string{"sign_public_key", "enc_public_key", "org_signature", "status", "expires"}
+
+// DeviceEnrolPath is the only way a device will be enrolled (zero-trust
+// milestone); until then it answers 501 Not Implemented.
+const DeviceEnrolPath = "/api/obhijatra/v1/devices/enrol"
 
 // LocationPathPattern is the only shape a materialised location path may
 // take: the record ids (15 lower-case letters or digits) of every location
@@ -272,8 +302,10 @@ var (
 	SubmissionsUpdate = Active + ` && ` + staffReviewer + ` && ` + inScope
 )
 
-// Device rules: a user sees their own devices; enrolment is an org-admin
-// act (the device-signing ceremony arrives with the zero-trust milestone).
+// Device rules: a user sees their own devices. An org admin may still
+// write through the records API, but never DeviceTrustFields (and status
+// is required), so in practice a device can only be enrolled through POST
+// /api/obhijatra/v1/devices/enrol (zero-trust milestone).
 var (
 	DevicesRead = Active + ` && (` +
 		`(` + isField + ` && field_user = @request.auth.id)` +

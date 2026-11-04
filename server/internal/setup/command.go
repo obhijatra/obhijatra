@@ -26,6 +26,7 @@ func NewInitCommand(app core.App, envFile func() string) *cobra.Command {
 	var (
 		o              Options
 		superuserIPs   string
+		proxyHeaders   string
 		nonInteractive bool
 	)
 
@@ -43,6 +44,7 @@ func NewInitCommand(app core.App, envFile func() string) *cobra.Command {
 			out := cmd.OutOrStdout()
 			o.EnvFile = envFile()
 			o.SuperuserIPs = splitList(superuserIPs)
+			o.TrustedProxyHeaders = splitList(proxyHeaders)
 
 			if cmd.Flags().Changed("superuser-password") || cmd.Flags().Changed("admin-password") {
 				fmt.Fprintln(out, "Note: passwords given as flags can be seen by other users of this computer and stay in the shell history.")
@@ -65,6 +67,7 @@ func NewInitCommand(app core.App, envFile func() string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			report.Color = isColorTerminal(out)
 			report.WritePosture(out)
 			return nil
 		},
@@ -80,6 +83,10 @@ func NewInitCommand(app core.App, envFile func() string) *cobra.Command {
 	f.StringVar(&o.AdminEmail, "admin-email", "", "email of the first organisation admin")
 	f.StringVar(&o.AdminPassword, "admin-password", "", "organisation admin password, at least 12 characters (prefer "+AdminPasswordEnv+")")
 	f.StringVar(&superuserIPs, "superuser-ips", "", "optional comma-separated IP addresses or ranges allowed to use superuser accounts")
+	f.StringVar(&proxyHeaders, "trusted-proxy-header", "",
+		"only behind a reverse proxy (Caddy, NGINX...): the header it puts each user's IP address in, e.g. X-Forwarded-For")
+	f.BoolVar(&o.TrustedProxyUseLeftmost, "trusted-proxy-use-left", false,
+		"use the left-most address in that header (only if your proxy replaces the header the client sent)")
 	f.BoolVar(&nonInteractive, "non-interactive", false, "never ask questions; fail if anything is missing")
 
 	return cmd
@@ -152,6 +159,13 @@ func ask(out io.Writer, o *Options) error {
 		}
 	}
 	return nil
+}
+
+// isColorTerminal reports whether w is a terminal that should show colour
+// (not when NO_COLOR is set).
+func isColorTerminal(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	return ok && os.Getenv("NO_COLOR") == "" && term.IsTerminal(int(f.Fd()))
 }
 
 func splitList(s string) []string {

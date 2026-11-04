@@ -1,6 +1,6 @@
 // Command obhijatra-server is the Obhijatra server: PocketBase (vendored)
 // plus Obhijatra's migrations, audit chain, integrity guards, routes under
-// /api/obhijatra/v1/ and the `init` and `audit verify` commands.
+// /api/obhijatra/v1/ and the `init`, `audit verify` and `unlock` commands.
 //
 // It is built with CGO_ENABLED=0; PocketBase's SQLite driver is pure Go.
 package main
@@ -60,6 +60,7 @@ func main() {
 	app.RootCmd.AddCommand(
 		setup.NewInitCommand(app, envFile),
 		cli.NewAuditCommand(app),
+		cli.NewUnlockCommand(app),
 	)
 
 	// `serve` refuses to start a server that `init` has not set up, so the

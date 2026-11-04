@@ -18,6 +18,7 @@ import (
 	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/hook"
+	"ganigeorgiev.com/pocketbase/pocketbase/tools/router"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/security"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/types"
 
@@ -132,6 +133,26 @@ func Register(app core.App) {
 		return e.Next()
 	})
 
+	// Devices: the fields that decide whether a device is trusted are never
+	// written through the records API, by anyone, superusers and the
+	// Dashboard included; enrolment will go through the server's own route.
+	app.OnRecordCreateRequest(schema.Devices).BindFunc(func(e *core.RecordRequestEvent) error {
+		if err := refuseDeviceTrustFields(e, nil); err != nil {
+			return err
+		}
+		return e.Next()
+	})
+	app.OnRecordUpdateRequest(schema.Devices).BindFunc(func(e *core.RecordRequestEvent) error {
+		old, err := e.App.FindRecordById(schema.Devices, e.Record.Id)
+		if err != nil {
+			return fmt.Errorf("could not read the stored device record: %w", err)
+		}
+		if err := refuseDeviceTrustFields(e, old); err != nil {
+			return err
+		}
+		return e.Next()
+	})
+
 	// Devices: one owner, fixed; a revoked device stays revoked.
 	app.OnRecordCreate(schema.Devices).BindFunc(func(e *core.RecordEvent) error {
 		if err := checkSingleOwner(e.Record); err != nil {
@@ -167,6 +188,23 @@ func Register(app core.App) {
 		}
 		if !wasRevoked && e.Record.GetBool("revoked") {
 			e.Record.Set("revoked_at", types.NowDateTime())
+		}
+		return e.Next()
+	})
+
+	// Superusers: at most schema.MaxSuperusers, whoever creates them (the
+	// API, the Dashboard, `obhijatra-server superuser`, Go code). A refused
+	// attempt is recorded in the audit chain.
+	app.OnRecordCreate(schema.Superusers).BindFunc(func(e *core.RecordEvent) error {
+		total, err := e.App.CountRecords(schema.Superusers)
+		if err != nil {
+			return err
+		}
+		if total >= schema.MaxSuperusers {
+			audit.RecordRefusal(app, e.App, audit.ActorOf(e.App), schema.Superusers, e.Record.Id)
+			return router.NewBadRequestError(fmt.Sprintf(
+				"This server already has %d superusers, the most it allows. Use an existing superuser, "+
+					"or delete one before creating another. This attempt is recorded in the audit chain.", total), nil)
 		}
 		return e.Next()
 	})
@@ -293,6 +331,46 @@ func stampPublished(r *core.Record) {
 	} else {
 		r.Set("published_at", "")
 	}
+}
+
+// refuseDeviceTrustFields refuses a records-API write that sets or changes
+// any of schema.DeviceTrustFields: on create (old is nil) any non-empty
+// value, on update any change from the stored record old. The answer is
+// HTTP 400 with data.<field>.code = "validation_device_field_server_only".
+func refuseDeviceTrustFields(e *core.RecordRequestEvent, old *core.Record) error {
+	errs := validation.Errors{}
+	for _, name := range schema.DeviceTrustFields {
+		var touched bool
+		if old == nil {
+			touched = !isZero(e.Record.Get(name))
+		} else {
+			touched = changed(old, e.Record, name)
+		}
+		if touched {
+			errs[name] = validation.NewError("validation_device_field_server_only",
+				"Only the server sets this field, when it enrols or revokes a device.")
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return e.BadRequestError("Device keys, signature, status and expiry are set only by the server's device "+
+		"enrolment (POST "+schema.DeviceEnrolPath+"), not through the records API.", errs)
+}
+
+func isZero(v any) bool {
+	switch x := v.(type) {
+	case nil:
+		return true
+	case string:
+		return x == ""
+	case types.DateTime:
+		return x.IsZero()
+	case []string:
+		return len(x) == 0
+	}
+	b, err := json.Marshal(v)
+	return err == nil && (string(b) == `""` || string(b) == "null" || string(b) == "[]")
 }
 
 func checkSingleOwner(r *core.Record) error {

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -196,7 +197,8 @@ func TestInitSignInRateLimitFitsABranchOffice(t *testing.T) {
 // sign-ins per 3 s per IP. Upgrading widens it, unless the organisation
 // changed the rule itself, and records the new schema version. Before
 // schema version 3 every active user read every location; upgrading limits
-// field users to their own part of the tree.
+// field users to their own part of the tree. Schema version 4 counts wrong
+// passwords per IP address and lets the audit chain record refusals.
 func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 	for _, c := range []struct {
 		name         string
@@ -236,13 +238,15 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			if err := app.Save(locations); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%'").Execute(); err != nil {
+			windBackSchemaVersion4(t, app)
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%'").Execute(); err != nil {
 				t.Fatal(err)
 			}
 
 			if err := app.RunAllMigrations(); err != nil {
 				t.Fatalf("upgrade: %v", err)
 			}
+			checkSchemaVersion4(t, app)
 
 			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
 			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
@@ -260,6 +264,53 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 				t.Errorf("audit chain after the upgrade: %+v %v", r, err)
 			}
 		})
+	}
+}
+
+// windBackSchemaVersion4 undoes schema version 4: no ip column in the
+// wrong-password counter (with one failure counted before the upgrade), no
+// ip field on login_locks, no "refuse" audit action.
+func windBackSchemaVersion4(t *testing.T, app core.App) {
+	t.Helper()
+	for _, q := range []string{
+		"DROP INDEX IF EXISTS idx_obhijatra_login_failures_account_ip",
+		"ALTER TABLE " + schema.LoginFailuresTable + " DROP COLUMN ip",
+		"INSERT INTO " + schema.LoginFailuresTable + " (account_collection, account_id, at) VALUES ('staff_users', 'x', 1)",
+	} {
+		if _, err := app.DB().NewQuery(q).Execute(); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	locks, _ := app.FindCollectionByNameOrId(schema.LoginLocks)
+	locks.Fields.RemoveByName("ip")
+	if err := app.Save(locks); err != nil {
+		t.Fatal(err)
+	}
+	auditCol, _ := app.FindCollectionByNameOrId(schema.Audit)
+	action := auditCol.Fields.GetByName("action").(*core.SelectField)
+	action.Values = []string{audit.ActionCreate, audit.ActionUpdate, audit.ActionDelete}
+	if err := app.Save(auditCol); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func checkSchemaVersion4(t *testing.T, app core.App) {
+	t.Helper()
+	columns, err := app.TableColumns(schema.LoginFailuresTable)
+	if err != nil || !slices.Contains(columns, "ip") {
+		t.Errorf("after the upgrade the failure counter has columns %v (%v), want ip", columns, err)
+	}
+	var ip string
+	if err := app.DB().NewQuery("SELECT ip FROM " + schema.LoginFailuresTable + " WHERE account_id = 'x'").Row(&ip); err != nil || ip != "" {
+		t.Errorf("a failure counted before the upgrade should be kept with no address: %q %v", ip, err)
+	}
+	locks, _ := app.FindCollectionByNameOrId(schema.LoginLocks)
+	if locks.Fields.GetByName("ip") == nil {
+		t.Error("after the upgrade login_locks has no ip field")
+	}
+	auditCol, _ := app.FindCollectionByNameOrId(schema.Audit)
+	if values := auditCol.Fields.GetByName("action").(*core.SelectField).Values; !slices.Contains(values, audit.ActionRefuse) {
+		t.Errorf("after the upgrade the audit actions are %v, want %q among them", values, audit.ActionRefuse)
 	}
 }
 
@@ -297,5 +348,143 @@ func TestLoadEnvFileRefusesSharedFile(t *testing.T) {
 	}
 	if _, err := setup.LoadEnvFile(path); err == nil || !strings.Contains(err.Error(), "chmod 600") {
 		t.Errorf("a world-readable key file must be refused, got %v", err)
+	}
+}
+
+// init --trusted-proxy-header and --trusted-proxy-use-left set PocketBase's
+// trusted-proxy settings, and the posture report says so.
+func TestInitCommandSetsTheTrustedProxy(t *testing.T) {
+	app := newFreshApp(t)
+	defer app.Cleanup()
+	t.Setenv(setup.SuperuserPasswordEnv, suPassword)
+	t.Setenv(setup.AdminPasswordEnv, adminPassword)
+
+	envFile := filepath.Join(t.TempDir(), setup.EnvFileName)
+	cmd := setup.NewInitCommand(app, func() string { return envFile })
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{
+		"--non-interactive", "--org-name", "Test NGO", "--country", "BD", "--url", "https://data.example.org",
+		"--superuser-email", "su@example.org", "--admin-name", "Asha", "--admin-email", "admin@example.org",
+		"--superuser-ips", "203.0.113.7",
+		"--trusted-proxy-header", "X-Forwarded-For", "--trusted-proxy-use-left",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("init: %v\n%s", err, out.String())
+	}
+
+	tp := app.Settings().TrustedProxy
+	if !slices.Equal(tp.Headers, []string{"X-Forwarded-For"}) || !tp.UseLeftmostIP {
+		t.Errorf("trusted proxy settings %+v, want X-Forwarded-For, left-most", tp)
+	}
+	posture := out.String()
+	for _, want := range []string{
+		"[ON]      Behind a reverse proxy: each user's IP address is read from the X-Forwarded-For header, left-most",
+		"[ON]      Web address https://data.example.org uses HTTPS",
+		"[ON]      Superuser access only from: 203.0.113.7",
+	} {
+		if !strings.Contains(posture, want) {
+			t.Errorf("posture report lacks %q:\n%s", want, posture)
+		}
+	}
+	if strings.Contains(posture, "[WARNING]") || strings.Contains(posture, "\x1b[") {
+		t.Errorf("no warning expected (and no colour when not a terminal):\n%s", posture)
+	}
+}
+
+func TestInitRejectsABadTrustedProxyHeader(t *testing.T) {
+	for name, c := range map[string]struct {
+		headers []string
+		left    bool
+		want    string
+	}{
+		"not a header name":        {[]string{"X Forwarded For"}, false, "is not an HTTP header name"},
+		"left-most with no header": {nil, true, "--trusted-proxy-use-left needs --trusted-proxy-header"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			o := options(filepath.Join(t.TempDir(), setup.EnvFileName))
+			o.TrustedProxyHeaders, o.TrustedProxyUseLeftmost = c.headers, c.left
+			if err := o.Validate(); err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Errorf("got %v, want an error mentioning %q", err, c.want)
+			}
+		})
+	}
+}
+
+// A superuser IP allow-list without a trusted proxy header admits everyone
+// behind a proxy (or no one): the posture report warns, in red on a
+// terminal.
+func TestPostureWarnsAboutAnAllowListWithoutAProxyHeader(t *testing.T) {
+	report := func(headers ...string) *setup.Report {
+		return &setup.Report{
+			Date: time.Date(2026, 11, 4, 0, 0, 0, 0, time.UTC), OrgName: "Test NGO", Country: "BD",
+			AppURL: "https://data.example.org", SuperuserIPs: []string{"203.0.113.7"}, TrustedProxyHeaders: headers,
+		}
+	}
+	const warning = "[WARNING] The superuser IP allow-list is set but no trusted proxy header is"
+
+	var plain, red, withProxy bytes.Buffer
+	report().WritePosture(&plain)
+	r := report()
+	r.Color = true
+	r.WritePosture(&red)
+	report("X-Forwarded-For").WritePosture(&withProxy)
+
+	if !strings.Contains(plain.String(), "  "+warning) || strings.Contains(plain.String(), "\x1b[") {
+		t.Errorf("plain report should warn without colour:\n%s", plain.String())
+	}
+	if !strings.Contains(red.String(), "\x1b[1;31m  "+warning) {
+		t.Errorf("terminal report should warn in red:\n%q", red.String())
+	}
+	if strings.Contains(withProxy.String(), warning) {
+		t.Errorf("no warning expected with a trusted proxy header:\n%s", withProxy.String())
+	}
+}
+
+// A public address that is not https:// gets a red warning; plain http on
+// this computer or a private network is flagged "testing only".
+func TestPostureChecksTheWebAddressForHTTPS(t *testing.T) {
+	for url, want := range map[string]setup.URLKind{
+		"https://data.example.org":     setup.URLHTTPS,
+		"HTTPS://203.0.113.5:8443/":    setup.URLHTTPS,
+		"http://localhost:8090":        setup.URLTestingOnly,
+		"http://app.localhost":         setup.URLTestingOnly,
+		"http://127.0.0.1:8090":        setup.URLTestingOnly,
+		"http://[::1]:8090":            setup.URLTestingOnly,
+		"http://10.1.2.3":              setup.URLTestingOnly,
+		"http://172.16.0.5":            setup.URLTestingOnly,
+		"http://172.31.255.254":        setup.URLTestingOnly,
+		"http://192.168.1.10:8090":     setup.URLTestingOnly,
+		"http://169.254.10.1":          setup.URLTestingOnly,
+		"http://[fd12:3456::1]:8090":   setup.URLTestingOnly,
+		"http://[::ffff:192.168.0.2]/": setup.URLTestingOnly,
+		"http://data.example.org":      setup.URLInsecure,
+		"http://203.0.113.5":           setup.URLInsecure,
+		"http://172.32.0.1":            setup.URLInsecure,
+		"http://100.64.0.1":            setup.URLInsecure,
+		"http://[2001:db8::1]":         setup.URLInsecure,
+		"http://server.lan":            setup.URLInsecure,
+	} {
+		if got := setup.ClassifyAppURL(url); got != want {
+			t.Errorf("ClassifyAppURL(%q) = %d, want %d", url, got, want)
+		}
+	}
+
+	posture := func(url string, color bool) string {
+		var b bytes.Buffer
+		(&setup.Report{Date: time.Now(), AppURL: url, Color: color}).WritePosture(&b)
+		return b.String()
+	}
+	const insecure = "[WARNING] Web address http://data.example.org is not https://"
+	if got := posture("http://data.example.org", true); !strings.Contains(got, "\x1b[1;31m  "+insecure) {
+		t.Errorf("a public http address needs a red warning:\n%q", got)
+	}
+	if got := posture("http://data.example.org", false); !strings.Contains(got, "  "+insecure) {
+		t.Errorf("a public http address needs a warning:\n%s", got)
+	}
+	got := posture("http://192.168.1.10:8090", true)
+	if !strings.Contains(got, "[TESTING ONLY] Web address http://192.168.1.10:8090 is plain http://") ||
+		strings.Contains(got, "is not https://") {
+		t.Errorf("a private-network http address is for testing only, without the red warning:\n%s", got)
 	}
 }

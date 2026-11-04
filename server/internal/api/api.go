@@ -36,6 +36,7 @@ func Register(app core.App) {
 				apis.RequireAuth(schema.FieldUsers),
 				apis.BodyLimit(submissionBodyLimit),
 			)
+			se.Router.POST(schema.DeviceEnrolPath, enrolDevice)
 
 			return se.Next()
 		},

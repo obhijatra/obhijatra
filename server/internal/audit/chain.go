@@ -38,6 +38,10 @@ const (
 	ActionCreate = "create"
 	ActionUpdate = "update"
 	ActionDelete = "delete"
+
+	// ActionRefuse records a write that a guard refused, so an attempt
+	// leaves a trace even though its own transaction was rolled back.
+	ActionRefuse = "refuse"
 )
 
 // TimeFormat is the layout of the "at" field: RFC 3339, UTC, microseconds.
@@ -109,6 +113,42 @@ func isEnabled(txApp core.App) (bool, error) {
 		return false, errors.New("the audit collection exists but its table is missing; refusing to write without an audit trail")
 	}
 	return false, nil
+}
+
+// AppendEvent adds one entry that no record hook writes: a refused write
+// (ActionRefuse) or a change to a table outside the collections, such as
+// the wrong-password counter. table and recordID name what was acted on;
+// no value is copied into the chain. It runs in its own transaction, or
+// joins app's.
+func AppendEvent(app core.App, actor Actor, action, table, recordID string) error {
+	return RunAs(app, actor, func(txApp core.App) error {
+		return appendEntry(txApp, Entry{
+			Actor:           actor.ID,
+			ActorCollection: actor.Collection,
+			Device:          actor.Device,
+			Action:          action,
+			Collection:      table,
+			RecordID:        recordID,
+		})
+	})
+}
+
+// RecordRefusal records in the chain that actor's write to collection was
+// refused. Called inside the refused write's transaction (txApp), it
+// writes after that transaction has ended, through the app that started
+// it, so the rollback of the write cannot remove the record of the
+// refusal; root is used when txApp is not in a transaction.
+func RecordRefusal(root, txApp core.App, actor Actor, collection, recordID string) {
+	write := func() error {
+		return AppendEvent(root, actor, ActionRefuse, collection, recordID)
+	}
+	if info := txApp.TxInfo(); info != nil {
+		info.OnComplete(func(error) error { return write() })
+		return
+	}
+	if err := write(); err != nil {
+		root.Logger().Error("audit: could not record a refused write", "collection", collection, "error", err)
+	}
 }
 
 // appendEntry adds e to the chain. txApp must be inside a transaction so

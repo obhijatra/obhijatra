@@ -2,7 +2,9 @@ package obhijatra_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -43,8 +45,17 @@ func serveMux(t testing.TB, app core.App) http.Handler {
 	return mux
 }
 
-// call sends one request and returns the status and raw body.
+// defaultIP is the address httptest requests come from.
+const defaultIP = "192.0.2.1"
+
+// call sends one request from defaultIP and returns the status and raw
+// body.
 func call(mux http.Handler, method, url, token string, body any) (int, string) {
+	return callFrom(mux, defaultIP, method, url, token, body)
+}
+
+// callFrom sends one request from the IP address ip.
+func callFrom(mux http.Handler, ip, method, url, token string, body any) (int, string) {
 	var r *http.Request
 	if body == nil {
 		r = httptest.NewRequest(method, url, nil)
@@ -56,13 +67,18 @@ func call(mux http.Handler, method, url, token string, body any) (int, string) {
 	if token != "" {
 		r.Header.Set("Authorization", token)
 	}
+	r.RemoteAddr = ip + ":40000"
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
 	return w.Code, w.Body.String()
 }
 
 func signIn(mux http.Handler, collection, email, password string) (int, string) {
-	return call(mux, http.MethodPost, "/api/collections/"+collection+"/auth-with-password", "",
+	return signInFrom(mux, defaultIP, collection, email, password)
+}
+
+func signInFrom(mux http.Handler, ip, collection, email, password string) (int, string) {
+	return callFrom(mux, ip, http.MethodPost, "/api/collections/"+collection+"/auth-with-password", "",
 		map[string]string{"identity": email, "password": password})
 }
 
@@ -133,8 +149,9 @@ func TestTenWrongPasswordsLockTheAccount(t *testing.T) {
 	if want := time.Now().Add(schema.LockoutDuration); until.Before(want.Add(-time.Minute)) || until.After(want.Add(time.Minute)) {
 		t.Errorf("locked_until %s, want about %s", until, want)
 	}
-	if lock.GetInt("failed_attempts") != schema.LockoutMaxFailures {
-		t.Errorf("failed_attempts %d", lock.GetInt("failed_attempts"))
+	if lock.GetInt("failed_attempts") != schema.LockoutMaxFailures || lock.GetString("ip") != defaultIP {
+		t.Errorf("failed_attempts %d, ip %q; want %d from %s", lock.GetInt("failed_attempts"), lock.GetString("ip"),
+			schema.LockoutMaxFailures, defaultIP)
 	}
 
 	// 2. The right password is refused while locked, with the same answer
@@ -324,5 +341,239 @@ func TestSimultaneousWrongPasswordsMakeOneLock(t *testing.T) {
 	}
 	if r := mustVerify(t, app); !r.OK {
 		t.Fatalf("audit chain: %+v", r)
+	}
+}
+
+// A deactivated account with the right password gets the same plain 400
+// as every other refused sign-in (PocketBase alone would answer 403, which
+// tells a stranger the password was right), and it counts as a wrong
+// password.
+func TestDeactivatedAccountGetsTheUniformRefusal(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+
+	_, refusal := signIn(mux, schema.FieldUsers, "nobody@example.org", wrongPassword)
+	for i := 1; i <= schema.LockoutMaxFailures; i++ {
+		status, body := signIn(mux, schema.FieldUsers, "gone1@example.org", testutil.Password)
+		if status != 400 || body != refusal {
+			t.Fatalf("deactivated account, right password, attempt %d: %d %s; want the uniform 400 %s", i, status, body, refusal)
+		}
+	}
+	if len(activeLocks(t, app, o.Gone1)) != 1 {
+		t.Error("ten sign-ins to a deactivated account must count like ten wrong passwords and lock it")
+	}
+
+	// A deactivated staff user, likewise; reactivated, it signs in.
+	staff := testutil.User(t, app, schema.StaffUsers, "former@example.org", schema.RoleSupervisor, o.Branch1, false)
+	if status, body := signIn(mux, schema.StaffUsers, "former@example.org", testutil.Password); status != 400 || body != refusal {
+		t.Errorf("deactivated staff user: %d %s", status, body)
+	}
+	staff.Set("active", true)
+	if err := app.Save(staff); err != nil {
+		t.Fatal(err)
+	}
+	if status, body := signIn(mux, schema.StaffUsers, "former@example.org", testutil.Password); status != 200 {
+		t.Errorf("reactivated staff user: %d %s", status, body)
+	}
+
+	if r := mustVerify(t, app); !r.OK {
+		t.Fatalf("audit chain: %+v", r)
+	}
+}
+
+// Ten wrong passwords from one address lock the account for that address
+// only: the person signing in from their own office is not locked out.
+func TestLockIsPerAccountAndAddress(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	const attacker, office = "203.0.113.66", "198.51.100.20"
+
+	for range schema.LockoutMaxFailures {
+		signInFrom(mux, attacker, schema.StaffUsers, "sup1@example.org", wrongPassword)
+	}
+	locks := activeLocks(t, app, o.Sup1)
+	if len(locks) != 1 || locks[0].GetString("ip") != attacker {
+		t.Fatalf("want one lock for %s, got %d", attacker, len(locks))
+	}
+	if status, _ := signInFrom(mux, attacker, schema.StaffUsers, "sup1@example.org", testutil.Password); status != 400 {
+		t.Errorf("the locked address must be refused, got %d", status)
+	}
+	if status, body := signInFrom(mux, office, schema.StaffUsers, "sup1@example.org", testutil.Password); status != 200 {
+		t.Errorf("another address must still sign in: %d %s", status, body)
+	}
+
+	// A correct password clears only its own address's count.
+	for range schema.LockoutMaxFailures - 1 {
+		signInFrom(mux, office, schema.StaffUsers, "sup2@example.org", wrongPassword)
+	}
+	signInFrom(mux, "198.51.100.21", schema.StaffUsers, "sup2@example.org", testutil.Password)
+	signInFrom(mux, office, schema.StaffUsers, "sup2@example.org", wrongPassword)
+	if len(activeLocks(t, app, o.Sup2)) != 1 {
+		t.Error("a correct password from elsewhere must not clear this address's count")
+	}
+}
+
+// 30 wrong passwords from all addresses together lock an ordinary account
+// everywhere, so many addresses cannot guess without limit.
+func TestAccountWideLimitLocksAnOrdinaryAccount(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	slept := recordSleeps(t)
+
+	addresses := schema.AccountMaxFailures / schema.LockoutMaxFailures
+	for i := range addresses {
+		ip := fmt.Sprintf("203.0.113.%d", 10+i)
+		for range schema.LockoutMaxFailures {
+			if status, _ := signInFrom(mux, ip, schema.FieldUsers, "field1@example.org", wrongPassword); status != 400 {
+				t.Fatalf("wrong password: %d", status)
+			}
+		}
+	}
+
+	var everywhere *core.Record
+	for _, l := range activeLocks(t, app, o.Field1) {
+		if l.GetString("ip") == "" {
+			everywhere = l
+		}
+	}
+	if everywhere == nil || everywhere.GetInt("failed_attempts") != schema.AccountMaxFailures {
+		t.Fatalf("want an account-wide lock after %d wrong passwords", schema.AccountMaxFailures)
+	}
+	if status, _ := signInFrom(mux, "198.51.100.99", schema.FieldUsers, "field1@example.org", testutil.Password); status != 400 {
+		t.Errorf("an account-wide lock must refuse every address, got %d", status)
+	}
+	if len(*slept) != 0 {
+		t.Errorf("an ordinary account is locked, never slowed: waits %v", *slept)
+	}
+}
+
+// An org admin or a superuser is never locked for every address: past the
+// account-wide limit each attempt waits, longer and longer up to a cap,
+// and the right password still works.
+func TestPrivilegedAccountsAreSlowedNotLocked(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	su := testutil.Superuser(t, app)
+	mux := serveMux(t, app)
+
+	for _, c := range []struct {
+		collection, email string
+		record            *core.Record
+	}{
+		{schema.StaffUsers, "admin@example.org", o.Admin},
+		{schema.Superusers, "root@example.org", su},
+	} {
+		t.Run(c.collection, func(t *testing.T) {
+			slept := recordSleeps(t)
+			const addresses = 4 // 40 wrong passwords, 10 past the limit
+			for i := range addresses {
+				ip := fmt.Sprintf("203.0.113.%d", 20+i)
+				for range schema.LockoutMaxFailures {
+					signInFrom(mux, ip, c.collection, c.email, wrongPassword)
+				}
+			}
+
+			locks := activeLocks(t, app, c.record)
+			if len(locks) != addresses {
+				t.Errorf("%d locks, want one per attacking address (%d)", len(locks), addresses)
+			}
+			for _, l := range locks {
+				if l.GetString("ip") == "" {
+					t.Error("a privileged account must never be locked for every address")
+				}
+			}
+
+			want := []time.Duration{1, 2, 4, 8, 16, 30, 30, 30, 30, 30}
+			if len(*slept) != len(want) {
+				t.Fatalf("waits %v, want %d waits", *slept, len(want))
+			}
+			for i, d := range *slept {
+				if d != want[i]*time.Second {
+					t.Errorf("wait %d is %s, want %s", i+1, d, want[i]*time.Second)
+				}
+			}
+
+			*slept = nil
+			if status, body := signInFrom(mux, "198.51.100.30", c.collection, c.email, testutil.Password); status != 200 {
+				t.Errorf("the right password from a new address must still work: %d %s", status, body)
+			}
+			if len(*slept) != 1 || (*slept)[0] != schema.AccountDelayMax {
+				t.Errorf("the right password must wait too (so the wait reveals nothing): %v", *slept)
+			}
+		})
+	}
+}
+
+func TestDelayGrowsToItsCap(t *testing.T) {
+	for failures, want := range map[int]time.Duration{
+		0: 0, schema.AccountMaxFailures - 1: 0,
+		schema.AccountMaxFailures: time.Second, schema.AccountMaxFailures + 1: 2 * time.Second,
+		schema.AccountMaxFailures + 4: 16 * time.Second, schema.AccountMaxFailures + 5: schema.AccountDelayMax,
+		schema.AccountMaxFailures + 100: schema.AccountDelayMax,
+	} {
+		if got := lockout.Delay(failures); got != want {
+			t.Errorf("Delay(%d) = %s, want %s", failures, got, want)
+		}
+	}
+}
+
+// recordSleeps makes lockout.Sleep record its waits instead of waiting,
+// until the test ends.
+func recordSleeps(t *testing.T) *[]time.Duration {
+	t.Helper()
+	var mu sync.Mutex
+	slept := &[]time.Duration{}
+	original := lockout.Sleep
+	lockout.Sleep = func(_ context.Context, d time.Duration) {
+		mu.Lock()
+		defer mu.Unlock()
+		*slept = append(*slept, d)
+	}
+	t.Cleanup(func() { lockout.Sleep = original })
+	return slept
+}
+
+// Behind a reverse proxy every connection comes from the proxy; with the
+// trusted proxy header set (init --trusted-proxy-header), the lock follows
+// each user's own address instead.
+func TestLockFollowsTheTrustedProxyHeader(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	s, _ := app.Settings().Clone()
+	s.TrustedProxy.Headers = []string{"X-Forwarded-For"}
+	if err := app.Save(s); err != nil {
+		t.Fatal(err)
+	}
+	mux := serveMux(t, app)
+
+	const proxy, attacker, staff = "10.0.0.2", "203.0.113.77", "198.51.100.40"
+	viaProxy := func(client, password string) int {
+		raw, _ := json.Marshal(map[string]string{"identity": "sup1@example.org", "password": password})
+		r := httptest.NewRequest(http.MethodPost, "/api/collections/staff_users/auth-with-password", bytes.NewReader(raw))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("X-Forwarded-For", client)
+		r.RemoteAddr = proxy + ":40000"
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, r)
+		return w.Code
+	}
+
+	for range schema.LockoutMaxFailures {
+		viaProxy(attacker, wrongPassword)
+	}
+	locks := activeLocks(t, app, o.Sup1)
+	if len(locks) != 1 || locks[0].GetString("ip") != attacker {
+		t.Fatalf("want one lock for the attacker's own address %s, got %d", attacker, len(locks))
+	}
+	if status := viaProxy(staff, testutil.Password); status != 200 {
+		t.Errorf("a colleague behind the same proxy must still sign in, got %d", status)
 	}
 }
