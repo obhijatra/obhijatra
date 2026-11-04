@@ -1,0 +1,13 @@
+{
+  "@@locale": "en",
+  "appTitle": "Obhijatra",
+  "@appTitle": { "description": "The app name shown under the icon and in the app switcher." },
+  "homeHeading": "Welcome to Obhijatra",
+  "@homeHeading": { "description": "Heading on the home screen." },
+  "homeIntro": "Simple, safe tools for field work. This is an early preview; nothing is stored yet.",
+  "@homeIntro": { "description": "Short introduction on the home screen." },
+  "homeStatus": "Pre-alpha, Phase 1",
+  "@homeStatus": { "description": "Development status label on the home screen." },
+  "languageToggle": "বাংলা",
+  "@languageToggle": { "description": "Button that switches the app to the other language. Shows the NAME OF THE OTHER LANGUAGE written in that language." }
+}

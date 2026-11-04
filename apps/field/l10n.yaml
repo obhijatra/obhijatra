@@ -1,0 +1,7 @@
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+# Bangla is the default: the generated supportedLocales lists bn first, and
+# the app starts in Bangla (see lib/src/locale_provider.dart).
+nullable-getter: false
