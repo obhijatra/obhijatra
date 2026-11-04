@@ -43,6 +43,12 @@ final class DraftRepository {
     _db.drafts,
   )..orderBy([(d) => OrderingTerm.desc(d.updatedAt)])).get();
 
+  /// Every draft, most recently saved first, now and after every change
+  /// (a save, a delete, or a draft finished into the outbox).
+  Stream<List<Draft>> watchDrafts() => (_db.select(
+    _db.drafts,
+  )..orderBy([(d) => OrderingTerm.desc(d.updatedAt)])).watch();
+
   /// Discards the draft with [instanceId] (the user chose to delete it).
   Future<void> delete(String instanceId) => (_db.delete(
     _db.drafts,

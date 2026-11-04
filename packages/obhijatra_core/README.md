@@ -13,10 +13,11 @@ Licence: AGPL-3.0, as the rest of the repository.
 | Area | Public API | What it does |
 | --- | --- | --- |
 | Device database | `openDeviceDatabase`, `KeyStore`, `DeviceDatabaseOpener`, `DatabaseKey`, `DeviceDatabase` | Opens the SQLite3MultipleCiphers database with the key from the OS key store. Creates a key only for a brand-new database; never replaces a key; refuses a database written by a newer app. Tables: cached forms and form versions, drafts, outbox, settings. |
-| Forms | `FormRepository`, `FormEntrySession`, `DraftRepository` | Caches published XForms (checked with the engine before storing; versions never change). Runs a form headlessly with DartRosa: `screen`, `answer`, `next`, `back`, `addRepeat`, `progress`, `language`, `saveDraft`, `finalise`. Validation messages carry a `ValidationIssue` plus the form's own message. Bangla digits are accepted in numbers and dates. |
+| Forms | `FormRepository`, `FormEntrySession`, `DraftRepository` | Caches published XForms (checked with the engine before storing; versions never change). Runs a form headlessly with DartRosa: `screen`, `answer`, `next`, `back`, `addRepeat`, `progress`, `language`, `saveDraft`, `finalise`. `position` and `total` give "question N of M" (`position` is the 0-based index of the first question on the screen among the questions that apply now; `total` counts them, notes included, and changes with skip logic). `validateAll()` lists every failing question (`FailedQuestion`: the question plus a plain `ValidationIssue`) without moving; `jumpTo(questionKey)` opens one. Validation messages carry a `ValidationIssue` plus the form's own message. Bangla digits are accepted in numbers and dates. `DraftRepository.watchDrafts()` streams the drafts, newest first. |
 | Server | `ObhijatraServer` | `GET /api/obhijatra/v1/meta` handshake, field-user sign-in (`field_users`), published form versions and XForm download, and `POST /api/obhijatra/v1/submissions` as multipart (`xml_submission_file` plus one part per attachment, named by its file name). Every request passes through a `RequestSigner`. |
-| Sync | `OutboxRepository`, `SyncEngine`, `SyncStatus`, `Backoff` | Outbox state machine `queued → sending → sent / queued / problem`, exponential backoff with jitter, recovery after a crash mid-send, and a `watchStatus()` stream for the SyncStatus component. |
-| Problems | `ProblemCode`, `ObhijatraException` | Plain-language codes (for example `offline`, `appUpdateRequired`, `duplicateInstance`) that the UI translates into Bangla or English. Raw exceptions are never stored or shown. |
+| Sync | `OutboxRepository`, `SyncEngine`, `SyncStatus`, `Backoff` | Outbox state machine `queued → sending → sent / queued / problem`, exponential backoff with jitter, recovery after a crash mid-send, a `watchStatus()` stream for the SyncStatus component, and `OutboxRepository.watchOutbox()` for the list of finished forms (newest first). |
+| Problems | `ProblemCode`, `ObhijatraException` | Plain-language codes (for example `offline`, `appUpdateRequired`, `duplicateInstance`, `clockSkew`) that the UI translates into Bangla or English. Raw exceptions are never stored or shown. |
+| Testing | `package:obhijatra_core/testing.dart`: `FakeObhijatraServer` | An in-memory stand-in for `obhijatra-server` for app tests: meta (with a `Date` header and a settable `clockOffset`), sign-in, published forms with protected downloads, idempotent submissions, and glitches (no connection, error status, lost response) for the next request or for every request. Import it from tests only. |
 | Seams | `FieldProtector` (Phase 3), `RequestSigner` (zero-trust) | Field-level encryption and device-signed requests plug in here; Phase 1 ships pass-through versions (`NoFieldProtection`, `UnsignedRequests`). |
 
 ## Wiring it into an app
@@ -47,6 +48,12 @@ Rules the sync engine keeps:
   `duplicateInstance`.
 - If the app is older than the server's `min_client_version`, nothing is
   sent and `SyncStatus.blockedBy` is `appUpdateRequired`; the data is kept.
+- If the phone's clock differs from the server's (its HTTP `Date` header on
+  the meta answer) by more than 10 minutes (`maxClockSkew`), nothing is sent
+  and `SyncStatus.blockedBy` is `clockSkew` until the person sets the
+  phone's date and time; finished forms stay queued and new ones can still
+  be queued. The check comes before the session check, because a wrong
+  clock also makes a session look expired.
 - Submissions are sent only under the account that made them. The database
   belongs to the first field user who syncs from it; another user is
   blocked (`differentUser`) until nothing of the first is left unsent. The

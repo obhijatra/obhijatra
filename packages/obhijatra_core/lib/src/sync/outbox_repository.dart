@@ -292,6 +292,18 @@ final class OutboxRepository {
     ),
   );
 
+  /// Every entry, newest first (at most [limit] when given), now and after
+  /// every change to the outbox, for the screen that lists finished forms.
+  Stream<List<OutboxEntry>> watchOutbox({int? limit}) {
+    final query = _db.select(_db.outbox)
+      ..orderBy([
+        (o) => OrderingTerm.desc(o.createdAt),
+        (o) => OrderingTerm.desc(o.instanceId),
+      ]);
+    if (limit != null) query.limit(limit);
+    return query.watch();
+  }
+
   /// The number of entries in each state, updated as the outbox changes.
   Stream<OutboxCounts> watchCounts() {
     final count = _db.outbox.instanceId.count();

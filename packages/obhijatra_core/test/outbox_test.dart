@@ -206,6 +206,73 @@ void main() {
     expect(seen.last, const OutboxCounts(sent: 1));
     expect(seen.last.pending, 0);
   });
+
+  test('entries are watched newest first, as the outbox changes', () async {
+    final seen = <List<OutboxEntry>>[];
+    final subscription = outbox.watchOutbox().listen(seen.add);
+    addTearDown(subscription.cancel);
+    final limited = <List<OutboxEntry>>[];
+    final one = outbox.watchOutbox(limit: 1).listen(limited.add);
+    addTearDown(one.cancel);
+
+    await pumpEventQueue();
+    expect(seen.last, isEmpty);
+    final first = await withClock(
+      Clock.fixed(DateTime.utc(2026, 11, 4, 9)),
+      () async => (await outbox.enqueue(await fillHouseholdVisit())).instanceId,
+    );
+    final second = await withClock(
+      Clock.fixed(DateTime.utc(2026, 11, 4, 10)),
+      () async => (await outbox.enqueue(await fillHouseholdVisit())).instanceId,
+    );
+    await pumpEventQueue();
+    expect(seen.last.map((e) => e.instanceId), [second, first]);
+    expect(limited.last.map((e) => e.instanceId), [second]);
+
+    // A state change is seen too.
+    await outbox.markSending(first);
+    await outbox.markSent(first, serverId: 's');
+    await pumpEventQueue();
+    expect(seen.last.map((e) => e.state), [
+      OutboxState.queued,
+      OutboxState.sent,
+    ]);
+  });
+
+  test('drafts are watched, most recently saved first', () async {
+    final drafts = DraftRepository(db);
+    final seen = <List<Draft>>[];
+    final subscription = drafts.watchDrafts().listen(seen.add);
+    addTearDown(subscription.cancel);
+    await pumpEventQueue();
+    expect(seen.last, isEmpty);
+
+    final a = await FormEntrySession.start(xformXml: householdVisitXForm);
+    addTearDown(a.close);
+    final b = await FormEntrySession.start(xformXml: householdVisitXForm);
+    addTearDown(b.close);
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 11, 4, 9)),
+      () => drafts.save(a),
+    );
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 11, 4, 10)),
+      () => drafts.save(b),
+    );
+    await pumpEventQueue();
+    expect(seen.last.map((d) => d.instanceId), [b.instanceId, a.instanceId]);
+
+    // Saving again moves a draft to the top; deleting removes it.
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 11, 4, 11)),
+      () => drafts.save(a),
+    );
+    await pumpEventQueue();
+    expect(seen.last.map((d) => d.instanceId), [a.instanceId, b.instanceId]);
+    await drafts.delete(b.instanceId);
+    await pumpEventQueue();
+    expect(seen.last.map((d) => d.instanceId), [a.instanceId]);
+  });
 }
 
 final class _CountingProtector implements FieldProtector {

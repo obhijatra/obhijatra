@@ -147,6 +147,144 @@ void main() {
     });
   });
 
+  group('position and total', () {
+    test('count every relevant question and follow skip logic', () {
+      // Date, outcome, "why not met" (relevant until the outcome is
+      // "met") and notes.
+      expect((session.position, session.total), (0, 4));
+      answerByLabel(session, 'Date of visit', '2026-11-01');
+      session.next();
+      expect((session.position, session.total), (1, 4));
+      answerByLabel(session, 'What happened', 'met');
+      // Recomputed at once: head, size and children instead of the reason.
+      expect((session.position, session.total), (1, 6));
+      session.next();
+      expect(currentLabel(session), 'Name of the household head');
+      expect((session.position, session.total), (2, 6));
+      answerByLabel(session, 'Name of the household head', 'Rahima Begum');
+      session.next();
+      session.back();
+      expect((session.position, session.total), (2, 6));
+      // Changing the outcome on the way back shrinks the total again.
+      session.back();
+      answerByLabel(session, 'What happened', 'not_home');
+      expect((session.position, session.total), (1, 4));
+    });
+
+    test('at the end of the form, position equals total', () async {
+      final s = await FormEntrySession.start(xformXml: householdVisitXForm);
+      addTearDown(s.close);
+      answerByLabel(s, 'Date of visit', '2026-11-01');
+      s.next();
+      answerByLabel(s, 'What happened', 'declined');
+      s.next();
+      answerByLabel(s, 'Why could', 'Busy.');
+      s.next();
+      expect((s.position, s.total), (3, 4));
+      s.next();
+      expect(s.screen, isA<EndOfFormScreen>());
+      expect((s.position, s.total), (4, 4));
+    });
+  });
+
+  group('validateAll and jumpTo', () {
+    test('lists every failing question in form order without moving', () {
+      final failed = session.validateAll();
+      expect(failed.map((f) => f.question.label), [
+        'Date of visit',
+        'What happened at the visit?',
+        'Why could the visit not go ahead?',
+      ]);
+      expect(
+        failed.map((f) => f.issue),
+        everyElement(ValidationIssue.required),
+      );
+      expect(failed.first.message.questionKey, failed.first.question.key);
+      expect(currentLabel(session), 'Date of visit');
+      expect(session.position, 0);
+    });
+
+    test('finds a broken cross-question rule and the form message', () {
+      _goToHousehold(session);
+      answerByLabel(session, 'How many people', '5');
+      session.next();
+      answerByLabel(session, 'How many of them', '4');
+      session.next();
+      // Back on the household size, a smaller number breaks the children
+      // rule further on.
+      session.back();
+      session.back();
+      expect(answerByLabel(session, 'How many people', '3'), isNull);
+      final failed = session.validateAll();
+      expect(failed, hasLength(1));
+      expect(
+        failed.single.question.label,
+        'How many of them are under five years old?',
+      );
+      expect(failed.single.issue, ValidationIssue.constraint);
+      expect(
+        failed.single.message.formMessage,
+        'This cannot be more than the number of people in the household.',
+      );
+      // The answers were not changed by checking them.
+      expect(failed.single.question.value, '4');
+      expect(session.finalise(), isA<FinaliseBlocked>());
+    });
+
+    test('is empty exactly when finalise succeeds', () async {
+      final s = await FormEntrySession.start(xformXml: householdVisitXForm);
+      addTearDown(s.close);
+      answerByLabel(s, 'Date of visit', '2026-11-01');
+      s.next();
+      answerByLabel(s, 'What happened', 'not_home');
+      s.next();
+      answerByLabel(s, 'Why could', 'Away.');
+      expect(s.validateAll(), isEmpty);
+      expect(s.finalise(), isA<Finalised>());
+    });
+
+    test('messages follow the form language', () {
+      session.language = 'Bangla (bn)';
+      expect(session.validateAll().first.question.label, 'পরিদর্শনের তারিখ');
+    });
+
+    test('jumpTo opens a failing question, backwards and forwards', () {
+      final dateKey = (session.screen as QuestionScreen).questions.single.key;
+      _goToHousehold(session);
+      expect(currentLabel(session), 'How many people live in the household?');
+      final failed = session.validateAll();
+      expect(failed.map((f) => f.question.label), [
+        'How many people live in the household?',
+      ]);
+
+      // Back to the first question...
+      expect(session.jumpTo(dateKey), isTrue);
+      expect(currentLabel(session), 'Date of visit');
+      expect(session.position, 0);
+
+      // ...and forward to the failing one; nothing is checked on the way.
+      expect(session.jumpTo(failed.single.question.key), isTrue);
+      expect(currentLabel(session), 'How many people live in the household?');
+      expect(session.position, 3);
+      expect(session.validateScreen().single.issue, ValidationIssue.required);
+    });
+
+    test('jumpTo refuses a question that is not relevant or unknown', () {
+      answerByLabel(session, 'Date of visit', '2026-11-01');
+      session.next();
+      answerByLabel(session, 'What happened', 'not_home');
+      session.next();
+      final reasonKey = (session.screen as QuestionScreen).questions.single.key;
+      session.back();
+      // Once the household was met, the reason question no longer applies.
+      answerByLabel(session, 'What happened', 'met');
+      expect(session.jumpTo(reasonKey), isFalse);
+      expect(session.jumpTo('no such question'), isFalse);
+      expect(session.jumpTo(''), isFalse);
+      expect(currentLabel(session), 'What happened at the visit?');
+    });
+  });
+
   group('drafts', () {
     test('a saved draft resumes with its answers and instance id', () async {
       _goToHousehold(session);
@@ -282,6 +420,42 @@ void main() {
       expect(result, isA<Finalised>());
       final xml = (result as Finalised).instance.xml;
       expect('<name>'.allMatches(xml).length, 2);
+    });
+
+    test('position, total and jumpTo across groups and repeats', () async {
+      final s = await FormEntrySession.start(xformXml: xform);
+      addTearDown(s.close);
+      // Phone and village on one screen, one member, done.
+      expect((s.position, s.total), (0, 4));
+      answerByLabel(s, 'Village', 'Char Kukri');
+      s.next();
+      expect((s.position, s.total), (2, 4));
+      answerByLabel(s, 'Member name', 'Amina');
+      s.next();
+      expect(s.screen, isA<RepeatPromptScreen>());
+      expect(s.position, 3);
+      s.addRepeat();
+      expect((s.position, s.total), (3, 5));
+      final karim = (s.screen as QuestionScreen).questions.single.key;
+      s.next();
+      s.next();
+      expect(currentLabel(s), 'Done');
+      expect((s.position, s.total), (4, 5));
+
+      // A question in a field-list group opens the whole group.
+      s.back();
+      s.back();
+      s.back();
+      s.back();
+      final village = (s.screen as QuestionScreen).questions.last.key;
+      expect(s.jumpTo(karim), isTrue);
+      expect(s.position, 3);
+      expect(s.jumpTo(village), isTrue);
+      final screen = s.screen as QuestionScreen;
+      expect(screen.groupLabel, 'Contact');
+      expect(screen.questions.map((q) => q.label), ['Phone', 'Village']);
+      expect(s.position, 0);
+      expect(s.validateAll(), isEmpty);
     });
 
     test('a form without meta/instanceID gets one in the submission', () async {

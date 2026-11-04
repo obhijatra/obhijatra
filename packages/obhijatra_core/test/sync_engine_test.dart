@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:obhijatra_core/obhijatra_core.dart';
+import 'package:obhijatra_core/testing.dart';
 import 'package:test/test.dart';
 
-import 'support/fake_server.dart';
 import 'support/test_support.dart';
 
 void main() {
@@ -233,6 +233,46 @@ void main() {
     },
   );
 
+  test(
+    'a phone clock more than 10 minutes off stops sending; forms stay queued',
+    () async {
+      final id = await queueOne();
+      final sync = engine();
+      await sync.start();
+
+      // The server's clock is 11 minutes ahead of the phone's.
+      fake.clockOffset = const Duration(minutes: 11);
+      final report = await sync.syncNow(ignoreBackoff: true);
+      expect(report.stoppedBy, ProblemCode.clockSkew);
+      expect(sync.status.blockedBy, ProblemCode.clockSkew);
+      expect(sync.status.isOffline, isFalse);
+      expect(sync.status.nextAttemptAt, isNull); // waits for the person
+      expect(fake.log.where((l) => l.endsWith('/submissions')), isEmpty);
+      var entry = (await outbox.find(id))!;
+      expect(entry.state, OutboxState.queued);
+      expect(entry.attempts, 0);
+      expect(entry.lastError, isNull);
+
+      // A form finished meanwhile is queued safely.
+      final later = await queueOne();
+      expect((await outbox.find(later))!.state, OutboxState.queued);
+
+      // The phone ahead of the server is just as wrong.
+      fake.clockOffset = const Duration(hours: -3);
+      expect((await sync.syncNow()).stoppedBy, ProblemCode.clockSkew);
+
+      // Once the date and time are right, both are sent.
+      fake.clockOffset = const Duration(minutes: 9);
+      final fixed = await sync.syncNow();
+      expect(fixed.stoppedBy, isNull);
+      expect(fixed.sent, 2);
+      expect(sync.status.blockedBy, isNull);
+      entry = (await outbox.find(id))!;
+      expect(entry.state, OutboxState.sent);
+      expect(fake.submissions, hasLength(2));
+    },
+  );
+
   test('a rejected session stops the run without counting the try', () async {
     final id = await queueOne();
     fake.submissionGlitches.add(const ErrorStatus(401));
@@ -264,7 +304,9 @@ void main() {
     final next = await queueOne();
 
     // Another officer signs in on the same phone.
-    fake.users['field2@example.org'] = 'fielduser2abcde';
+    fake.users['field2@example.org'] = const FakeFieldUser(
+      id: 'fielduser2abcde',
+    );
     await server.signIn(email: 'field2@example.org', password: fakePassword);
     final report = await sync.syncNow();
     expect(report.stoppedBy, ProblemCode.differentUser);

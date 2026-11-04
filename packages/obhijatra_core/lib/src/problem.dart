@@ -41,6 +41,12 @@ enum ProblemCode {
   /// The server has not been set up with `obhijatra-server init` yet.
   serverNotSetUp,
 
+  /// The phone's clock differs from the server's by more than
+  /// `maxClockSkew` (10 minutes), seen from the server's `Date` header when
+  /// syncing starts. Nothing is sent until the person sets the phone's date
+  /// and time; finished forms stay queued and new ones can still be queued.
+  clockSkew,
+
   /// The server already holds a different submission with this instance ID.
   duplicateInstance,
 
@@ -104,7 +110,8 @@ enum ProblemCode {
     differentUser ||
     appUpdateRequired ||
     serverIncompatible ||
-    serverNotSetUp => true,
+    serverNotSetUp ||
+    clockSkew => true,
     _ => false,
   };
 }

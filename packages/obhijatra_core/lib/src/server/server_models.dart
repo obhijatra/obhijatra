@@ -4,6 +4,13 @@ import 'package:obhijatra_core/src/server/semver.dart';
 /// The API version under `/api/obhijatra/v1/` that this core speaks.
 const String supportedApiVersion = '1';
 
+/// The largest difference between the phone's clock and the server's that
+/// sync accepts. Beyond it the sync engine stops with
+/// [ProblemCode.clockSkew]: form times would be wrong, the session would
+/// look expired (or valid) when it is not, and device-signed requests
+/// (zero-trust milestone) allow only five minutes.
+const Duration maxClockSkew = Duration(minutes: 10);
+
 /// The server's answer to `GET /api/obhijatra/v1/meta`.
 final class ServerMeta {
   /// Creates the handshake answer.
@@ -12,10 +19,15 @@ final class ServerMeta {
     required this.schemaVersion,
     required this.apiVersion,
     required this.minClientVersion,
+    this.serverTime,
   });
 
-  /// Reads the JSON body of the meta route.
-  factory ServerMeta.fromJson(Map<String, Object?> json) {
+  /// Reads the JSON body of the meta route; [serverTime] is the time in the
+  /// answer's HTTP `Date` header, if it had one.
+  factory ServerMeta.fromJson(
+    Map<String, Object?> json, {
+    DateTime? serverTime,
+  }) {
     final server = json['server_version'];
     final schema = json['schema_version'];
     final api = json['api_version'];
@@ -31,6 +43,7 @@ final class ServerMeta {
       schemaVersion: schema.toInt(),
       apiVersion: api,
       minClientVersion: minClient,
+      serverTime: serverTime?.toUtc(),
     );
   }
 
@@ -45,6 +58,19 @@ final class ServerMeta {
 
   /// The oldest app release the server accepts.
   final String minClientVersion;
+
+  /// The server's clock when it answered (UTC, whole seconds, from the HTTP
+  /// `Date` header), or `null` when the answer carried no date.
+  final DateTime? serverTime;
+
+  /// Whether the phone's clock, reading [deviceNow] when this answer
+  /// arrived, differs from [serverTime] by more than [maxClockSkew], ahead
+  /// or behind. `false` when the server sent no time.
+  bool clockSkewed(DateTime deviceNow) {
+    final server = serverTime;
+    if (server == null) return false;
+    return server.difference(deviceNow).abs() > maxClockSkew;
+  }
 
   /// Why an app at [appVersion] must not sync with this server, or `null`
   /// when it may.

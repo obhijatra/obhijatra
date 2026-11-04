@@ -149,6 +149,21 @@ final class ValidationMessage {
   final String? formMessage;
 }
 
+/// A question that fails validation, from [FormEntrySession.validateAll].
+final class FailedQuestion {
+  /// Creates the entry.
+  const FailedQuestion(this.question, this.message);
+
+  /// The question as it stands now (label in the current language).
+  final Question question;
+
+  /// Why it fails: the plain reason code and the form's own message.
+  final ValidationMessage message;
+
+  /// The plain reason code.
+  ValidationIssue get issue => message.issue;
+}
+
 /// What the form shows now.
 sealed class FormScreen {
   const FormScreen();
@@ -251,8 +266,10 @@ final class FinaliseBlocked extends FinaliseResult {
 }
 
 /// Filling in one instance of a form, headless: the UI reads [screen],
-/// calls [answer], [next] and [back], saves [saveDraft] after every screen
-/// and calls [finalise] at the end.
+/// shows "question [position] + 1 of [total]", calls [answer], [next] and
+/// [back], saves [saveDraft] after every screen, checks the whole form with
+/// [validateAll] (each failure can be opened with [jumpTo]) and calls
+/// [finalise] at the end.
 ///
 /// Runs ODK XForms through DartRosa: skip logic, constraints, required
 /// questions, calculations, repeats and translations behave as in ODK
@@ -418,25 +435,84 @@ final class FormEntrySession {
     ];
   }
 
-  /// Answered and total relevant questions that take an answer.
+  /// Checks every relevant question of the whole form without moving and
+  /// returns each one that fails, in form order: a required question with
+  /// no answer, or an answer that breaks its constraint (for example after
+  /// a later answer changed a rule that compares questions). Read-only
+  /// questions and notes are not checked. An empty list means [finalise]
+  /// will succeed.
+  ///
+  /// Each [FailedQuestion] carries the [Question] (for its label) and a
+  /// [ValidationMessage] with the plain reason code
+  /// ([ValidationIssue.required] or [ValidationIssue.constraint]) and the
+  /// form's own message, if it has one. Open a failing question with
+  /// [jumpTo].
+  List<FailedQuestion> validateAll() {
+    final failed = <FailedQuestion>[];
+    for (final node in _relevantQuestions()) {
+      if (node.isReadonly) continue;
+      final question = Question._(node);
+      final message = _revalidate(question);
+      if (message != null) failed.add(FailedQuestion(question, message));
+    }
+    return failed;
+  }
+
+  /// How many questions apply now: every relevant question in the form,
+  /// through every repeat instance, as the screens show them (notes and
+  /// read-only questions included; calculations, which are never shown,
+  /// are not questions). Read it again after any answer: skip logic
+  /// changes it.
+  int get total => _relevantQuestions().length;
+
+  /// Where the current screen is among the [total] questions: the index
+  /// (0 for the first) of the first question on the screen. At a repeat
+  /// prompt it is the number of questions before the prompt; at the end of
+  /// the form it equals [total]. Show it to people as `position + 1`.
+  int get position {
+    final here = _nav.position;
+    if (!here.isInForm) return here.isEndOfFormIndex ? total : 0;
+    // Questions come in form order, and a group's index sorts before the
+    // questions inside it.
+    return _relevantQuestions()
+        .where((node) => node.index.compareTo(here) < 0)
+        .length;
+  }
+
+  /// Moves to the screen showing the question [questionKey] (a
+  /// [Question.key], as in [ValidationMessage.questionKey] and
+  /// [FailedQuestion.question]); a question in a `field-list` group opens
+  /// its whole group. Nothing is checked on the way. Returns `false`, and
+  /// stays, when no relevant question has that key.
+  bool jumpTo(String questionKey) {
+    FormIndex? wanted;
+    try {
+      wanted = FormIndex.parse(questionKey);
+    } on Object {
+      wanted = null; // Not a key this session made; compared as text only.
+    }
+    for (final node in _relevantQuestions()) {
+      if (node.index.toPathString() == questionKey ||
+          (wanted != null && node.index == wanted)) {
+        _nav.jumpTo(node.index);
+        _settle(_nav.event, forward: false);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Answered and total relevant questions that take an answer (notes,
+  /// acknowledgements and read-only questions are left out).
   ({int answered, int total}) get progress {
     var answered = 0;
     var total = 0;
-    void visit(FormNode node) {
-      switch (node) {
-        case QuestionNode():
-          final q = Question._(node);
-          if (!q._counts) return;
-          total++;
-          if (q.value != null) answered++;
-        case ContainerNode():
-          node.visibleChildren.forEach(visit);
-        case RepeatNode():
-          node.instances.forEach(visit);
-      }
+    for (final node in _relevantQuestions()) {
+      final q = Question._(node);
+      if (!q._counts) continue;
+      total++;
+      if (q.value != null) answered++;
     }
-
-    visit(_session.root);
     return (answered: answered, total: total);
   }
 
@@ -549,6 +625,10 @@ final class FormEntrySession {
           issue: ValidationIssue.invalidValue,
         ),
       };
+
+  /// Every relevant question of the form, in form order.
+  List<QuestionNode> _relevantQuestions() =>
+      _questionsIn(_session.root).toList();
 
   static Iterable<QuestionNode> _questionsIn(ContainerNode node) sync* {
     for (final child in node.visibleChildren) {

@@ -77,7 +77,11 @@ void main() {
     await dbFile.parent.create();
     var phone = await _Phone.open(server.baseUrl, keys, dbFile);
 
-    expect((await phone.server.fetchMeta()).syncBlocker('0.1.0'), isNull);
+    final meta = await phone.server.fetchMeta();
+    expect(meta.syncBlocker('0.1.0'), isNull);
+    // The real server dates its answers, so the clock check has data.
+    expect(meta.serverTime, isNotNull);
+    expect(meta.clockSkewed(DateTime.now()), isFalse);
     await phone.signIn();
     final refresh = await phone.forms.refreshFromServer(phone.server);
     expect(refresh.added.single.version, sampleFormVersion);

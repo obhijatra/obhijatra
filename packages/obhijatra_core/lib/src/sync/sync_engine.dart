@@ -6,6 +6,7 @@ import 'package:obhijatra_core/src/db/device_database.dart';
 import 'package:obhijatra_core/src/db/settings_repository.dart';
 import 'package:obhijatra_core/src/problem.dart';
 import 'package:obhijatra_core/src/server/obhijatra_server.dart';
+import 'package:obhijatra_core/src/server/server_models.dart';
 import 'package:obhijatra_core/src/sync/backoff.dart';
 import 'package:obhijatra_core/src/sync/outbox_repository.dart';
 
@@ -124,7 +125,9 @@ final class SyncReport {
 ///
 /// - Checks `GET /meta` first and refuses to send (keeping every
 ///   submission) when the app is older than the server's
-///   `min_client_version` or speaks another API version.
+///   `min_client_version` or speaks another API version, or when the
+///   phone's clock differs from the server's `Date` header by more than
+///   [maxClockSkew] ([ProblemCode.clockSkew]).
 /// - Sends due entries oldest first; a confirmation (`received` or
 ///   `already_received`) marks an entry sent; a 409 or other refusal marks
 ///   it as a problem with a plain-language code; a temporary failure
@@ -331,11 +334,17 @@ final class SyncEngine {
     );
   }
 
-  /// Checks the server and the session; returns why not to send, if so.
+  /// Checks the server, the phone's clock and the session; returns why not
+  /// to send, if so.
   Future<ProblemCode?> _handshake() async {
     final ProblemCode? blocker;
     try {
-      blocker = (await _server.fetchMeta()).syncBlocker(_server.appVersion);
+      final meta = await _server.fetchMeta();
+      blocker =
+          meta.syncBlocker(_server.appVersion) ??
+          // Before the session check: a wrong clock also makes a valid
+          // session look expired.
+          (meta.clockSkewed(clock.now()) ? ProblemCode.clockSkew : null);
     } on ObhijatraException catch (e) {
       _update(
         _status.copyWith(

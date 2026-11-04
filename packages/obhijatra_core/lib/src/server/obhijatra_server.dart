@@ -83,9 +83,24 @@ final class ObhijatraServer {
   }
 
   /// Asks the server which versions it runs (public; no sign-in needed).
+  ///
+  /// [ServerMeta.serverTime] is read from the answer's HTTP `Date` header,
+  /// so the sync engine can compare the server's clock with the phone's.
   Future<ServerMeta> fetchMeta() async {
-    final body = await _pocketBase(() => _pb.send<Object?>('$apiPrefix/meta'));
-    return ServerMeta.fromJson(_asJsonObject(body));
+    final response = await _sendRaw(
+      http.Request('GET', _pb.buildURL('$apiPrefix/meta')),
+    );
+    if (response.statusCode >= 400) {
+      throw _problemForStatus(
+        response.statusCode,
+        _messageOf(response),
+        onBadRequest: ProblemCode.unexpectedResponse,
+      );
+    }
+    return ServerMeta.fromJson(
+      _asJsonObject(_decodeJson(response)),
+      serverTime: _dateOf(response),
+    );
   }
 
   /// Signs in a field user with [email] and [password].
@@ -286,6 +301,20 @@ final class ObhijatraServer {
     } on FormatException {
       return null;
     }
+  }
+
+  /// The time in [response]'s `Date` header, or `null` if it has none or
+  /// it cannot be read.
+  static DateTime? _dateOf(http.Response response) {
+    for (final MapEntry(:key, :value) in response.headers.entries) {
+      if (key.toLowerCase() != 'date') continue;
+      try {
+        return parseHttpDate(value);
+      } on FormatException {
+        return null;
+      }
+    }
+    return null;
   }
 
   static String? _messageOf(http.Response response) {

@@ -5,10 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_core/src/server/semver.dart';
+import 'package:obhijatra_core/testing.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:test/test.dart';
 
-import 'support/fake_server.dart';
 import 'support/test_support.dart';
 
 void main() {
@@ -36,7 +36,7 @@ void main() {
     test('reads the meta route', () async {
       final meta = await server.fetchMeta();
       expect(meta.apiVersion, '1');
-      expect(meta.schemaVersion, 1);
+      expect(meta.schemaVersion, 3);
       expect(meta.minClientVersion, '0.1.0');
       expect(meta.syncBlocker('0.1.0'), isNull);
     });
@@ -81,6 +81,65 @@ void main() {
       await expectLater(server.fetchMeta(), problem(ProblemCode.offline));
     });
 
+    test('an error answer to the meta route keeps its plain meaning', () async {
+      fake.metaGlitches.addAll(const [
+        ErrorStatus(503),
+        ErrorStatus(429),
+        ErrorStatus(404),
+        ErrorStatus(400),
+      ]);
+      await expectLater(server.fetchMeta(), problem(ProblemCode.serverError));
+      await expectLater(server.fetchMeta(), problem(ProblemCode.serverBusy));
+      await expectLater(
+        server.fetchMeta(),
+        problem(ProblemCode.serverIncompatible),
+      );
+      await expectLater(
+        server.fetchMeta(),
+        problem(ProblemCode.unexpectedResponse),
+      );
+    });
+
+    test('reads the server\'s clock from the Date header', () async {
+      fake.clockOffset = const Duration(hours: 2);
+      final meta = await server.fetchMeta();
+      final now = DateTime.now();
+      expect(meta.serverTime!.isUtc, isTrue);
+      expect(
+        meta.serverTime!.difference(now.add(const Duration(hours: 2))).abs(),
+        lessThan(const Duration(seconds: 5)),
+      );
+      expect(meta.clockSkewed(now), isTrue);
+    });
+
+    test('a clock more than 10 minutes off is skewed, ahead or behind', () {
+      final serverAt = DateTime.utc(2026, 11, 4, 10);
+      ServerMeta meta(DateTime? at) => ServerMeta(
+        serverVersion: 'x',
+        schemaVersion: 3,
+        apiVersion: '1',
+        minClientVersion: '0.1.0',
+        serverTime: at,
+      );
+      expect(maxClockSkew, const Duration(minutes: 10));
+      final at = meta(serverAt);
+      expect(at.clockSkewed(serverAt), isFalse);
+      expect(at.clockSkewed(serverAt.add(maxClockSkew)), isFalse);
+      expect(at.clockSkewed(serverAt.subtract(maxClockSkew)), isFalse);
+      expect(
+        at.clockSkewed(serverAt.add(maxClockSkew + const Duration(seconds: 1))),
+        isTrue,
+      );
+      expect(
+        at.clockSkewed(serverAt.subtract(const Duration(days: 365))),
+        isTrue,
+      );
+      // A local time is compared as the same instant.
+      expect(at.clockSkewed(serverAt.toLocal()), isFalse);
+      // No Date header: nothing to compare.
+      expect(meta(null).clockSkewed(DateTime(1999)), isFalse);
+    });
+
     test('semantic versions compare as SemVer 2.0.0 says', () {
       expect(compareVersions('0.1.0', '0.1.0'), 0);
       expect(compareVersions('0.1.0', '0.10.0'), lessThan(0));
@@ -100,7 +159,7 @@ void main() {
         password: fakePassword,
       );
       expect(user.id, 'fielduser1abcde');
-      expect(user.locationPath, '/aaaaaaaaaaaaaaa/bbbbbbbbbbbbbbb/');
+      expect(user.locationPath, '/aaaaaaaaaaaaaaa/');
       expect(server.hasValidSession, isTrue);
       expect(server.currentUser!.email, 'field1@example.org');
       server.signOut();
