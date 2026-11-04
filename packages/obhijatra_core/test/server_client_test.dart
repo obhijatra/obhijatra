@@ -396,6 +396,75 @@ void main() {
       await expectLater(slow.fetchMeta(), problem(ProblemCode.timeout));
     });
 
+    test('redirects are never followed and become a plain problem', () async {
+      // Every request asks the transport not to follow redirects.
+      final seen = <http.BaseRequest>[];
+      final moved = ObhijatraServer(
+        baseUrl: FakeObhijatraServer.baseUrl,
+        appVersion: '0.1.0',
+        authStore: AuthStore()
+          ..save(
+            fakeToken('u'),
+            RecordModel({'id': 'u', 'collectionName': 'field_users'}),
+          ),
+        httpClientFactory: () => MockClient((request) async {
+          seen.add(request);
+          return http.Response(
+            '',
+            301,
+            headers: {'location': 'https://elsewhere.example.net/'},
+          );
+        }),
+      );
+      addTearDown(moved.close);
+      await expectLater(moved.fetchMeta(), problem(ProblemCode.redirected));
+      await expectLater(
+        moved.submit(instanceXml: instance.xml),
+        problem(ProblemCode.redirected),
+      );
+      await expectLater(
+        moved.signIn(email: 'field1@example.org', password: fakePassword),
+        problem(ProblemCode.redirected),
+      );
+      expect(seen, hasLength(3));
+      expect(seen.every((r) => !r.followRedirects), isTrue);
+      expect(ProblemCode.redirected.isTransient, isTrue);
+      expect(ProblemCode.redirected.blocksSync, isFalse);
+
+      // The fake server's redirect glitch reaches the same plain problem.
+      for (final status in [302, 303, 307, 308]) {
+        fake.submissionGlitches.add(Redirect(status: status));
+        await expectLater(
+          server.submit(instanceXml: instance.xml),
+          problem(ProblemCode.redirected),
+          reason: 'HTTP $status',
+        );
+      }
+      expect(fake.submissions, isEmpty);
+    });
+
+    test('the signing client ignores a request that asks to follow '
+        'redirects', () async {
+      final seen = <http.BaseRequest>[];
+      final client = SigningHttpClient(
+        MockClient((request) async {
+          seen.add(request);
+          return http.Response('', 302, headers: {'location': '/x'});
+        }),
+      );
+      addTearDown(client.close);
+      final request = http.Request('GET', Uri.parse('https://a.example/'))
+        ..followRedirects = true
+        ..maxRedirects = 5;
+      await expectLater(
+        client.send(request),
+        throwsA(
+          isA<RedirectNotFollowed>().having((e) => e.statusCode, 'status', 302),
+        ),
+      );
+      expect(seen.single.followRedirects, isFalse);
+    });
+
     test('a missing attachment is reported, not thrown raw', () async {
       await expectLater(
         server.submit(

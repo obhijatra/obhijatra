@@ -132,8 +132,10 @@ final class SyncReport {
 ///   `already_received`) marks an entry sent; a 409 or other refusal marks
 ///   it as a problem with a plain-language code; a temporary failure
 ///   queues it again with exponential backoff and jitter.
-/// - Never deletes anything, and after a crash re-sends entries left
-///   mid-send (the server recognises a retry).
+/// - Never deletes a submission the server has not confirmed, and after a
+///   crash re-sends entries left mid-send (the server recognises a retry).
+///   Once the server confirms one, its XML and files are removed and a
+///   receipt row stays.
 /// - Publishes a [SyncStatus] stream for the UI.
 ///
 /// Call [start] once, [syncNow] after queuing a submission, on app resume
@@ -262,13 +264,16 @@ final class SyncEngine {
       if (_disposed) break;
       final id = entry.instanceId;
       if (!await _outbox.markSending(id)) continue;
+      final attachmentPaths = OutboxRepository.attachmentPathsOf(entry);
       try {
         final receipt = await _server.submit(
           instanceXml: entry.instanceXml,
-          attachmentPaths: OutboxRepository.attachmentPathsOf(entry),
+          attachmentPaths: attachmentPaths,
           attachments: _attachments,
         );
-        await _outbox.markSent(id, serverId: receipt.serverId);
+        if (await _outbox.markSent(id, serverId: receipt.serverId)) {
+          await _removeSentFiles(attachmentPaths);
+        }
         sent++;
       } on ObhijatraException catch (e) {
         if (e.code.blocksSync) {
@@ -332,6 +337,21 @@ final class SyncEngine {
       retrying: retrying,
       stoppedBy: stoppedBy,
     );
+  }
+
+  /// Removes the files of a submission the server now holds. The receipt is
+  /// already stored, so a file that cannot be removed is reported and left;
+  /// it is never sent again.
+  Future<void> _removeSentFiles(List<String> paths) async {
+    final store = _attachments;
+    if (store == null) return;
+    for (final path in paths) {
+      try {
+        await store.delete(path);
+      } on Object catch (error, stack) {
+        _onUnexpectedError?.call(error, stack);
+      }
+    }
   }
 
   /// Checks the server, the phone's clock and the session; returns why not
@@ -431,5 +451,6 @@ final class SyncEngine {
   static bool _serverWide(ProblemCode code) =>
       _offlineCodes.contains(code) ||
       code == ProblemCode.serverError ||
-      code == ProblemCode.serverBusy;
+      code == ProblemCode.serverBusy ||
+      code == ProblemCode.redirected;
 }

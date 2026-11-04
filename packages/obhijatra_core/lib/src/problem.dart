@@ -80,6 +80,12 @@ enum ProblemCode {
   /// The server answered in a way this app does not understand.
   unexpectedResponse,
 
+  /// The server address answered by sending the app to another address
+  /// (an HTTP redirect), which the app never follows: a public Wi-Fi sign-in
+  /// page, or a server that has moved. Nothing was sent; it is tried again
+  /// later.
+  redirected,
+
   /// Something unexpected happened inside the app.
   unknown;
 
@@ -98,6 +104,7 @@ enum ProblemCode {
     serverError ||
     serverBusy ||
     unexpectedResponse ||
+    redirected ||
     unknown => true,
     _ => false,
   };

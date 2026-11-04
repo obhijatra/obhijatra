@@ -86,6 +86,24 @@ final class MemoryAttachments implements AttachmentStore {
     }
     return Uint8List.fromList(bytes);
   }
+
+  @override
+  Future<void> delete(String path) async => files.remove(path);
+}
+
+/// Protected values held in memory.
+final class MemorySecureValues implements SecureValueStore {
+  /// The stored values, by name.
+  final Map<String, String> values = {};
+
+  @override
+  Future<String?> read(String name) async => values[name];
+
+  @override
+  Future<void> write(String name, String value) async => values[name] = value;
+
+  @override
+  Future<void> delete(String name) async => values.remove(name);
 }
 
 /// Answers the question on the current screen of [session] whose label

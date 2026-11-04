@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:clock/clock.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:test/test.dart';
@@ -47,11 +49,51 @@ void main() {
       expect(sent.state, OutboxState.sent);
       expect(sent.serverId, 'srv1');
       expect(sent.sentAt, isNotNull);
-      // Nothing moves a sent entry, and it is never deleted.
+      // Nothing moves a sent entry, and its receipt is never deleted.
       expect(await outbox.markSending(id), isFalse);
       expect(await outbox.retry(id), isFalse);
       expect(await outbox.recoverInterrupted(), 0);
-      expect((await outbox.find(id))!.instanceXml, entry.instanceXml);
+      expect((await outbox.find(id))!.state, OutboxState.sent);
+    });
+
+    test('a confirmed submission keeps only a small receipt', () async {
+      final instance = await fillHouseholdVisit();
+      final entry = await outbox.enqueue(
+        instance,
+        attachmentPaths: ['photo-1.jpg'],
+      );
+      final id = entry.instanceId;
+      await outbox.markSending(id);
+      // A temporary failure first, so there is an error to clear.
+      await outbox.markRetry(
+        id,
+        problem: ProblemCode.serverError,
+        serverMessage: 'Something went wrong.',
+        nextAttemptAt: DateTime.now(),
+      );
+      await outbox.markSending(id);
+      expect(await outbox.markSent(id, serverId: 'srv1'), isTrue);
+
+      final receipt = (await outbox.find(id))!;
+      // The submission itself is gone from the phone…
+      expect(receipt.instanceXml, isEmpty);
+      expect(OutboxRepository.attachmentPathsOf(receipt), isEmpty);
+      expect(receipt.lastError, isNull);
+      expect(receipt.lastErrorMessage, isNull);
+      // …and the receipt still says what was sent, when, and that it was.
+      expect(receipt.instanceId, id);
+      expect(receipt.formId, sampleFormId);
+      expect(receipt.formVersion, sampleFormVersion);
+      expect(receipt.createdAt, entry.createdAt);
+      expect(receipt.sentAt, isNotNull);
+      expect(receipt.state, OutboxState.sent);
+      expect(receipt.serverId, 'srv1');
+      expect(
+        receipt.plaintextSha256,
+        OutboxRepository.plaintextDigest(instance.xml),
+      );
+      final listed = await outbox.watchOutbox().first;
+      expect(listed.map((e) => e.instanceId), [id]);
     });
 
     test('a temporary failure queues again with a backoff time', () async {
@@ -191,6 +233,82 @@ void main() {
       expect(protector.calls, 1);
       expect(entry.instanceXml, contains('<!-- protected -->'));
     });
+
+    test('looks the instance up before protecting it, so queuing it again '
+        'returns the stored entry even when protection is random', () async {
+      final protector = _RandomNonceProtector();
+      final protected = OutboxRepository(db, protector: protector);
+      final instance = await fillHouseholdVisit();
+
+      final first = await protected.enqueue(instance);
+      final again = await protected.enqueue(instance);
+
+      expect(protector.calls, 1, reason: 'protected only on insert');
+      expect(again.instanceXml, first.instanceXml);
+      expect(again.createdAt, first.createdAt);
+      expect(await protected.entries(), hasLength(1));
+    });
+
+    test('stores the SHA-256 of the unprotected XML for the check', () async {
+      final protected = OutboxRepository(
+        db,
+        protector: _RandomNonceProtector(),
+      );
+      final instance = await fillHouseholdVisit();
+      final entry = await protected.enqueue(instance);
+      expect(
+        entry.plaintextSha256,
+        OutboxRepository.plaintextDigest(instance.xml),
+      );
+      expect(entry.plaintextSha256, hasLength(64));
+      expect(
+        entry.plaintextSha256,
+        isNot(OutboxRepository.plaintextDigest(entry.instanceXml)),
+      );
+    });
+
+    test('different XML under a stored id is refused without protecting '
+        'it', () async {
+      final protector = _RandomNonceProtector();
+      final protected = OutboxRepository(db, protector: protector);
+      final instance = await fillHouseholdVisit();
+      final stored = await protected.enqueue(instance);
+      await expectLater(
+        protected.enqueue(
+          FinalisedInstance(
+            form: instance.form,
+            instanceId: instance.instanceId,
+            xml: instance.xml.replaceFirst('Rahima', 'Rokeya'),
+            attachmentNames: const [],
+          ),
+        ),
+        throwsA(
+          isA<ObhijatraException>().having(
+            (e) => e.code,
+            'code',
+            ProblemCode.duplicateInstance,
+          ),
+        ),
+      );
+      expect(protector.calls, 1);
+      expect(
+        (await protected.find(instance.instanceId))!.instanceXml,
+        stored.instanceXml,
+      );
+    });
+
+    test('queuing an instance the server already holds returns its '
+        'receipt', () async {
+      final instance = await fillHouseholdVisit();
+      final id = (await outbox.enqueue(instance)).instanceId;
+      await outbox.markSending(id);
+      await outbox.markSent(id, serverId: 'srv1');
+
+      final again = await outbox.enqueue(instance);
+      expect(again.state, OutboxState.sent);
+      expect(again.instanceXml, isEmpty);
+      expect(await outbox.entries(), hasLength(1));
+    });
   });
 
   test('counts are watched as the outbox changes', () async {
@@ -273,6 +391,23 @@ void main() {
     await pumpEventQueue();
     expect(seen.last.map((d) => d.instanceId), [a.instanceId]);
   });
+}
+
+/// Encrypts with a fresh random nonce each time, as Phase 3 protection
+/// will: protecting the same XML twice gives different XML.
+final class _RandomNonceProtector implements FieldProtector {
+  final _random = Random.secure();
+  int calls = 0;
+
+  @override
+  Future<String> protectInstance({
+    required String instanceXml,
+    required FormVersionRef form,
+  }) async {
+    calls++;
+    final nonce = List.generate(8, (_) => _random.nextInt(256)).join('.');
+    return instanceXml.replaceFirst('<meta>', '<!-- nonce $nonce --><meta>');
+  }
 }
 
 final class _CountingProtector implements FieldProtector {

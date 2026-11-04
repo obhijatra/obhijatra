@@ -89,10 +89,15 @@ void main() {
 
     // Fill the form headlessly from the cached copy, as offline work does.
     final first = await phone.fill(head: 'Rahima Begum', size: '5');
-    expect((await phone.outbox.find(first))!.state, OutboxState.queued);
+    final queued = (await phone.outbox.find(first))!;
+    expect(queued.state, OutboxState.queued);
+    final sentXml = queued.instanceXml;
     final report = await phone.sync.syncNow();
     expect(report.sent, 1, reason: 'report: ${report.stoppedBy}');
-    expect((await phone.outbox.find(first))!.state, OutboxState.sent);
+    final receipt = (await phone.outbox.find(first))!;
+    expect(receipt.state, OutboxState.sent);
+    // Once the server holds it, the phone keeps only a receipt.
+    expect(receipt.instanceXml, isEmpty);
 
     // The submission is on the server, byte for byte, attributed to the
     // field user and placed in their branch.
@@ -100,15 +105,10 @@ void main() {
     expect(stored['submitted_by'], fieldUser['id']);
     expect(stored['location_path'], branch['path']);
     expect(stored['review_state'], 'Received');
-    expect(
-      await admin.submissionXml(stored),
-      (await phone.outbox.find(first))!.instanceXml,
-    );
+    expect(await admin.submissionXml(stored), sentXml);
 
     // A retry of the same bytes is acknowledged, never duplicated.
-    final retry = await phone.server.submit(
-      instanceXml: (await phone.outbox.find(first))!.instanceXml,
-    );
+    final retry = await phone.server.submit(instanceXml: sentXml);
     expect(retry.status, ReceiptStatus.alreadyReceived);
 
     // ---- The server goes down for an upgrade; the field officer keeps

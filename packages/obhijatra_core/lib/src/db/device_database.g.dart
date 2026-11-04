@@ -1351,6 +1351,17 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxEntry> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _plaintextSha256Meta = const VerificationMeta(
+    'plaintextSha256',
+  );
+  @override
+  late final GeneratedColumn<String> plaintextSha256 = GeneratedColumn<String>(
+    'plaintext_sha256',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _attachmentsMeta = const VerificationMeta(
     'attachments',
   );
@@ -1466,6 +1477,7 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxEntry> {
     formId,
     formVersion,
     instanceXml,
+    plaintextSha256,
     attachments,
     state,
     attempts,
@@ -1526,6 +1538,15 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxEntry> {
       );
     } else if (isInserting) {
       context.missing(_instanceXmlMeta);
+    }
+    if (data.containsKey('plaintext_sha256')) {
+      context.handle(
+        _plaintextSha256Meta,
+        plaintextSha256.isAcceptableOrUnknown(
+          data['plaintext_sha256']!,
+          _plaintextSha256Meta,
+        ),
+      );
     }
     if (data.containsKey('attachments')) {
       context.handle(
@@ -1619,6 +1640,10 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxEntry> {
         DriftSqlType.string,
         data['${effectivePrefix}instance_xml'],
       )!,
+      plaintextSha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plaintext_sha256'],
+      ),
       attachments: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}attachments'],
@@ -1683,10 +1708,18 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   /// The form version the submission was filled with.
   final String formVersion;
 
-  /// The final instance XML exactly as it will be uploaded.
+  /// The final instance XML exactly as it will be uploaded; empty once the
+  /// server has confirmed the submission.
   final String instanceXml;
 
-  /// JSON list of local paths of files sent with the submission.
+  /// The SHA-256 (lower-case hex) of the instance XML as the form engine
+  /// finalised it, before field protection, so that queuing the same
+  /// instance again is recognised without protecting it again, and still
+  /// after the XML is removed. Added in schema version 2.
+  final String? plaintextSha256;
+
+  /// JSON list of local paths of files sent with the submission; empty once
+  /// the server has confirmed the submission.
   final String attachments;
 
   /// Where the submission is on its way to the server.
@@ -1721,6 +1754,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     required this.formId,
     required this.formVersion,
     required this.instanceXml,
+    this.plaintextSha256,
     required this.attachments,
     required this.state,
     required this.attempts,
@@ -1739,6 +1773,9 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     map['form_id'] = Variable<String>(formId);
     map['form_version'] = Variable<String>(formVersion);
     map['instance_xml'] = Variable<String>(instanceXml);
+    if (!nullToAbsent || plaintextSha256 != null) {
+      map['plaintext_sha256'] = Variable<String>(plaintextSha256);
+    }
     map['attachments'] = Variable<String>(attachments);
     {
       map['state'] = Variable<String>(
@@ -1772,6 +1809,9 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
       formId: Value(formId),
       formVersion: Value(formVersion),
       instanceXml: Value(instanceXml),
+      plaintextSha256: plaintextSha256 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plaintextSha256),
       attachments: Value(attachments),
       state: Value(state),
       attempts: Value(attempts),
@@ -1805,6 +1845,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
       formId: serializer.fromJson<String>(json['formId']),
       formVersion: serializer.fromJson<String>(json['formVersion']),
       instanceXml: serializer.fromJson<String>(json['instanceXml']),
+      plaintextSha256: serializer.fromJson<String?>(json['plaintextSha256']),
       attachments: serializer.fromJson<String>(json['attachments']),
       state: $OutboxTable.$converterstate.fromJson(
         serializer.fromJson<String>(json['state']),
@@ -1827,6 +1868,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
       'formId': serializer.toJson<String>(formId),
       'formVersion': serializer.toJson<String>(formVersion),
       'instanceXml': serializer.toJson<String>(instanceXml),
+      'plaintextSha256': serializer.toJson<String?>(plaintextSha256),
       'attachments': serializer.toJson<String>(attachments),
       'state': serializer.toJson<String>(
         $OutboxTable.$converterstate.toJson(state),
@@ -1847,6 +1889,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     String? formId,
     String? formVersion,
     String? instanceXml,
+    Value<String?> plaintextSha256 = const Value.absent(),
     String? attachments,
     OutboxState? state,
     int? attempts,
@@ -1862,6 +1905,9 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     formId: formId ?? this.formId,
     formVersion: formVersion ?? this.formVersion,
     instanceXml: instanceXml ?? this.instanceXml,
+    plaintextSha256: plaintextSha256.present
+        ? plaintextSha256.value
+        : this.plaintextSha256,
     attachments: attachments ?? this.attachments,
     state: state ?? this.state,
     attempts: attempts ?? this.attempts,
@@ -1889,6 +1935,9 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
       instanceXml: data.instanceXml.present
           ? data.instanceXml.value
           : this.instanceXml,
+      plaintextSha256: data.plaintextSha256.present
+          ? data.plaintextSha256.value
+          : this.plaintextSha256,
       attachments: data.attachments.present
           ? data.attachments.value
           : this.attachments,
@@ -1915,6 +1964,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
           ..write('formId: $formId, ')
           ..write('formVersion: $formVersion, ')
           ..write('instanceXml: $instanceXml, ')
+          ..write('plaintextSha256: $plaintextSha256, ')
           ..write('attachments: $attachments, ')
           ..write('state: $state, ')
           ..write('attempts: $attempts, ')
@@ -1935,6 +1985,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     formId,
     formVersion,
     instanceXml,
+    plaintextSha256,
     attachments,
     state,
     attempts,
@@ -1954,6 +2005,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
           other.formId == this.formId &&
           other.formVersion == this.formVersion &&
           other.instanceXml == this.instanceXml &&
+          other.plaintextSha256 == this.plaintextSha256 &&
           other.attachments == this.attachments &&
           other.state == this.state &&
           other.attempts == this.attempts &&
@@ -1971,6 +2023,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
   final Value<String> formId;
   final Value<String> formVersion;
   final Value<String> instanceXml;
+  final Value<String?> plaintextSha256;
   final Value<String> attachments;
   final Value<OutboxState> state;
   final Value<int> attempts;
@@ -1987,6 +2040,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
     this.formId = const Value.absent(),
     this.formVersion = const Value.absent(),
     this.instanceXml = const Value.absent(),
+    this.plaintextSha256 = const Value.absent(),
     this.attachments = const Value.absent(),
     this.state = const Value.absent(),
     this.attempts = const Value.absent(),
@@ -2004,6 +2058,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
     required String formId,
     required String formVersion,
     required String instanceXml,
+    this.plaintextSha256 = const Value.absent(),
     this.attachments = const Value.absent(),
     required OutboxState state,
     this.attempts = const Value.absent(),
@@ -2027,6 +2082,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
     Expression<String>? formId,
     Expression<String>? formVersion,
     Expression<String>? instanceXml,
+    Expression<String>? plaintextSha256,
     Expression<String>? attachments,
     Expression<String>? state,
     Expression<int>? attempts,
@@ -2044,6 +2100,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
       if (formId != null) 'form_id': formId,
       if (formVersion != null) 'form_version': formVersion,
       if (instanceXml != null) 'instance_xml': instanceXml,
+      if (plaintextSha256 != null) 'plaintext_sha256': plaintextSha256,
       if (attachments != null) 'attachments': attachments,
       if (state != null) 'state': state,
       if (attempts != null) 'attempts': attempts,
@@ -2063,6 +2120,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
     Value<String>? formId,
     Value<String>? formVersion,
     Value<String>? instanceXml,
+    Value<String?>? plaintextSha256,
     Value<String>? attachments,
     Value<OutboxState>? state,
     Value<int>? attempts,
@@ -2080,6 +2138,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
       formId: formId ?? this.formId,
       formVersion: formVersion ?? this.formVersion,
       instanceXml: instanceXml ?? this.instanceXml,
+      plaintextSha256: plaintextSha256 ?? this.plaintextSha256,
       attachments: attachments ?? this.attachments,
       state: state ?? this.state,
       attempts: attempts ?? this.attempts,
@@ -2108,6 +2167,9 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
     }
     if (instanceXml.present) {
       map['instance_xml'] = Variable<String>(instanceXml.value);
+    }
+    if (plaintextSha256.present) {
+      map['plaintext_sha256'] = Variable<String>(plaintextSha256.value);
     }
     if (attachments.present) {
       map['attachments'] = Variable<String>(attachments.value);
@@ -2154,6 +2216,7 @@ class OutboxCompanion extends UpdateCompanion<OutboxEntry> {
           ..write('formId: $formId, ')
           ..write('formVersion: $formVersion, ')
           ..write('instanceXml: $instanceXml, ')
+          ..write('plaintextSha256: $plaintextSha256, ')
           ..write('attachments: $attachments, ')
           ..write('state: $state, ')
           ..write('attempts: $attempts, ')
@@ -3122,6 +3185,7 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   required String formId,
   required String formVersion,
   required String instanceXml,
+  Value<String?> plaintextSha256,
   Value<String> attachments,
   required OutboxState state,
   Value<int> attempts,
@@ -3139,6 +3203,7 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<String> formId,
   Value<String> formVersion,
   Value<String> instanceXml,
+  Value<String?> plaintextSha256,
   Value<String> attachments,
   Value<OutboxState> state,
   Value<int> attempts,
@@ -3178,6 +3243,11 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<String> get instanceXml => $composableBuilder(
     column: $table.instanceXml,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get plaintextSha256 => $composableBuilder(
+    column: $table.plaintextSha256,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3262,6 +3332,11 @@ class $$OutboxTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get plaintextSha256 => $composableBuilder(
+    column: $table.plaintextSha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get attachments => $composableBuilder(
     column: $table.attachments,
     builder: (column) => ColumnOrderings(column),
@@ -3340,6 +3415,11 @@ class $$OutboxTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get plaintextSha256 => $composableBuilder(
+    column: $table.plaintextSha256,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get attachments => $composableBuilder(
     column: $table.attachments,
     builder: (column) => column,
@@ -3412,6 +3492,7 @@ class $$OutboxTableTableManager
                 Value<String> formId = const Value.absent(),
                 Value<String> formVersion = const Value.absent(),
                 Value<String> instanceXml = const Value.absent(),
+                Value<String?> plaintextSha256 = const Value.absent(),
                 Value<String> attachments = const Value.absent(),
                 Value<OutboxState> state = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
@@ -3428,6 +3509,7 @@ class $$OutboxTableTableManager
                 formId: formId,
                 formVersion: formVersion,
                 instanceXml: instanceXml,
+                plaintextSha256: plaintextSha256,
                 attachments: attachments,
                 state: state,
                 attempts: attempts,
@@ -3446,6 +3528,7 @@ class $$OutboxTableTableManager
                 required String formId,
                 required String formVersion,
                 required String instanceXml,
+                Value<String?> plaintextSha256 = const Value.absent(),
                 Value<String> attachments = const Value.absent(),
                 required OutboxState state,
                 Value<int> attempts = const Value.absent(),
@@ -3462,6 +3545,7 @@ class $$OutboxTableTableManager
                 formId: formId,
                 formVersion: formVersion,
                 instanceXml: instanceXml,
+                plaintextSha256: plaintextSha256,
                 attachments: attachments,
                 state: state,
                 attempts: attempts,

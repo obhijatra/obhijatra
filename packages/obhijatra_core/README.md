@@ -12,9 +12,10 @@ Licence: AGPL-3.0, as the rest of the repository.
 
 | Area | Public API | What it does |
 | --- | --- | --- |
-| Device database | `openDeviceDatabase`, `KeyStore`, `DeviceDatabaseOpener`, `DatabaseKey`, `DeviceDatabase` | Opens the SQLite3MultipleCiphers database with the key from the OS key store. Creates a key only for a brand-new database; never replaces a key; refuses a database written by a newer app. Tables: cached forms and form versions, drafts, outbox, settings. |
+| Device database | `openDeviceDatabase`, `KeyStore`, `DeviceDatabaseOpener`, `DatabaseKey`, `DeviceDatabase` | Opens the SQLite3MultipleCiphers database with the key from the OS key store. Creates a key only for a brand-new database; never replaces a key; refuses a database written by a newer app. Tables: cached forms and form versions, drafts, outbox, settings. The app's opener must prove at run time that the file is encrypted (the field app checks `PRAGMA cipher` and the file header, and fails closed). |
+| App lock | `AppLock`, `SecureValueStore`, `PinHash`, `normaliseAppPin`, `pbkdf2HmacSha256` | The rules the apps apply before opening the database: a 6-digit app PIN kept only as a PBKDF2-HMAC-SHA256 hash (100,000 iterations, random 16-byte salt) in the OS key store; 5 wrong PINs, then a 30-second wait that doubles up to an hour; the data opens only within 30 days of the last online sign-in; the app locks again after 5 minutes in the background. Hashing runs through an app-supplied `ComputeRunner` (a background isolate in the app). |
 | Forms | `FormRepository`, `FormEntrySession`, `DraftRepository` | Caches published XForms (checked with the engine before storing; versions never change). Runs a form headlessly with DartRosa: `screen`, `answer`, `next`, `back`, `addRepeat`, `progress`, `language`, `saveDraft`, `finalise`. `position` and `total` give "question N of M" (`position` is the 0-based index of the first question on the screen among the questions that apply now; `total` counts them, notes included, and changes with skip logic). `validateAll()` lists every failing question (`FailedQuestion`: the question plus a plain `ValidationIssue`) without moving; `jumpTo(questionKey)` opens one. Validation messages carry a `ValidationIssue` plus the form's own message. Bangla digits are accepted in numbers and dates. `DraftRepository.watchDrafts()` streams the drafts, newest first. |
-| Server | `ObhijatraServer` | `GET /api/obhijatra/v1/meta` handshake, field-user sign-in (`field_users`), published form versions and XForm download, and `POST /api/obhijatra/v1/submissions` as multipart (`xml_submission_file` plus one part per attachment, named by its file name). Every request passes through a `RequestSigner`. |
+| Server | `ObhijatraServer` | `GET /api/obhijatra/v1/meta` handshake, field-user sign-in (`field_users`), published form versions and XForm download, and `POST /api/obhijatra/v1/submissions` as multipart (`xml_submission_file` plus one part per attachment, named by its file name). Every request passes through a `RequestSigner`; redirects are never followed (`redirected`). |
 | Sync | `OutboxRepository`, `SyncEngine`, `SyncStatus`, `Backoff` | Outbox state machine `queued → sending → sent / queued / problem`, exponential backoff with jitter, recovery after a crash mid-send, a `watchStatus()` stream for the SyncStatus component, and `OutboxRepository.watchOutbox()` for the list of finished forms (newest first). |
 | Problems | `ProblemCode`, `ObhijatraException` | Plain-language codes (for example `offline`, `appUpdateRequired`, `duplicateInstance`, `clockSkew`) that the UI translates into Bangla or English. Raw exceptions are never stored or shown. |
 | Testing | `package:obhijatra_core/testing.dart`: `FakeObhijatraServer` | An in-memory stand-in for `obhijatra-server` for app tests: meta (with a `Date` header and a settable `clockOffset`), sign-in, published forms with protected downloads, idempotent submissions, and glitches (no connection, error status, lost response) for the next request or for every request. Import it from tests only. |
@@ -40,8 +41,17 @@ unawaited(sync.syncNow());
 
 Rules the sync engine keeps:
 
-- A submission is never deleted; `sent` rows stay until a retention rule is
-  added.
+- A submission is never deleted before the server confirms it. Once it
+  has, its XML and attachment list are emptied and its files removed
+  (`AttachmentStore.delete`); the row stays as a small receipt (instance
+  id, form, times, state) for the list of sent forms.
+- Queuing an instance looks up its id first, inside the transaction; the
+  field protector runs only for a new instance, and a repeat is recognised
+  by the SHA-256 of the unprotected XML (`outbox.plaintext_sha256`), which
+  outlives the XML.
+- A redirect from the server is never followed: it becomes the temporary
+  problem `redirected` (often a public Wi-Fi sign-in page) and the run
+  stops, to be tried again later.
 - The XML is stored once and resent byte for byte: the server recognises a
   retry by the SHA-256 of the XML (`already_received`) and answers 409 to
   different XML under the same instance ID, which becomes a `problem` with
@@ -60,7 +70,8 @@ Rules the sync engine keeps:
   blueprint's per-user encrypted partitions will give each user their own
   database.
 - Field-level encryption (Phase 3) must run in `OutboxRepository.enqueue`,
-  once, never per upload, for the reason above.
+  once, never per upload, for the reason above. `enqueue` already calls
+  the protector only for a new instance.
 
 ## Tests
 

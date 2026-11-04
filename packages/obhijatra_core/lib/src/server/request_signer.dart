@@ -43,7 +43,27 @@ final class UnsignedRequests implements RequestSigner {
       const {};
 }
 
-/// An HTTP client that gives every request to a [RequestSigner] and stops
+/// The server answered with a redirect (HTTP 3xx), which a
+/// [SigningHttpClient] never follows: following it would send the session
+/// token and the signed body to an address nobody chose (for example a
+/// public Wi-Fi sign-in page). `ObhijatraServer` turns it into
+/// `ProblemCode.redirected`.
+final class RedirectNotFollowed implements Exception {
+  /// Creates the exception for a [statusCode] answer to [url].
+  const RedirectNotFollowed(this.statusCode, this.url);
+
+  /// The HTTP status of the answer (300 to 399).
+  final int statusCode;
+
+  /// The address that answered with the redirect.
+  final Uri url;
+
+  @override
+  String toString() => 'RedirectNotFollowed($statusCode)';
+}
+
+/// An HTTP client that gives every request to a [RequestSigner], never
+/// follows redirects (a 3xx answer throws [RedirectNotFollowed]) and stops
 /// waiting for an answer after [timeout].
 ///
 /// The body is buffered so it can be signed; large media will move to one
@@ -67,8 +87,8 @@ final class SigningHttpClient extends http.BaseClient {
     final body = await request.finalize().toBytes();
     final signed = http.Request(request.method, request.url)
       ..headers.addAll(request.headers)
-      ..followRedirects = request.followRedirects
-      ..maxRedirects = request.maxRedirects
+      // Never follow a redirect, whatever the caller asked for.
+      ..followRedirects = false
       ..persistentConnection = request.persistentConnection
       ..bodyBytes = body;
     // Setting bodyBytes may add a charset; keep the original content type.
@@ -80,7 +100,13 @@ final class SigningHttpClient extends http.BaseClient {
     );
     signed.headers.addAll(extra);
 
-    return _inner.send(signed).timeout(timeout);
+    final response = await _inner.send(signed).timeout(timeout);
+    if (response.statusCode >= 300 && response.statusCode < 400) {
+      // Release the connection; the body of a redirect is never read.
+      await response.stream.listen(null).cancel();
+      throw RedirectNotFollowed(response.statusCode, request.url);
+    }
+    return response;
   }
 
   @override

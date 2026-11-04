@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:obhijatra_core/src/db/device_database.dart';
 import 'package:obhijatra_core/src/forms/form_entry.dart';
@@ -74,7 +75,9 @@ final class OutboxCounts {
 ///
 /// Every state change is a compare-and-set on the stored state, so two
 /// sync runs (or a sync run and the user) can never both act on one row,
-/// and no row is ever deleted before the server has confirmed it.
+/// and no row is ever deleted before the server has confirmed it. Once it
+/// has, [markSent] empties the XML and the attachment list, so the row is
+/// only a receipt.
 final class OutboxRepository {
   /// Creates the repository on [db]; [protector] encrypts protected fields
   /// once, as a submission enters the outbox (Phase 3).
@@ -86,25 +89,30 @@ final class OutboxRepository {
   /// Puts a finalised [instance] in the outbox and deletes its draft, in
   /// one transaction. [attachmentPaths] are the local files to send.
   ///
-  /// Queuing the same instance again with the same XML returns the stored
-  /// entry; with different XML it throws an [ObhijatraException] with
-  /// [ProblemCode.duplicateInstance] and changes nothing.
+  /// The instance id is looked up first, inside the transaction; the field
+  /// protector runs only when the instance is new, so it runs exactly once
+  /// per submission. Queuing the same instance again with the same XML
+  /// (compared by the SHA-256 of the unprotected XML, which outlives the
+  /// XML itself) returns the stored entry; with different XML it throws an
+  /// [ObhijatraException] with [ProblemCode.duplicateInstance] and changes
+  /// nothing.
   Future<OutboxEntry> enqueue(
     FinalisedInstance instance, {
     List<String> attachmentPaths = const [],
-  }) async {
-    final xml = await _protector.protectInstance(
-      instanceXml: instance.xml,
-      form: instance.form,
-    );
-    final now = _now();
+  }) {
+    final digest = plaintextDigest(instance.xml);
     return _db.transaction(() async {
       final existing = await find(instance.instanceId);
       if (existing != null) {
         // Never replace a queued or sent submission.
-        if (existing.instanceXml == xml) return existing;
+        if (existing.plaintextSha256 == digest) return existing;
         throw const ObhijatraException(ProblemCode.duplicateInstance);
       }
+      final xml = await _protector.protectInstance(
+        instanceXml: instance.xml,
+        form: instance.form,
+      );
+      final now = _now();
       final entry = await _db
           .into(_db.outbox)
           .insertReturning(
@@ -113,6 +121,7 @@ final class OutboxRepository {
               formId: instance.form.formId,
               formVersion: instance.form.version,
               instanceXml: xml,
+              plaintextSha256: Value(digest),
               attachments: Value(jsonEncode(attachmentPaths)),
               state: OutboxState.queued,
               createdAt: now,
@@ -198,7 +207,10 @@ final class OutboxRepository {
     return changed == 1;
   }
 
-  /// Records the server's confirmation (`sending → sent`).
+  /// Records the server's confirmation (`sending → sent`) and removes the
+  /// submission's XML and attachment list, keeping the row as a receipt.
+  /// The caller removes the attachment files themselves afterwards (read
+  /// their paths before calling this).
   Future<bool> markSent(String instanceId, {required String serverId}) {
     final now = _now();
     return _move(
@@ -207,6 +219,8 @@ final class OutboxRepository {
       to: OutboxCompanion(
         state: const Value(OutboxState.sent),
         serverId: Value(serverId),
+        instanceXml: const Value(''),
+        attachments: const Value('[]'),
         sentAt: Value(now),
         lastError: const Value(null),
         lastErrorMessage: const Value(null),
@@ -324,6 +338,11 @@ final class OutboxRepository {
       );
     });
   }
+
+  /// The SHA-256 of [xml] (UTF-8), as lower-case hex: what
+  /// [OutboxEntry.plaintextSha256] holds for the unprotected instance XML.
+  static String plaintextDigest(String xml) =>
+      sha256.convert(utf8.encode(xml)).toString();
 
   /// Decoded [OutboxEntry.attachments].
   static List<String> attachmentPathsOf(OutboxEntry entry) {

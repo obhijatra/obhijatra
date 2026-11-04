@@ -10,6 +10,8 @@
 /// - Server: [ObhijatraServer] (handshake, sign-in, forms, submissions).
 /// - Sync: [OutboxRepository] and [SyncEngine] with its [SyncStatus].
 /// - Problems: every failure carries a plain-language [ProblemCode].
+/// - App lock: [AppLock] (app PIN, wrong-PIN waits, offline limit) over an
+///   app-supplied [SecureValueStore].
 library;
 
 export 'src/db/device_database.dart'
@@ -28,6 +30,7 @@ export 'src/forms/form_repository.dart';
 export 'src/forms/instance_xml.dart' show newInstanceId;
 export 'src/forms/xform_info.dart';
 export 'src/problem.dart';
+export 'src/security/app_lock.dart';
 export 'src/security/field_protector.dart';
 export 'src/security/key_store.dart';
 export 'src/server/obhijatra_server.dart';

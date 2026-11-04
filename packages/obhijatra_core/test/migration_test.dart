@@ -11,6 +11,7 @@
 @TestOn('vm')
 library;
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:test/test.dart';
@@ -67,6 +68,22 @@ void main() {
             ),
           );
       await old
+          .into(old.outbox)
+          .insert(
+            v1.OutboxCompanion.insert(
+              instanceId: 'uuid:22222222-2222-4333-8444-555555555555',
+              formId: 'household_visit',
+              formVersion: '2026110401',
+              instanceXml: '<data id="household_visit">sent</data>',
+              attachments: const Value('["photo.jpg"]'),
+              state: 'sent',
+              serverId: const Value('srv1'),
+              sentAt: const Value(created),
+              createdAt: created,
+              updatedAt: created,
+            ),
+          );
+      await old
           .into(old.drafts)
           .insert(
             v1.DraftsCompanion.insert(
@@ -92,6 +109,27 @@ void main() {
       expect(entry!.state, OutboxState.queued);
       expect(entry.createdAt, DateTime.utc(2026, 11, 4, 8));
       expect(entry.attachments, '[]');
+      // v2: the unsent submission is kept whole and gets its plaintext hash,
+      // so queuing it again is still recognised.
+      expect(entry.instanceXml, '<data id="household_visit"/>');
+      expect(
+        entry.plaintextSha256,
+        OutboxRepository.plaintextDigest('<data id="household_visit"/>'),
+      );
+      // v2: a submission the server already holds keeps only its receipt.
+      final sent = await OutboxRepository(db)
+          .find('uuid:22222222-2222-4333-8444-555555555555');
+      expect(sent!.state, OutboxState.sent);
+      expect(sent.instanceXml, isEmpty);
+      expect(sent.attachments, '[]');
+      expect(sent.serverId, 'srv1');
+      expect(sent.sentAt, DateTime.utc(2026, 11, 4, 8));
+      expect(
+        sent.plaintextSha256,
+        OutboxRepository.plaintextDigest(
+          '<data id="household_visit">sent</data>',
+        ),
+      );
       expect(
         await DraftRepository(db)
             .find('uuid:aaaaaaaa-2222-4333-8444-555555555555'),

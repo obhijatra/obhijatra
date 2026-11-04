@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   clock: 1.1.3
+  crypto: 3.0.8
   dartrosa: 0.1.2
   dartrosa_entities: 0.1.1
   drift: 2.35.3

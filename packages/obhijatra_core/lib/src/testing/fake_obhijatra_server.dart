@@ -69,6 +69,22 @@ final class LostResponse extends Glitch {
   const LostResponse();
 }
 
+/// The address answers with a redirect to [location] (HTTP [status]), as a
+/// public Wi-Fi sign-in page or a moved server would. Nothing is stored.
+final class Redirect extends Glitch {
+  /// Creates the glitch.
+  const Redirect({
+    this.status = 302,
+    this.location = 'https://wifi-login.example.net/',
+  });
+
+  /// The HTTP status (300 to 399).
+  final int status;
+
+  /// The address in the `Location` header.
+  final String location;
+}
+
 /// One part of a multipart request.
 final class Part {
   /// Creates a part.
@@ -245,6 +261,12 @@ final class FakeObhijatraServer {
     },
   );
 
+  static http.Response _redirect(Redirect glitch) => http.Response(
+    '<html><body>Moved</body></html>',
+    glitch.status,
+    headers: {'location': glitch.location, 'content-type': 'text/html'},
+  );
+
   static Glitch? _next(List<Glitch> queue, Glitch? always) =>
       queue.isNotEmpty ? queue.removeAt(0) : always;
 
@@ -256,6 +278,7 @@ final class FakeObhijatraServer {
 
   http.Response _meta(http.Request request) {
     final glitch = _next(metaGlitches, metaGlitch);
+    if (glitch is Redirect) return _redirect(glitch);
     if (glitch is NoConnection || glitch is LostResponse) _drop(request);
     if (glitch is ErrorStatus) return _error(glitch.status, glitch.message);
     return _json(200, meta);
@@ -263,6 +286,7 @@ final class FakeObhijatraServer {
 
   http.Response _signIn(http.Request request) {
     final glitch = _next(signInGlitches, signInGlitch);
+    if (glitch is Redirect) return _redirect(glitch);
     if (glitch is NoConnection || glitch is LostResponse) _drop(request);
     if (glitch is ErrorStatus) return _error(glitch.status, glitch.message);
     final body = jsonDecode(request.body) as Map<String, Object?>;
@@ -346,6 +370,7 @@ final class FakeObhijatraServer {
 
   http.Response _submit(http.Request request) {
     final glitch = _next(submissionGlitches, submissionGlitch);
+    if (glitch is Redirect) return _redirect(glitch);
     if (glitch is NoConnection) {
       throw http.ClientException('Connection reset by peer', request.url);
     }

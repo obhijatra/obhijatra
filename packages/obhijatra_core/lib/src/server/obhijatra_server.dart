@@ -9,12 +9,18 @@ import 'package:obhijatra_core/src/server/request_signer.dart';
 import 'package:obhijatra_core/src/server/server_models.dart';
 import 'package:pocketbase/pocketbase.dart';
 
-/// Reads the files sent with submissions, implemented by the app (for
-/// example with `dart:io`), so the core stays free of platform libraries.
+/// Reads the files sent with submissions, and removes them once the server
+/// holds them; implemented by the app (for example with `dart:io`), so the
+/// core stays free of platform libraries.
 abstract interface class AttachmentStore {
   /// Returns the bytes of the file at [path]; throws an
   /// [ObhijatraException] with [ProblemCode.attachmentMissing] if it is gone.
   Future<Uint8List> read(String path);
+
+  /// Removes the file at [path] after the server confirmed the submission it
+  /// belongs to. A file that is already gone is not an error; a path outside
+  /// the store's folder is never touched.
+  Future<void> delete(String path);
 }
 
 /// The multipart part that carries the instance XML (the OpenRosa name).
@@ -245,6 +251,12 @@ final class ObhijatraServer {
   Future<http.Response> _sendRaw(http.BaseRequest request) async {
     try {
       return await http.Response.fromStream(await _http.send(request));
+    } on RedirectNotFollowed catch (e) {
+      throw ObhijatraException(
+        ProblemCode.redirected,
+        statusCode: e.statusCode,
+        cause: e,
+      );
     } on TimeoutException catch (e) {
       throw ObhijatraException(ProblemCode.timeout, cause: e);
     } on http.ClientException catch (e) {
@@ -259,11 +271,19 @@ final class ObhijatraServer {
     try {
       return await call();
     } on ClientException catch (e) {
+      final original = e.originalError;
+      if (original is RedirectNotFollowed) {
+        throw ObhijatraException(
+          ProblemCode.redirected,
+          statusCode: original.statusCode,
+          cause: original,
+        );
+      }
       if (e.statusCode == 0) {
-        final timedOut = e.originalError is TimeoutException;
+        final timedOut = original is TimeoutException;
         throw ObhijatraException(
           timedOut ? ProblemCode.timeout : ProblemCode.offline,
-          cause: e.originalError ?? e,
+          cause: original ?? e,
         );
       }
       final message = e.response['message'];

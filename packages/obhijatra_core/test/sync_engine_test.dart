@@ -384,6 +384,53 @@ void main() {
     expect(fake.submissions, isEmpty);
   });
 
+  test(
+    'a sent submission keeps only a receipt; its files are removed',
+    () async {
+      final instance = await fillHouseholdVisit();
+      final files = MemoryAttachments({
+        'photo-1.jpg': [1, 2, 3],
+        'other.jpg': [4],
+      });
+      await outbox.enqueue(instance, attachmentPaths: ['photo-1.jpg']);
+      final sync = SyncEngine(
+        database: db,
+        server: server,
+        attachments: files,
+        autoRetry: false,
+      );
+      engines.add(sync);
+      await sync.start();
+
+      expect((await sync.syncNow()).sent, 1);
+      // The server got the photo and the XML…
+      final stored = fake.submissions[instance.instanceId]!;
+      expect(stored.xml, instance.xml);
+      expect(stored.parts.map((p) => p.name), contains('photo-1.jpg'));
+      // …and the phone keeps only the receipt.
+      final receipt = (await outbox.find(instance.instanceId))!;
+      expect(receipt.state, OutboxState.sent);
+      expect(receipt.instanceXml, isEmpty);
+      expect(OutboxRepository.attachmentPathsOf(receipt), isEmpty);
+      expect(files.files.keys, ['other.jpg']);
+    },
+  );
+
+  test('a redirect is never followed; the run stops and retries', () async {
+    final id = await queueOne();
+    fake.submissionGlitches.add(const Redirect());
+    final sync = engine();
+    await sync.start();
+
+    final report = await sync.syncNow();
+    expect(report.stoppedBy, ProblemCode.redirected);
+    final entry = (await outbox.find(id))!;
+    expect(entry.state, OutboxState.queued);
+    expect(entry.lastError, 'redirected');
+    expect(fake.submissions, isEmpty);
+    expect((await sync.syncNow(ignoreBackoff: true)).sent, 1);
+  });
+
   test('overlapping calls share one run', () async {
     await queueOne();
     final sync = engine();

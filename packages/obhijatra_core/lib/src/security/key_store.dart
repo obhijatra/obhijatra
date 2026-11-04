@@ -73,6 +73,11 @@ abstract interface class KeyStore {
 /// Opens the encrypted SQLite file, implemented by the app with
 /// SQLite3MultipleCiphers (for example drift's `NativeDatabase` running
 /// `PRAGMA hexkey` in its setup callback).
+///
+/// A plain SQLite ignores the key and writes a readable file, so an opener
+/// must also prove at run time that the cipher library is present and that
+/// the file is encrypted, and otherwise throw an [ObhijatraException] with
+/// [ProblemCode.databaseUnavailable] (fail closed).
 abstract interface class DeviceDatabaseOpener {
   /// Whether the database file already exists.
   Future<bool> databaseExists();

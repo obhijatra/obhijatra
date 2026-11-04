@@ -98,7 +98,10 @@ class Drafts extends Table {
 ///
 /// A row is never deleted before the server confirms it; [instanceXml] is
 /// sent byte for byte the same on every try, because the server recognises
-/// a retry by the SHA-256 of the XML.
+/// a retry by the SHA-256 of the XML. Once the server confirms it
+/// ([OutboxState.sent]), the XML and the attachment list are emptied and
+/// the files removed: the row stays as a small receipt (instance id, form,
+/// times, state) for the list of sent forms.
 @DataClassName('OutboxEntry')
 @TableIndex(name: 'outbox_state_due', columns: {#state, #nextAttemptAt})
 class Outbox extends Table {
@@ -111,10 +114,18 @@ class Outbox extends Table {
   /// The form version the submission was filled with.
   TextColumn get formVersion => text()();
 
-  /// The final instance XML exactly as it will be uploaded.
+  /// The final instance XML exactly as it will be uploaded; empty once the
+  /// server has confirmed the submission.
   TextColumn get instanceXml => text()();
 
-  /// JSON list of local paths of files sent with the submission.
+  /// The SHA-256 (lower-case hex) of the instance XML as the form engine
+  /// finalised it, before field protection, so that queuing the same
+  /// instance again is recognised without protecting it again, and still
+  /// after the XML is removed. Added in schema version 2.
+  TextColumn get plaintextSha256 => text().nullable()();
+
+  /// JSON list of local paths of files sent with the submission; empty once
+  /// the server has confirmed the submission.
   TextColumn get attachments => text().withDefault(const Constant('[]'))();
 
   /// Where the submission is on its way to the server.

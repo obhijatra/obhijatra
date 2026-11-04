@@ -48,6 +48,20 @@ final class SettingsRepository {
   Future<void> setLastSyncedAt(DateTime time) =>
       write(lastSyncedAtKey, time.toUtc().toIso8601String());
 
+  /// A session store for signing in while the device database is still
+  /// closed (the app lock's online sign-in): [onSave] receives the data
+  /// that [authStore] would have stored, or `null` when the session is
+  /// cleared. Store it with [saveSession] once the database is open.
+  static AuthStore detachedAuthStore(void Function(String? data) onSave) =>
+      AsyncAuthStore(
+        save: (data) async => onSave(data.isEmpty ? null : data),
+        clear: () async => onSave(null),
+      );
+
+  /// Stores session [data] captured by [detachedAuthStore], replacing the
+  /// saved session.
+  Future<void> saveSession(String data) => write(sessionKey, data);
+
   /// A PocketBase session store that keeps the session in this (encrypted)
   /// database, so sync continues after the app restarts.
   Future<AuthStore> authStore() async => AsyncAuthStore(
