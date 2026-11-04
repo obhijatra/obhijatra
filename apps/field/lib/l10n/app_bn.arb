@@ -1,8 +1,656 @@
 {
   "@@locale": "bn",
+  "@@x-translation-status": "DRAFT. These Bangla lines were written by the engineering assistant and have not been checked. The owner must read every line (the problem_* sentences first, because people act on them) and correct the wording before release.",
   "appTitle": "অভিযাত্রা",
-  "homeHeading": "অভিযাত্রায় স্বাগতম",
-  "homeIntro": "মাঠপর্যায়ের কাজের জন্য সহজ ও নিরাপদ সরঞ্জাম। এটি একটি প্রাথমিক পূর্বরূপ; এখনও কিছু সংরক্ষণ করা হয় না।",
-  "homeStatus": "প্রি-আলফা, পর্ব ১",
-  "languageToggle": "English"
+  "@appTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "splashLoading": "অ্যাপ খোলা হচ্ছে",
+  "@splashLoading": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "actionCancel": "বাতিল করুন",
+  "@actionCancel": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "actionClose": "বন্ধ করুন",
+  "@actionClose": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "actionBack": "ফিরে যান",
+  "@actionBack": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "actionTryAgain": "আবার চেষ্টা করুন",
+  "@actionTryAgain": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "actionContinue": "এগিয়ে যান",
+  "@actionContinue": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "actionRetryStartup": "আবার চেষ্টা করুন",
+  "@actionRetryStartup": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "startupProblemTitle": "অ্যাপটি চালু করা যায়নি",
+  "@startupProblemTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectTitle": "আপনার প্রতিষ্ঠানের সাথে যুক্ত হন",
+  "@connectTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectIntro": "আপনার প্রতিষ্ঠান যে সার্ভারের ঠিকানা দিয়েছে, সেটি লিখুন।",
+  "@connectIntro": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectAddressLabel": "সার্ভারের ঠিকানা",
+  "@connectAddressLabel": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectAddressHelp": "যেমন: data.example.org",
+  "@connectAddressHelp": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectErrorEmpty": "সার্ভারের ঠিকানা লিখুন।",
+  "@connectErrorEmpty": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectErrorShape": "এটি ঠিকানার মতো দেখাচ্ছে না। ঠিকানা এমন হয়: data.example.org।",
+  "@connectErrorShape": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectErrorInsecure": "https:// দিয়ে শুরু হওয়া ঠিকানা ব্যবহার করুন, যাতে পথে আপনার তথ্য সুরক্ষিত থাকে।",
+  "@connectErrorInsecure": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectTest": "সংযোগ পরীক্ষা করুন",
+  "@connectTest": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectTesting": "সংযোগ পরীক্ষা করা হচ্ছে…",
+  "@connectTesting": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectSuccess": "সংযোগ হয়েছে। সার্ভারটি প্রস্তুত।",
+  "@connectSuccess": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectWrongAddress": "এই ঠিকানায় অভিযাত্রা সার্ভার পাওয়া যায়নি। ঠিকানাটি আপনার প্রতিষ্ঠানের কাছ থেকে আবার দেখে নিন।",
+  "@connectWrongAddress": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "connectOffline": "এই ঠিকানায় পৌঁছানো যায়নি। ফোনের ইন্টারনেট এবং ঠিকানাটি দেখে নিন।",
+  "@connectOffline": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInTitle": "সাইন ইন",
+  "@signInTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInServer": "{server}-এর সাথে যুক্ত",
+  "@signInServer": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInEmail": "ইমেইল",
+  "@signInEmail": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInPassword": "পাসওয়ার্ড",
+  "@signInPassword": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInShowPassword": "পাসওয়ার্ড দেখান",
+  "@signInShowPassword": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInHidePassword": "পাসওয়ার্ড লুকান",
+  "@signInHidePassword": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInEmptyEmail": "আপনার ইমেইল লিখুন।",
+  "@signInEmptyEmail": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInEmptyPassword": "আপনার পাসওয়ার্ড লিখুন।",
+  "@signInEmptyPassword": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInNeedsInternet": "প্রথমবার সাইন ইন করতে ইন্টারনেট লাগবে। এরপর অ্যাপ অফলাইনেও কাজ করবে।",
+  "@signInNeedsInternet": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInWorking": "সাইন ইন হচ্ছে…",
+  "@signInWorking": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInChangeServer": "অন্য সার্ভার ব্যবহার করুন",
+  "@signInChangeServer": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "navToday": "আজ",
+  "@navToday": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "navForms": "ফর্ম",
+  "@navForms": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "navSending": "পাঠানো",
+  "@navSending": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "navMore": "আরও",
+  "@navMore": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "navMainMenu": "প্রধান মেনু",
+  "@navMainMenu": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "todayTitle": "আজ",
+  "@todayTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "offlineTitle": "আপনি অফলাইনে আছেন।",
+  "@offlineTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "offlineMessage": "কাজ চালিয়ে যান, সবকিছু এই ফোনে সেভ হচ্ছে।",
+  "@offlineMessage": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "statWaiting": "পাঠানোর অপেক্ষায়",
+  "@statWaiting": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "statDrafts": "খসড়া সেভ করা আছে",
+  "@statDrafts": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lastSyncedAt": "শেষ সিঙ্ক {when}-এ। সিগন্যাল পেলে ফর্মগুলো নিজে থেকেই চলে যাবে।",
+  "@lastSyncedAt": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "lastSyncedNever": "এখনও সিঙ্ক হয়নি। ফর্ম পেতে ও কাজ পাঠাতে একবার ইন্টারনেটে যুক্ত হন।",
+  "@lastSyncedNever": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formsToFill": "পূরণ করার ফর্ম",
+  "@formsToFill": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formsEmptyTitle": "এখনও কোনো ফর্ম নেই",
+  "@formsEmptyTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formsEmptyBody": "প্রথম সিঙ্কের পর আপনার ফর্ম এখানে দেখা যাবে। ইন্টারনেটে যুক্ত হয়ে \"ফর্ম হালনাগাদ করুন\" চাপুন।",
+  "@formsEmptyBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formsUpdate": "ফর্ম হালনাগাদ করুন",
+  "@formsUpdate": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formsUpdating": "ফর্ম হালনাগাদ হচ্ছে…",
+  "@formsUpdating": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formsUpdateFailed": "ফর্ম হালনাগাদ করা যায়নি। {reason}",
+  "@formsUpdateFailed": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formMetaNew": "নতুন পূরণ শুরু করুন",
+  "@formMetaNew": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formMetaDrafts": "{count}টি খসড়া সেভ করা আছে",
+  "@formMetaDrafts": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "draftsHeading": "খসড়া",
+  "@draftsHeading": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "draftSavedAt": "{when} সেভ হয়েছে",
+  "@draftSavedAt": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "draftContinue": "এই খসড়া চালিয়ে যান",
+  "@draftContinue": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInAgainBanner": "ফর্ম পাঠাতে আবার সাইন ইন করুন। আপনার উত্তর এই ফোনেই থাকবে।",
+  "@signInAgainBanner": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "syncBlockedUpdate": "ফর্ম পাঠাতে অ্যাপটি আপডেট করুন। আপনার উত্তর রাখা আছে।",
+  "@syncBlockedUpdate": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "syncSendingNow": "পাঠানো হচ্ছে…",
+  "@syncSendingNow": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "sendingTitle": "পাঠানো",
+  "@sendingTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "sendingEmpty": "এখানে এখনও কিছু নেই। আপনি যে ফর্ম শেষ করবেন, তা এখানে দেখা যাবে।",
+  "@sendingEmpty": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "sendingNow": "এখনই পাঠান",
+  "@sendingNow": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "stateQueued": "পাঠানোর অপেক্ষায়",
+  "@stateQueued": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "stateSending": "পাঠানো হচ্ছে…",
+  "@stateSending": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "stateSent": "{when}-এ পাঠানো হয়েছে",
+  "@stateSent": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "stateProblem": "পাঠানো যায়নি",
+  "@stateProblem": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "stateOnPhone": "এই ফোনে সেভ আছে",
+  "@stateOnPhone": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "sendingFinishedAt": "{when} শেষ করা হয়েছে",
+  "@sendingFinishedAt": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "questionProgress": "প্রশ্ন {n}/{total}",
+  "@questionProgress": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "savedBadge": "সেভ হয়েছে",
+  "@savedBadge": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "closeForm": "ফর্ম বন্ধ করুন",
+  "@closeForm": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "requiredMark": "আবশ্যক",
+  "@requiredMark": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "entryBack": "পেছনে যান",
+  "@entryBack": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "entryNext": "পরের প্রশ্ন",
+  "@entryNext": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "entryFinish": "শেষ করুন",
+  "@entryFinish": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "helpChooseOne": "একটি বেছে নিন।",
+  "@helpChooseOne": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "helpChooseMany": "যেগুলো প্রযোজ্য সবগুলো বেছে নিন।",
+  "@helpChooseMany": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "pickDate": "তারিখ বেছে নিন",
+  "@pickDate": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "issueRequired": "এই প্রশ্নের উত্তর দিন।",
+  "@issueRequired": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "issueConstraint": "এই উত্তরটি ঠিক মনে হচ্ছে না। আবার দেখে লিখুন।",
+  "@issueConstraint": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "issueInvalidInteger": "একটি পূর্ণসংখ্যা লিখুন, যেমন ৫।",
+  "@issueInvalidInteger": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "issueInvalidDecimal": "একটি সংখ্যা লিখুন, যেমন ২.৫।",
+  "@issueInvalidDecimal": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "issueInvalidDate": "একটি তারিখ বেছে নিন।",
+  "@issueInvalidDate": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "issueInvalidChoice": "তালিকা থেকে বেছে নিন।",
+  "@issueInvalidChoice": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "issueInvalidText": "এই উত্তরটি পড়া যায়নি। আবার দেখে লিখুন।",
+  "@issueInvalidText": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "unsupportedTitle": "এই ধরনের প্রশ্ন এখনও সমর্থিত নয়",
+  "@unsupportedTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "unsupportedBody": "অ্যাপের এই সংস্করণে এটি দেখানো যায় না। আপনার প্রতিষ্ঠান ফর্ম বা অ্যাপ হালনাগাদ করতে পারবে। আপনি পরের প্রশ্নে যেতে পারেন।",
+  "@unsupportedBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "unsupportedRequiredBody": "এই প্রশ্নের উত্তর দেওয়া আবশ্যক, তাই এখন ফর্মটি শেষ করা যাবে না। এ পর্যন্ত আপনার উত্তর সেভ আছে। আপনার প্রতিষ্ঠানকে জানান।",
+  "@unsupportedRequiredBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "repeatPromptTitle": "আরও একটি {label} যোগ করবেন?",
+  "@repeatPromptTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "repeatPromptTitleNoLabel": "আরও একটি যোগ করবেন?",
+  "@repeatPromptTitleNoLabel": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "repeatAdd": "আরও যোগ করুন",
+  "@repeatAdd": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "repeatNoMore": "আর নয়",
+  "@repeatNoMore": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formOpenFailedTitle": "ফর্মটি খোলা যায়নি",
+  "@formOpenFailedTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "formNotOnPhone": "ফর্মটি ফোনে নেই। ইন্টারনেট থাকলে হোম স্ক্রিনে \"ফর্ম হালনাগাদ করুন\" চাপুন।",
+  "@formNotOnPhone": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "entryBackToToday": "তালিকায় ফিরুন",
+  "@entryBackToToday": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "finishTitle": "শেষ করে পাঠান",
+  "@finishTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "finishBackToQuestions": "প্রশ্নে ফিরে যান",
+  "@finishBackToQuestions": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "summaryTitle": "সারসংক্ষেপ",
+  "@summaryTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "summaryAnswered": "উত্তর দেওয়া হয়েছে",
+  "@summaryAnswered": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "summaryAnsweredValue": "{total}টির মধ্যে {answered}টি",
+  "@summaryAnsweredValue": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "summaryStarted": "শুরু করেছেন",
+  "@summaryStarted": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "summaryReady": "সব উত্তর দেওয়া হয়েছে। আপনি ফর্মটি পাঠাতে পারেন।",
+  "@summaryReady": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "validationTitle": "একটি উত্তর ঠিক করতে হবে",
+  "@validationTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "validationMessage": "এটি ঠিক করুন, তারপর আবার পাঠান।",
+  "@validationMessage": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "validationItem": "{question}: {reason}",
+  "@validationItem": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "finishSend": "পাঠান",
+  "@finishSend": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "finishSending": "পাঠানো হচ্ছে…",
+  "@finishSending": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "finishKeepDraft": "খসড়া হিসেবে রাখুন",
+  "@finishKeepDraft": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "finishDraftKept": "খসড়া হিসেবে সেভ হয়েছে।",
+  "@finishDraftKept": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeSentTitle": "পাঠানো হয়েছে",
+  "@outcomeSentTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeSentBody": "আপনার উত্তরগুলো আপনার প্রতিষ্ঠানের কাছে পৌঁছেছে।",
+  "@outcomeSentBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeSentChip": "{when}-এ পাঠানো",
+  "@outcomeSentChip": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeWaitingTitle": "সিগন্যালের অপেক্ষায়",
+  "@outcomeWaitingTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeWaitingBody": "আপনার উত্তর এই ফোনে নিরাপদে সেভ আছে। সিগন্যাল পেলেই নিজে থেকে পাঠানো হবে, আপনাকে কিছু করতে হবে না।",
+  "@outcomeWaitingBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeWaitingCount": "পাঠানোর অপেক্ষায় মোট {count}টি ফর্ম।",
+  "@outcomeWaitingCount": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeProblemTitle": "পাঠানো যায়নি",
+  "@outcomeProblemTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeProblemSafe": "আপনার উত্তর হারায়নি, এই ফোনে সেভ আছে।",
+  "@outcomeProblemSafe": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeNext": "পরেরটি শুরু করুন",
+  "@outcomeNext": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeBackToToday": "আজকের তালিকায় ফিরুন",
+  "@outcomeBackToToday": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "outcomeSignIn": "আবার সাইন ইন করুন",
+  "@outcomeSignIn": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "moreTitle": "আরও",
+  "@moreTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsTitle": "সেটিংস",
+  "@settingsTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsLanguage": "ভাষা",
+  "@settingsLanguage": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "languageBangla": "বাংলা",
+  "@languageBangla": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsAccount": "অ্যাকাউন্ট",
+  "@settingsAccount": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsSignedInAs": "{name} হিসেবে সাইন ইন করা আছে",
+  "@settingsSignedInAs": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsSignOut": "সাইন আউট",
+  "@settingsSignOut": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signOutConfirmTitle": "সাইন আউট করবেন?",
+  "@signOutConfirmTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signOutNothingWaiting": "ফর্ম পাঠাতে আপনাকে আবার সাইন ইন করতে হবে। আপনার খসড়াগুলো এই ফোনেই থাকবে।",
+  "@signOutNothingWaiting": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signOutOutboxWarning": "{count}টি ফর্ম এখনও পাঠানো হয়নি। সেগুলো এই ফোনে নিরাপদে থাকবে, কিন্তু শুধু আপনার অ্যাকাউন্ট থেকেই পাঠানো যাবে। সিগন্যাল পেলে একই অ্যাকাউন্টে আবার সাইন ইন করুন।",
+  "@signOutOutboxWarning": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsAbout": "অভিযাত্রা সম্পর্কে",
+  "@settingsAbout": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsSection": "সেটিংস",
+  "@settingsSection": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutTitle": "সম্পর্কে",
+  "@aboutTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutVersion": "সংস্করণ {version}",
+  "@aboutVersion": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutMadeBy": "Made by Aninda Studio",
+  "@aboutMadeBy": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutLicenceHeading": "মুক্ত সফটওয়্যার",
+  "@aboutLicenceHeading": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutLicenceBody": "অভিযাত্রা একটি মুক্ত সফটওয়্যার, যা GNU Affero General Public License, সংস্করণ ৩ (AGPL-3.0) অনুযায়ী দেওয়া হয়েছে। আপনি এটি ব্যবহার করতে, বুঝতে, বদলাতে ও অন্যকে দিতে পারেন। বদলানো সংস্করণ অন্যদের জন্য চালালে আপনার বদলগুলোও একই লাইসেন্সে সবার সাথে ভাগ করতে হবে। এর কোনো ওয়ারেন্টি নেই।",
+  "@aboutLicenceBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutSourceLink": "সোর্স কোড দেখুন",
+  "@aboutSourceLink": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutLinkFailed": "লিংকটি খোলা যায়নি। ঠিকানাটি হলো {url}",
+  "@aboutLinkFailed": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "aboutLicences": "ওপেন-সোর্স লাইসেন্স",
+  "@aboutLicences": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_offline": "এখন ইন্টারনেট সংযোগ নেই। আপনার কাজ এই ফোনে নিরাপদ আছে, সিগন্যাল ফিরলে পাঠানো হবে।",
+  "@problem_offline": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_timeout": "সংযোগ খুব ধীর। আমরা নিজে থেকেই আবার চেষ্টা করব।",
+  "@problem_timeout": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_serverError": "সার্ভারে সমস্যা হয়েছে। এটি আপনার ভুল নয়। আমরা নিজে থেকেই আবার চেষ্টা করব।",
+  "@problem_serverError": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_serverBusy": "সার্ভার এখন ব্যস্ত। কিছুক্ষণ পর আবার চেষ্টা করা হবে।",
+  "@problem_serverBusy": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_signInRequired": "ফর্ম পাঠাতে আবার সাইন ইন করুন। আপনার উত্তর এই ফোনেই থাকবে।",
+  "@problem_signInRequired": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_signInFailed": "ইমেইল বা পাসওয়ার্ড ঠিক নয়, অথবা অ্যাকাউন্টটি চালু নেই। দেখে আবার চেষ্টা করুন।",
+  "@problem_signInFailed": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_accountNotPermitted": "এই অ্যাকাউন্ট দিয়ে এটি করা যাবে না। আপনার প্রতিষ্ঠানের সাথে যোগাযোগ করুন।",
+  "@problem_accountNotPermitted": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_differentUser": "এই ফোনে অন্য একজনের ফর্ম এখনও পাঠানো বাকি আছে। আগে সেই ব্যক্তির অ্যাকাউন্টে সাইন ইন করে সেগুলো পাঠান।",
+  "@problem_differentUser": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_appUpdateRequired": "ফর্ম পাঠানোর জন্য এই অ্যাপ খুব পুরনো। অ্যাপটি আপডেট করুন। আপনার উত্তর রাখা আছে।",
+  "@problem_appUpdateRequired": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_serverIncompatible": "অ্যাপ ও সার্ভার মিলছে না। অ্যাপটি আপডেট করুন অথবা আপনার প্রতিষ্ঠানকে জানান।",
+  "@problem_serverIncompatible": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_serverNotSetUp": "সার্ভার এখনও প্রস্তুত নয়। আপনার প্রতিষ্ঠানের অ্যাডমিনকে জানান।",
+  "@problem_serverNotSetUp": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_duplicateInstance": "সার্ভারে একই কোডের আরেকটি ভিন্ন ফর্ম আগে থেকেই আছে। আপনার উত্তর রাখা আছে। আপনার প্রতিষ্ঠানকে জানান।",
+  "@problem_duplicateInstance": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_formNotOnServer": "সার্ভারে ফর্মটির এই সংস্করণ নেই। আপনার প্রতিষ্ঠানকে জানান।",
+  "@problem_formNotOnServer": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_submissionInvalid": "সার্ভার এই ফর্মটি নিতে পারেনি। আপনার উত্তর রাখা আছে। আপনার প্রতিষ্ঠানকে জানান।",
+  "@problem_submissionInvalid": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_submissionTooLarge": "ফাইলসহ এই ফর্মটি পাঠানোর জন্য খুব বড়। আপনার প্রতিষ্ঠানকে জানান।",
+  "@problem_submissionTooLarge": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_attachmentMissing": "এই ফর্মের একটি ছবি বা ফাইল ফোনে পাওয়া যাচ্ছে না। আপনার প্রতিষ্ঠানকে জানান।",
+  "@problem_attachmentMissing": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_formInvalid": "ফর্মটি খোলা যায়নি। ইন্টারনেট থাকলে ফর্মগুলো আবার নিন, অথবা আপনার প্রতিষ্ঠানকে জানান।",
+  "@problem_formInvalid": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_databaseKeyMissing": "এই ফোনের সেভ করা তথ্যের চাবি পাওয়া যাচ্ছে না, তাই তথ্য খোলা যাচ্ছে না। অন্য কিছু করার আগে আপনার প্রতিষ্ঠানের সাথে যোগাযোগ করুন।",
+  "@problem_databaseKeyMissing": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_databaseKeyRejected": "এই ফোনের সেভ করা তথ্য খোলা যায়নি। অ্যাপটি মুছবেন না। আপনার প্রতিষ্ঠানের সাথে যোগাযোগ করুন।",
+  "@problem_databaseKeyRejected": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_databaseFromNewerApp": "সেভ করা তথ্য অ্যাপের নতুন সংস্করণে তৈরি। অ্যাপটি আপডেট করুন।",
+  "@problem_databaseFromNewerApp": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_databaseUnavailable": "এই ফোনের সেভ করা তথ্য খোলা যায়নি। ফোনটি বন্ধ করে আবার চালু করুন। আবার হলে আপনার প্রতিষ্ঠানের সাথে যোগাযোগ করুন।",
+  "@problem_databaseUnavailable": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_unexpectedResponse": "সার্ভার এমনভাবে উত্তর দিয়েছে যা অ্যাপ বুঝতে পারছে না। আমরা পরে আবার চেষ্টা করব।",
+  "@problem_unexpectedResponse": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_unknown": "কিছু একটা ভুল হয়েছে। আপনার কাজ এই ফোনে নিরাপদ আছে। আবার চেষ্টা করুন।",
+  "@problem_unknown": {
+    "x-translation-status": "draft: owner to check"
+  }
 }

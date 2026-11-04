@@ -21,11 +21,17 @@ dependencies:
   dartrosa_flutter: 0.2.1
   flutter_secure_storage: 11.2.0
   sqlite3: 3.8.0
+  connectivity_plus: 7.3.2
+  path_provider: 2.1.6
+  url_launcher: 6.3.3
+  lucide_icons_flutter: 4.0.1
+  http: 1.6.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   lints: 6.1.0
+  xml: 7.0.1
 
 flutter:
   uses-material-design: true

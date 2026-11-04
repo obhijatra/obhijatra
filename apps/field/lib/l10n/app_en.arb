@@ -1,13 +1,756 @@
 {
   "@@locale": "en",
   "appTitle": "Obhijatra",
-  "@appTitle": { "description": "The app name shown under the icon and in the app switcher." },
-  "homeHeading": "Welcome to Obhijatra",
-  "@homeHeading": { "description": "Heading on the home screen." },
-  "homeIntro": "Simple, safe tools for field work. This is an early preview; nothing is stored yet.",
-  "@homeIntro": { "description": "Short introduction on the home screen." },
-  "homeStatus": "Pre-alpha, Phase 1",
-  "@homeStatus": { "description": "Development status label on the home screen." },
-  "languageToggle": "বাংলা",
-  "@languageToggle": { "description": "Button that switches the app to the other language. Shows the NAME OF THE OTHER LANGUAGE written in that language." }
+  "@appTitle": {
+    "description": "The app name, shown in the top bar and the app switcher."
+  },
+  "splashLoading": "Opening the app",
+  "@splashLoading": {
+    "description": "Spoken by a screen reader while the splash screen is shown."
+  },
+  "actionCancel": "Cancel",
+  "@actionCancel": {
+    "description": "Button that cancels an action."
+  },
+  "actionClose": "Close",
+  "@actionClose": {
+    "description": "Button or icon that closes a screen."
+  },
+  "actionBack": "Go back",
+  "@actionBack": {
+    "description": "Icon button that goes to the previous screen."
+  },
+  "actionTryAgain": "Try again",
+  "@actionTryAgain": {
+    "description": "Button that repeats an action that failed."
+  },
+  "actionContinue": "Continue",
+  "@actionContinue": {
+    "description": "Button that goes to the next step."
+  },
+  "actionRetryStartup": "Try again",
+  "@actionRetryStartup": {
+    "description": "Button on the start-up problem screen."
+  },
+  "startupProblemTitle": "The app could not start",
+  "@startupProblemTitle": {
+    "description": "Title of the screen shown when the saved data on the phone cannot be opened."
+  },
+  "connectTitle": "Connect to your organisation",
+  "@connectTitle": {
+    "description": "Title of the screen where the server address is typed."
+  },
+  "connectIntro": "Type the server address that your organisation gave you.",
+  "@connectIntro": {
+    "description": "Short explanation under the title of the connect screen."
+  },
+  "connectAddressLabel": "Server address",
+  "@connectAddressLabel": {
+    "description": "Label of the server address field."
+  },
+  "connectAddressHelp": "For example: data.example.org",
+  "@connectAddressHelp": {
+    "description": "Help text under the server address field. The example address stays in English letters."
+  },
+  "connectErrorEmpty": "Type the server address.",
+  "@connectErrorEmpty": {
+    "description": "Shown when the server address field is empty."
+  },
+  "connectErrorShape": "This does not look like an address. It should look like data.example.org.",
+  "@connectErrorShape": {
+    "description": "Shown when the typed server address is not a web address."
+  },
+  "connectErrorInsecure": "Use an address that starts with https:// so that your data is protected on its way.",
+  "@connectErrorInsecure": {
+    "description": "Shown when the address would send data without protection."
+  },
+  "connectTest": "Test connection",
+  "@connectTest": {
+    "description": "Button that checks the server address."
+  },
+  "connectTesting": "Testing the connection…",
+  "@connectTesting": {
+    "description": "Shown on the test button while it works."
+  },
+  "connectSuccess": "Connected. This server is ready.",
+  "@connectSuccess": {
+    "description": "Shown when the test connection worked."
+  },
+  "connectWrongAddress": "We could not find Obhijatra at this address. Check the address with your organisation.",
+  "@connectWrongAddress": {
+    "description": "Shown when the address answers but is not an Obhijatra server."
+  },
+  "connectOffline": "We could not reach this address. Check your phone's internet, and check the address.",
+  "@connectOffline": {
+    "description": "Shown when the server could not be reached."
+  },
+  "signInTitle": "Sign in",
+  "@signInTitle": {
+    "description": "Title of the sign-in screen and the sign-in button."
+  },
+  "signInServer": "Connected to {server}",
+  "@signInServer": {
+    "description": "Shows which server the phone is connected to.",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "signInEmail": "Email",
+  "@signInEmail": {
+    "description": "Label of the email field."
+  },
+  "signInPassword": "Password",
+  "@signInPassword": {
+    "description": "Label of the password field."
+  },
+  "signInShowPassword": "Show password",
+  "@signInShowPassword": {
+    "description": "Button that shows the typed password."
+  },
+  "signInHidePassword": "Hide password",
+  "@signInHidePassword": {
+    "description": "Button that hides the typed password."
+  },
+  "signInEmptyEmail": "Type your email.",
+  "@signInEmptyEmail": {
+    "description": "Shown when the email field is empty."
+  },
+  "signInEmptyPassword": "Type your password.",
+  "@signInEmptyPassword": {
+    "description": "Shown when the password field is empty."
+  },
+  "signInNeedsInternet": "You need internet for this first sign in. After that, the app works offline too.",
+  "@signInNeedsInternet": {
+    "description": "Reassurance on the sign-in screen."
+  },
+  "signInWorking": "Signing in…",
+  "@signInWorking": {
+    "description": "Shown on the sign-in button while it works."
+  },
+  "signInChangeServer": "Use a different server",
+  "@signInChangeServer": {
+    "description": "Link that goes back to the connect screen."
+  },
+  "navToday": "Today",
+  "@navToday": {
+    "description": "Bottom navigation: today."
+  },
+  "navForms": "Forms",
+  "@navForms": {
+    "description": "Bottom navigation: forms."
+  },
+  "navSending": "Sending",
+  "@navSending": {
+    "description": "Bottom navigation: sending."
+  },
+  "navMore": "More",
+  "@navMore": {
+    "description": "Bottom navigation: more."
+  },
+  "navMainMenu": "Main menu",
+  "@navMainMenu": {
+    "description": "Spoken name of the bottom navigation bar."
+  },
+  "todayTitle": "Today",
+  "@todayTitle": {
+    "description": "Title of the home screen."
+  },
+  "offlineTitle": "You're offline.",
+  "@offlineTitle": {
+    "description": "Bold first part of the offline banner."
+  },
+  "offlineMessage": "Keep working: everything is being saved on this phone.",
+  "@offlineMessage": {
+    "description": "Second part of the offline banner."
+  },
+  "statWaiting": "Waiting to send",
+  "@statWaiting": {
+    "description": "Label under the number of forms waiting to be sent."
+  },
+  "statDrafts": "Drafts saved",
+  "@statDrafts": {
+    "description": "Label under the number of drafts."
+  },
+  "lastSyncedAt": "Last synced {when}. Waiting forms send by themselves when there is signal.",
+  "@lastSyncedAt": {
+    "description": "Last time the phone talked to the server. {when} is a time such as \"today at 9:15 am\".",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "lastSyncedNever": "Not synced yet. Connect to the internet once to get your forms and send your work.",
+  "@lastSyncedNever": {
+    "description": "Shown before the first sync."
+  },
+  "formsToFill": "Forms to fill",
+  "@formsToFill": {
+    "description": "Heading of the list of forms."
+  },
+  "formsEmptyTitle": "No forms yet",
+  "@formsEmptyTitle": {
+    "description": "Heading shown when no form is on the phone."
+  },
+  "formsEmptyBody": "Your forms appear here after the first sync. Connect to the internet, then press \"Update forms\".",
+  "@formsEmptyBody": {
+    "description": "Explains what to do when no form is on the phone."
+  },
+  "formsUpdate": "Update forms",
+  "@formsUpdate": {
+    "description": "Button that downloads new forms."
+  },
+  "formsUpdating": "Updating forms…",
+  "@formsUpdating": {
+    "description": "Shown on the update button while it works."
+  },
+  "formsUpdateFailed": "The forms could not be updated. {reason}",
+  "@formsUpdateFailed": {
+    "description": "Shown when updating forms failed; {reason} is a plain sentence.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "formMetaNew": "Start a new one",
+  "@formMetaNew": {
+    "description": "Detail line of a form card without drafts."
+  },
+  "formMetaDrafts": "{count, plural, =1{1 draft saved} other{{count} drafts saved}}",
+  "@formMetaDrafts": {
+    "description": "Detail line of a form card with drafts.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "draftsHeading": "Drafts",
+  "@draftsHeading": {
+    "description": "Heading of the list of drafts."
+  },
+  "draftSavedAt": "Saved {when}",
+  "@draftSavedAt": {
+    "description": "Detail line of a draft. {when} is a time such as \"today at 9:15 am\".",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "draftContinue": "Continue this draft",
+  "@draftContinue": {
+    "description": "Spoken hint of a draft card."
+  },
+  "signInAgainBanner": "Please sign in again to send your forms. Your answers stay on this phone.",
+  "@signInAgainBanner": {
+    "description": "Banner shown on the home screen when the session has ended."
+  },
+  "syncBlockedUpdate": "Please update the app to send your forms. Your answers are kept.",
+  "@syncBlockedUpdate": {
+    "description": "Banner shown when the app is too old for the server."
+  },
+  "syncSendingNow": "Sending…",
+  "@syncSendingNow": {
+    "description": "Shown while forms are being sent."
+  },
+  "sendingTitle": "Sending",
+  "@sendingTitle": {
+    "description": "Title of the screen that lists finished forms."
+  },
+  "sendingEmpty": "Nothing here yet. Forms you finish will show here.",
+  "@sendingEmpty": {
+    "description": "Shown when no form was finished yet."
+  },
+  "sendingNow": "Send now",
+  "@sendingNow": {
+    "description": "Button that tries to send waiting forms at once."
+  },
+  "stateQueued": "Waiting to send",
+  "@stateQueued": {
+    "description": "Status of a finished form not yet sent."
+  },
+  "stateSending": "Sending…",
+  "@stateSending": {
+    "description": "Status of a form being sent."
+  },
+  "stateSent": "Sent {when}",
+  "@stateSent": {
+    "description": "Status of a sent form. {when} is a time.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "stateProblem": "Could not send",
+  "@stateProblem": {
+    "description": "Status of a form the server refused."
+  },
+  "stateOnPhone": "Saved on this phone",
+  "@stateOnPhone": {
+    "description": "Status chip: the work is safe on this phone but not sent."
+  },
+  "sendingFinishedAt": "Finished {when}",
+  "@sendingFinishedAt": {
+    "description": "Detail line of a finished form. {when} is a time.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "questionProgress": "Question {n} of {total}",
+  "@questionProgress": {
+    "description": "Progress above a question.",
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "savedBadge": "Saved",
+  "@savedBadge": {
+    "description": "Shown after the answers were saved on the phone."
+  },
+  "closeForm": "Close form",
+  "@closeForm": {
+    "description": "Icon button that closes the form. The answers stay saved as a draft."
+  },
+  "requiredMark": "Required",
+  "@requiredMark": {
+    "description": "Word shown next to a question that must be answered."
+  },
+  "entryBack": "Back",
+  "@entryBack": {
+    "description": "Button that goes to the previous question."
+  },
+  "entryNext": "Next",
+  "@entryNext": {
+    "description": "Button that goes to the next question."
+  },
+  "entryFinish": "Finish",
+  "@entryFinish": {
+    "description": "Button on the last question."
+  },
+  "helpChooseOne": "Choose one.",
+  "@helpChooseOne": {
+    "description": "Help text of a choose-one question."
+  },
+  "helpChooseMany": "Choose all that apply.",
+  "@helpChooseMany": {
+    "description": "Help text of a choose-many question."
+  },
+  "pickDate": "Choose a date",
+  "@pickDate": {
+    "description": "What the date button says before a date is chosen."
+  },
+  "issueRequired": "Please answer this question.",
+  "@issueRequired": {
+    "description": "Shown when a required question has no answer."
+  },
+  "issueConstraint": "This answer does not look right. Please check it.",
+  "@issueConstraint": {
+    "description": "Shown when the answer breaks the form's rule and the form gives no message."
+  },
+  "issueInvalidInteger": "Type a whole number, for example 5.",
+  "@issueInvalidInteger": {
+    "description": "Shown when a whole number was expected."
+  },
+  "issueInvalidDecimal": "Type a number, for example 2.5.",
+  "@issueInvalidDecimal": {
+    "description": "Shown when a number was expected."
+  },
+  "issueInvalidDate": "Choose a date.",
+  "@issueInvalidDate": {
+    "description": "Shown when a date was expected."
+  },
+  "issueInvalidChoice": "Choose from the list.",
+  "@issueInvalidChoice": {
+    "description": "Shown when the answer is not one of the choices."
+  },
+  "issueInvalidText": "This answer could not be read. Please check it.",
+  "@issueInvalidText": {
+    "description": "Shown when text could not be accepted."
+  },
+  "unsupportedTitle": "This question type is not supported yet",
+  "@unsupportedTitle": {
+    "description": "Title of the card shown for a question the app cannot show."
+  },
+  "unsupportedBody": "This version of the app cannot show it. Your organisation can update the form or the app. You can go on to the next question.",
+  "@unsupportedBody": {
+    "description": "Explains the unsupported question card (optional question)."
+  },
+  "unsupportedRequiredBody": "This question must be answered, so this form cannot be finished yet. Your answers so far are saved. Please tell your organisation.",
+  "@unsupportedRequiredBody": {
+    "description": "Explains the unsupported question card (required question)."
+  },
+  "repeatPromptTitle": "Add another {label}?",
+  "@repeatPromptTitle": {
+    "description": "Question asked at the end of a repeated group.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatPromptTitleNoLabel": "Add another one?",
+  "@repeatPromptTitleNoLabel": {
+    "description": "Question asked at the end of a repeated group without a name."
+  },
+  "repeatAdd": "Add another",
+  "@repeatAdd": {
+    "description": "Button that adds another repeated group."
+  },
+  "repeatNoMore": "No more",
+  "@repeatNoMore": {
+    "description": "Button that goes on without adding another group."
+  },
+  "formOpenFailedTitle": "This form could not be opened",
+  "@formOpenFailedTitle": {
+    "description": "Title shown when a form cannot be opened."
+  },
+  "formNotOnPhone": "This form is not on the phone. Press \"Update forms\" on the home screen when you have internet.",
+  "@formNotOnPhone": {
+    "description": "Shown when the cached form is missing."
+  },
+  "entryBackToToday": "Back to the list",
+  "@entryBackToToday": {
+    "description": "Button on the form-open problem screen."
+  },
+  "finishTitle": "Finish and send",
+  "@finishTitle": {
+    "description": "Title of the last screen of a form."
+  },
+  "finishBackToQuestions": "Back to the questions",
+  "@finishBackToQuestions": {
+    "description": "Icon button that goes back to the questions."
+  },
+  "summaryTitle": "Summary",
+  "@summaryTitle": {
+    "description": "Heading of the summary box."
+  },
+  "summaryAnswered": "Answered",
+  "@summaryAnswered": {
+    "description": "Label in the summary box."
+  },
+  "summaryAnsweredValue": "{answered} of {total}",
+  "@summaryAnsweredValue": {
+    "description": "Value in the summary box.",
+    "placeholders": {
+      "answered": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "summaryStarted": "Started",
+  "@summaryStarted": {
+    "description": "Label in the summary box."
+  },
+  "summaryReady": "Everything is answered. You can send this form.",
+  "@summaryReady": {
+    "description": "Shown above the summary when all is answered."
+  },
+  "validationTitle": "One answer needs fixing",
+  "@validationTitle": {
+    "description": "Title of the box that lists what to fix."
+  },
+  "validationMessage": "Fix it, then send again.",
+  "@validationMessage": {
+    "description": "Text in the box that lists what to fix."
+  },
+  "validationItem": "{question}: {reason}",
+  "@validationItem": {
+    "description": "One line of the box that lists what to fix.",
+    "placeholders": {
+      "question": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "finishSend": "Send",
+  "@finishSend": {
+    "description": "Main button on the finish screen."
+  },
+  "finishSending": "Sending…",
+  "@finishSending": {
+    "description": "Shown on the send button while it works."
+  },
+  "finishKeepDraft": "Keep as a draft",
+  "@finishKeepDraft": {
+    "description": "Button that saves the form and closes it without sending."
+  },
+  "finishDraftKept": "Saved as a draft.",
+  "@finishDraftKept": {
+    "description": "Shown after the form was kept as a draft."
+  },
+  "outcomeSentTitle": "Sent",
+  "@outcomeSentTitle": {
+    "description": "Title when the server has the form."
+  },
+  "outcomeSentBody": "Your answers have reached your organisation.",
+  "@outcomeSentBody": {
+    "description": "Text when the server has the form."
+  },
+  "outcomeSentChip": "Sent {when}",
+  "@outcomeSentChip": {
+    "description": "Chip when the server has the form. {when} is a time.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "outcomeWaitingTitle": "Waiting for signal",
+  "@outcomeWaitingTitle": {
+    "description": "Title when the form is saved and will be sent later."
+  },
+  "outcomeWaitingBody": "Your answers are safely saved on this phone. They will be sent by themselves when there is signal. You do not need to do anything.",
+  "@outcomeWaitingBody": {
+    "description": "Text when the form is saved and will be sent later."
+  },
+  "outcomeWaitingCount": "{count, plural, =1{1 form is waiting to be sent.} other{{count} forms are waiting to be sent.}}",
+  "@outcomeWaitingCount": {
+    "description": "Number of forms waiting.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "outcomeProblemTitle": "Could not send",
+  "@outcomeProblemTitle": {
+    "description": "Title when sending failed."
+  },
+  "outcomeProblemSafe": "Your answers are not lost. They are saved on this phone.",
+  "@outcomeProblemSafe": {
+    "description": "Reassurance when sending failed."
+  },
+  "outcomeNext": "Start the next one",
+  "@outcomeNext": {
+    "description": "Button that starts another copy of the same form."
+  },
+  "outcomeBackToToday": "Back to today's list",
+  "@outcomeBackToToday": {
+    "description": "Button that goes to the home screen."
+  },
+  "outcomeSignIn": "Sign in again",
+  "@outcomeSignIn": {
+    "description": "Button on the problem screen when sign-in is needed."
+  },
+  "moreTitle": "More",
+  "@moreTitle": {
+    "description": "Title of the more screen."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the settings screen."
+  },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": {
+    "description": "Heading of the language setting."
+  },
+  "languageBangla": "বাংলা",
+  "@languageBangla": {
+    "description": "The Bangla language, written in Bangla."
+  },
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "The English language, written in English."
+  },
+  "settingsAccount": "Account",
+  "@settingsAccount": {
+    "description": "Heading of the account section."
+  },
+  "settingsSignedInAs": "Signed in as {name}",
+  "@settingsSignedInAs": {
+    "description": "Shows who is signed in.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSignOut": "Sign out",
+  "@settingsSignOut": {
+    "description": "Button that signs the person out."
+  },
+  "signOutConfirmTitle": "Sign out?",
+  "@signOutConfirmTitle": {
+    "description": "Title of the sign-out question."
+  },
+  "signOutNothingWaiting": "You will need to sign in again to send forms. Your drafts stay on this phone.",
+  "@signOutNothingWaiting": {
+    "description": "Sign-out question when nothing is waiting to be sent."
+  },
+  "signOutOutboxWarning": "{count, plural, =1{1 form has not been sent yet.} other{{count} forms have not been sent yet.}} They stay safe on this phone, but they can only be sent from your account. Sign in again with the same account when you have signal.",
+  "@signOutOutboxWarning": {
+    "description": "Warning before signing out while forms are unsent.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "settingsAbout": "About Obhijatra",
+  "@settingsAbout": {
+    "description": "Row that opens the About screen."
+  },
+  "settingsSection": "Settings",
+  "@settingsSection": {
+    "description": "Row that opens the settings screen."
+  },
+  "aboutTitle": "About",
+  "@aboutTitle": {
+    "description": "Title of the About screen."
+  },
+  "aboutVersion": "Version {version}",
+  "@aboutVersion": {
+    "description": "The app version.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutMadeBy": "Made by Aninda Studio",
+  "@aboutMadeBy": {
+    "description": "Credit line. Plain text in both languages."
+  },
+  "aboutLicenceHeading": "Free software",
+  "@aboutLicenceHeading": {
+    "description": "Heading of the licence notice."
+  },
+  "aboutLicenceBody": "Obhijatra is free software, shared under the GNU Affero General Public License, version 3 (AGPL-3.0). You may use it, study it, change it and share it. If you run a changed version for other people, you must share your changes under the same licence. There is no warranty.",
+  "@aboutLicenceBody": {
+    "description": "The AGPL notice."
+  },
+  "aboutSourceLink": "Get the source code",
+  "@aboutSourceLink": {
+    "description": "Link to the source code."
+  },
+  "aboutLinkFailed": "The link could not be opened. The address is {url}",
+  "@aboutLinkFailed": {
+    "description": "Shown when the source code link cannot be opened.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutLicences": "Open-source licences",
+  "@aboutLicences": {
+    "description": "Row that opens the list of licences of the parts the app is built from."
+  },
+  "problem_offline": "There is no internet connection right now. Your work is safe on this phone and will be sent when the signal returns.",
+  "@problem_offline": {
+    "description": "Plain-language explanation of the problem code \"offline\". Shown to a field officer."
+  },
+  "problem_timeout": "The connection is too slow. We will try again by ourselves.",
+  "@problem_timeout": {
+    "description": "Plain-language explanation of the problem code \"timeout\". Shown to a field officer."
+  },
+  "problem_serverError": "The server has a problem. This is not your fault. We will try again by ourselves.",
+  "@problem_serverError": {
+    "description": "Plain-language explanation of the problem code \"serverError\". Shown to a field officer."
+  },
+  "problem_serverBusy": "The server is busy. We will try again in a little while.",
+  "@problem_serverBusy": {
+    "description": "Plain-language explanation of the problem code \"serverBusy\". Shown to a field officer."
+  },
+  "problem_signInRequired": "Please sign in again to send your forms. Your answers stay on this phone.",
+  "@problem_signInRequired": {
+    "description": "Plain-language explanation of the problem code \"signInRequired\". Shown to a field officer."
+  },
+  "problem_signInFailed": "The email or password is not right, or this account is not active. Check them and try again.",
+  "@problem_signInFailed": {
+    "description": "Plain-language explanation of the problem code \"signInFailed\". Shown to a field officer."
+  },
+  "problem_accountNotPermitted": "This account is not allowed to do this. Please contact your organisation.",
+  "@problem_accountNotPermitted": {
+    "description": "Plain-language explanation of the problem code \"accountNotPermitted\". Shown to a field officer."
+  },
+  "problem_differentUser": "Forms from another person are still waiting on this phone. Sign in as that person to send them first.",
+  "@problem_differentUser": {
+    "description": "Plain-language explanation of the problem code \"differentUser\". Shown to a field officer."
+  },
+  "problem_appUpdateRequired": "This app is too old to send forms. Please update the app. Your answers are kept.",
+  "@problem_appUpdateRequired": {
+    "description": "Plain-language explanation of the problem code \"appUpdateRequired\". Shown to a field officer."
+  },
+  "problem_serverIncompatible": "This app and the server do not match. Please update the app or ask your organisation.",
+  "@problem_serverIncompatible": {
+    "description": "Plain-language explanation of the problem code \"serverIncompatible\". Shown to a field officer."
+  },
+  "problem_serverNotSetUp": "The server is not ready yet. Please ask your organisation's administrator.",
+  "@problem_serverNotSetUp": {
+    "description": "Plain-language explanation of the problem code \"serverNotSetUp\". Shown to a field officer."
+  },
+  "problem_duplicateInstance": "The server already has a different form with the same code. Your answers are kept. Please tell your organisation.",
+  "@problem_duplicateInstance": {
+    "description": "Plain-language explanation of the problem code \"duplicateInstance\". Shown to a field officer."
+  },
+  "problem_formNotOnServer": "The server does not have this version of the form. Please tell your organisation.",
+  "@problem_formNotOnServer": {
+    "description": "Plain-language explanation of the problem code \"formNotOnServer\". Shown to a field officer."
+  },
+  "problem_submissionInvalid": "The server could not accept this form. Your answers are kept. Please tell your organisation.",
+  "@problem_submissionInvalid": {
+    "description": "Plain-language explanation of the problem code \"submissionInvalid\". Shown to a field officer."
+  },
+  "problem_submissionTooLarge": "This form, with its files, is too big to send. Please tell your organisation.",
+  "@problem_submissionTooLarge": {
+    "description": "Plain-language explanation of the problem code \"submissionTooLarge\". Shown to a field officer."
+  },
+  "problem_attachmentMissing": "A photo or file of this form is missing on this phone. Please tell your organisation.",
+  "@problem_attachmentMissing": {
+    "description": "Plain-language explanation of the problem code \"attachmentMissing\". Shown to a field officer."
+  },
+  "problem_formInvalid": "This form could not be opened. Get the forms again when you have internet, or tell your organisation.",
+  "@problem_formInvalid": {
+    "description": "Plain-language explanation of the problem code \"formInvalid\". Shown to a field officer."
+  },
+  "problem_databaseKeyMissing": "The key to the saved data on this phone is missing, so the data cannot be opened. Please contact your organisation before you do anything else.",
+  "@problem_databaseKeyMissing": {
+    "description": "Plain-language explanation of the problem code \"databaseKeyMissing\". Shown to a field officer."
+  },
+  "problem_databaseKeyRejected": "The saved data on this phone could not be unlocked. Do not delete the app. Please contact your organisation.",
+  "@problem_databaseKeyRejected": {
+    "description": "Plain-language explanation of the problem code \"databaseKeyRejected\". Shown to a field officer."
+  },
+  "problem_databaseFromNewerApp": "The saved data was made by a newer version of the app. Please update the app.",
+  "@problem_databaseFromNewerApp": {
+    "description": "Plain-language explanation of the problem code \"databaseFromNewerApp\". Shown to a field officer."
+  },
+  "problem_databaseUnavailable": "The saved data on this phone could not be opened. Please restart the phone. If it happens again, contact your organisation.",
+  "@problem_databaseUnavailable": {
+    "description": "Plain-language explanation of the problem code \"databaseUnavailable\". Shown to a field officer."
+  },
+  "problem_unexpectedResponse": "The server answered in a way the app does not understand. We will try again later.",
+  "@problem_unexpectedResponse": {
+    "description": "Plain-language explanation of the problem code \"unexpectedResponse\". Shown to a field officer."
+  },
+  "problem_unknown": "Something went wrong. Your work is safe on this phone. Please try again.",
+  "@problem_unknown": {
+    "description": "Plain-language explanation of the problem code \"unknown\". Shown to a field officer."
+  }
 }
