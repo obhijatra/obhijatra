@@ -935,8 +935,9 @@ class PocketBaseApi implements ManagerApi {
     final record = await _pb
         .collection(_locations)
         .create(
+          // Never an id: the server makes it, and refuses one sent.
           body: <String, dynamic>{
-            'name': name.trim(),
+            'name': cleanPlaceName(name),
             'code': code.trim(),
             'parent': parentId,
           },
@@ -952,7 +953,7 @@ class PocketBaseApi implements ManagerApi {
     required String code,
   }) => _placeChange(() async {
     final body = <String, dynamic>{
-      if (name.trim() != place.name) 'name': name.trim(),
+      if (cleanPlaceName(name) != place.name) 'name': cleanPlaceName(name),
       if (code.trim() != place.code) 'code': code.trim(),
     };
     if (body.isEmpty) return place;

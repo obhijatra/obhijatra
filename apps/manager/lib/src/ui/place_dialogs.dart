@@ -143,7 +143,9 @@ class _PlaceEditorDialogState extends ConsumerState<_PlaceEditorDialog> {
           parentName,
         ),
         (_kName, 'validation_required') => l10n.placeErrorName,
+        (_kName, 'validation_place_text_unsafe') => l10n.placeErrorNameUnsafe,
         (_kCode, 'validation_not_unique') => l10n.placeErrorCodeTaken,
+        (_kCode, 'validation_place_text_unsafe') => l10n.placeErrorCodeUnsafe,
         (
           _kParent,
           'validation_place_parent_closed' || 'validation_place_closed',
@@ -156,7 +158,7 @@ class _PlaceEditorDialogState extends ConsumerState<_PlaceEditorDialog> {
   Future<void> _save() async {
     if (_saving) return;
     final l10n = AppLocalizations.of(context);
-    final name = _name.text.trim();
+    final name = cleanPlaceName(_name.text);
     final code = _code.text.trim();
     if (name.isEmpty) {
       setState(() {

@@ -344,6 +344,16 @@ void main() {
           greaterThan(tester.getTopLeft(fieldIn('place-code')).dy),
         );
 
+        // Characters that could hide or reorder text.
+        await typeInto(tester, 'place-name', 'East\u202E region');
+        await typeInto(tester, 'place-code', 'E');
+        await tapAndSettle(tester, find.byKey(const ValueKey('place-save')));
+        expect(find.text(l10n.placeErrorNameUnsafe), findsOneWidget);
+        await typeInto(tester, 'place-name', '  East\u00A0 region ');
+        await typeInto(tester, 'place-code', 'E\u0007');
+        await tapAndSettle(tester, find.byKey(const ValueKey('place-save')));
+        expect(find.text(l10n.placeErrorCodeUnsafe), findsOneWidget);
+
         await typeInto(tester, 'place-code', 'E');
         await tapAndSettle(tester, find.byKey(const ValueKey('place-save')));
         expect(find.text(l10n.placeAddTitle), findsNothing);
@@ -608,7 +618,12 @@ void main() {
         await tapAndSettle(tester, find.byKey(const ValueKey('places-import')));
         await scrollTo(tester, find.byKey(const ValueKey('import-choose')));
 
-        // Files that cannot be read at all.
+        // Files that cannot be read at all. A huge one is not even read.
+        picker.next = PickedFile.tooLarge('huge.csv');
+        await tapAndSettle(tester, find.byKey(const ValueKey('import-choose')));
+        expect(picker.limits, <int>[maxImportBytes]);
+        expect(find.text(l10n.importErrorTooBig), findsOneWidget);
+        expect(find.byKey(const ValueKey('import-header')), findsNothing);
         picker.next = pickedBytes('old.csv', <int>[0x43, 0x61, 0x66, 0xE9]);
         await tapAndSettle(tester, find.byKey(const ValueKey('import-choose')));
         expect(find.text(l10n.importErrorNotUtf8), findsOneWidget);

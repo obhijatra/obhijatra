@@ -25,8 +25,14 @@ class FakePicker implements FormFilePicker {
 class FakeCsvPicker implements CsvFilePicker {
   PickedFile? next;
 
+  /// The size limit the screen asked for, each time.
+  final List<int> limits = <int>[];
+
   @override
-  Future<PickedFile?> pickCsvFile() async => next;
+  Future<PickedFile?> pickCsvFile({required int maxBytes}) async {
+    limits.add(maxBytes);
+    return next;
+  }
 }
 
 PickedFile pickedText(String name, String text) =>

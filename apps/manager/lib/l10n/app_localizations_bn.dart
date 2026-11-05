@@ -2255,4 +2255,22 @@ class AppLocalizationsBn extends AppLocalizations {
 
     return 'এই সারিতে $limitStringটির বেশি স্তর আছে।';
   }
+
+  @override
+  String get placeErrorNameUnsafe =>
+      'নামে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে। নামটি আবার টাইপ করুন।';
+
+  @override
+  String get placeErrorCodeUnsafe =>
+      'কোডে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে। কোডটি আবার টাইপ করুন।';
+
+  @override
+  String importServerUnsafeName(String name) {
+    return '‘$name’ নামে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে।';
+  }
+
+  @override
+  String importServerUnsafeCode(String code) {
+    return '$code কোডে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে।';
+  }
 }

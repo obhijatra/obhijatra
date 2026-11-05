@@ -33,8 +33,9 @@ const double _pageWidth = 760;
 /// server's sentence as it is.
 @visibleForTesting
 String importProblemText(AppLocalizations l10n, PlaceImportProblem problem) {
-  final name = problem.name;
-  final value = problem.value;
+  // A refused character must not reorder or break the sentence around it.
+  final name = showUnsafeText(problem.name);
+  final value = showUnsafeText(problem.value);
   final fallback = problem.message.isNotEmpty
       ? problem.message
       : l10n.problemRejected;
@@ -51,6 +52,8 @@ String importProblemText(AppLocalizations l10n, PlaceImportProblem problem) {
       l10n.importServerCodeOther(name, value),
     'code_repeated' when value.isNotEmpty => l10n.importServerCodeTwice(value),
     'code_taken' when value.isNotEmpty => l10n.importServerCodeTaken(value),
+    'unsafe_text' when name.isNotEmpty => l10n.importServerUnsafeName(name),
+    'unsafe_text' when value.isNotEmpty => l10n.importServerUnsafeCode(value),
     _ => fallback,
   };
 }
@@ -150,7 +153,9 @@ class _PlacesImportScreenState extends ConsumerState<PlacesImportScreen> {
   }
 
   Future<void> _chooseFile() async {
-    final picked = await ref.read(csvFilePickerProvider).pickCsvFile();
+    final picked = await ref
+        .read(csvFilePickerProvider)
+        .pickCsvFile(maxBytes: maxImportBytes);
     if (picked == null || !mounted) return;
     setState(() {
       _file = picked;
@@ -175,6 +180,9 @@ class _PlacesImportScreenState extends ConsumerState<PlacesImportScreen> {
       _checking = false;
       _changedSinceCheck = false;
       try {
+        if (file.tooLarge) {
+          throw const PlaceSheetException(PlaceSheetError.tooBig);
+        }
         _sheet = readPlaceSheet(file.bytes, hasHeader: _headerChoice);
         _fileError = null;
       } on PlaceSheetException catch (error) {

@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_selector/file_selector.dart' show XFile;
 
 import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +12,7 @@ import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/places.dart';
 import 'package:obhijatra_manager/src/data/pocketbase_api.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
+import 'package:obhijatra_manager/src/state/file_picker.dart';
 import 'package:obhijatra_manager/src/ui/places_import_screen.dart';
 
 import 'support/people_fixtures.dart';
@@ -131,7 +135,7 @@ void main() {
     );
     final place = await api.createPlace(
       parentId: northRegion.id,
-      name: '  Uttara branch ',
+      name: '  Uttara\u00A0 branch\u200B ',
       code: ' UTT ',
     );
     expect(sent.method, 'POST');
@@ -141,6 +145,8 @@ void main() {
       'code': 'UTT',
       'parent': northRegion.id,
     });
+    // The server makes the id and refuses one sent.
+    expect(bodyOf(sent).containsKey('id'), isFalse);
     expect(place.parentId, northRegion.id);
     expect(place.code, 'UTT');
   });
@@ -453,6 +459,12 @@ void main() {
           'ঢাকা-১',
         ),
         problem('code_taken', value: 'N'): l10n.importServerCodeTaken('N'),
+        problem('unsafe_text', name: 'Dhaka\u202Eregion'): l10n
+            .importServerUnsafeName('Dhaka\uFFFDregion'),
+        problem('unsafe_text', value: 'D\t1'): l10n.importServerUnsafeCode(
+          'D\uFFFD1',
+        ),
+        problem('unsafe_text'): 'The server says so.',
         // Without the place or value it needs, or with a code the app does
         // not know, the server's own sentence.
         problem('place_closed'): 'The server says so.',
@@ -469,4 +481,41 @@ void main() {
       }
     }
   });
+
+  test(
+    'a spreadsheet bigger than allowed is refused without being read',
+    () async {
+      final big = await readPickedFile(
+        _SizedFile(maxImportBytes + 1),
+        maxBytes: maxImportBytes,
+      );
+      expect(big.tooLarge, isTrue);
+      expect(big.bytes, isEmpty);
+      expect(big.name, 'places.csv');
+      final small = await readPickedFile(
+        XFile.fromData(
+          Uint8List.fromList(<int>[65, 10]),
+          name: 'places.csv',
+          path: 'places.csv',
+        ),
+        maxBytes: maxImportBytes,
+      );
+      expect(small.tooLarge, isFalse);
+      expect(small.bytes, <int>[65, 10]);
+    },
+  );
+}
+
+/// A file that says how big it is and fails the test if it is read.
+class _SizedFile extends XFile {
+  _SizedFile(this.size)
+    : super.fromData(Uint8List(0), name: 'places.csv', path: 'places.csv');
+
+  final int size;
+
+  @override
+  Future<int> length() async => size;
+
+  @override
+  Future<Uint8List> readAsBytes() => fail('the file was read');
 }

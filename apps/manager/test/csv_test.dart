@@ -320,5 +320,84 @@ void main() {
         ],
       );
     });
+
+    test('names are cleaned and compared as the server does', () {
+      final directory = PlaceDirectory(samplePlaces);
+      final preview = previewImport(
+        directory,
+        headOffice,
+        const <PlaceImportRow>[
+          // No-break spaces, a line break, a zero-width space and a soft
+          // hyphen: still North region.
+          PlaceImportRow(
+            line: 2,
+            path: <String>[
+              'North\u00A0 \nREGION\u200B',
+              'Mir\u00ADpur  branch',
+            ],
+          ),
+          // A name that is only invisible characters is left out.
+          PlaceImportRow(line: 3, path: <String>['\u2060\uFEFF', 'Banani']),
+        ],
+      );
+      expect(
+        preview.map((n) => (n.name, n.depth, n.isNew)).toList(),
+        <(String, int, bool)>[
+          ('North region', 0, false),
+          ('Mirpur branch', 1, false),
+          ('Banani', 0, true),
+        ],
+      );
+    });
+  });
+
+  group('place names, as the server cleans and compares them', () {
+    test('invisible characters go, spaces collapse, ends are trimmed', () {
+      expect(
+        cleanPlaceName('  Mirpur\u00A0\u00A0 -10\t\r\nbranch\u200B  '),
+        'Mirpur -10 branch',
+      );
+      expect(cleanPlaceName('\uFEFFDha\u00ADka\u2060'), 'Dhaka');
+      expect(cleanPlaceName('\u200B \u3000'), isEmpty);
+      // Bangla joiners choose letter shapes, so they stay.
+      expect(cleanPlaceName('র\u200D্য'), 'র\u200D্য');
+      expect(cleanPlaceName('মিরপুর\u2028শাখা'), 'মিরপুর শাখা');
+    });
+
+    test('capitals are ignored letter by letter, as Go folds them', () {
+      expect(placeNameKey(' NORTH  Region '), placeNameKey('north region'));
+      expect(placeNameKey('ΟΔΟΣ'), placeNameKey('οδος'));
+      expect(placeNameKey('ſ'), placeNameKey('S'));
+      expect(placeNameKey('\u212A'), placeNameKey('k'), reason: 'Kelvin');
+      expect(placeNameKey('Straße'), isNot(placeNameKey('Strasse')));
+      expect(placeNameKey('ঢাকা অঞ্চল'), 'ঢাকা অঞ্চল');
+    });
+
+    test('control and direction-changing characters are unsafe, and shown '
+        'as a visible mark', () {
+      for (final rune in <int>[0x00, 0x09, 0x0A, 0x7F, 0x85, 0x202E, 0x2066]) {
+        expect(isUnsafeTextRune(rune), isTrue, reason: rune.toRadixString(16));
+      }
+      for (final rune in <int>[0x20, 0x41, 0x200D, 0x09A2, 0x2028]) {
+        expect(isUnsafeTextRune(rune), isFalse, reason: rune.toRadixString(16));
+      }
+      expect(showUnsafeText('Dhaka\u202Eregion\n'), 'Dhaka\uFFFDregion\uFFFD');
+    });
+
+    test(
+      'a spreadsheet\'s names are cleaned before they are checked or sent',
+      () {
+        final sheet = readPlaceSheet(
+          bytesOf(
+            'Region,Area\n'
+            '"North\u00A0region\n",\u200B\n'
+            '\u200B,Mirpur area\n',
+          ),
+        );
+        expect(sheet.rows.single.path, <String>['North region']);
+        expect(sheet.problems.single.error, PlaceRowError.gap);
+        expect(sheet.problems.single.line, 4);
+      },
+    );
   });
 }

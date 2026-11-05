@@ -669,11 +669,27 @@ class FakeManagerApi implements ManagerApi {
     if (name.isEmpty) {
       throw _refusal('name', 'validation_required', 'Give the place a name.');
     }
+    if (name.runes.any(isUnsafeTextRune)) {
+      throw _refusal(
+        'name',
+        'validation_place_text_unsafe',
+        'The name has a line break or a hidden control character. Type it '
+            'again.',
+      );
+    }
+    if (code.runes.any(isUnsafeTextRune)) {
+      throw _refusal(
+        'code',
+        'validation_place_text_unsafe',
+        'The code has a line break or a hidden control character. Type it '
+            'again.',
+      );
+    }
     final taken = places.any(
       (p) =>
           p.id != id &&
           p.parentId == parentId &&
-          p.name.trim().toLowerCase() == name.toLowerCase(),
+          placeNameKey(p.name) == placeNameKey(name),
     );
     if (taken) {
       throw _refusal(
@@ -715,13 +731,13 @@ class FakeManagerApi implements ManagerApi {
     _checkPlace(
       id: '',
       parentId: parentId,
-      name: name.trim(),
+      name: cleanPlaceName(name),
       code: code.trim(),
     );
     final id = 'newplace${(++_placeIds).toString().padLeft(7, '0')}';
     final place = Place(
       id: id,
-      name: name.trim(),
+      name: cleanPlaceName(name),
       code: code.trim(),
       parentId: parentId,
       path: '${parent.path}$id/',
@@ -742,12 +758,12 @@ class FakeManagerApi implements ManagerApi {
     _checkPlace(
       id: place.id,
       parentId: place.parentId,
-      name: name.trim(),
+      name: cleanPlaceName(name),
       code: code.trim(),
     );
     final updated = Place(
       id: place.id,
-      name: name.trim(),
+      name: cleanPlaceName(name),
       code: code.trim(),
       parentId: place.parentId,
       path: place.path,
@@ -866,15 +882,33 @@ class FakeManagerApi implements ManagerApi {
     var created = 0;
     var existing = 0;
     for (final row in rows) {
+      // Cleaned and compared as the server does.
+      final names = <String>[
+        for (final name in row.path)
+          if (cleanPlaceName(name).isNotEmpty) cleanPlaceName(name),
+      ];
+      final unsafe = names.where((n) => n.runes.any(isUnsafeTextRune));
+      if (unsafe.isNotEmpty || row.code.runes.any(isUnsafeTextRune)) {
+        problems.add(
+          PlaceImportProblem(
+            line: row.line,
+            code: 'unsafe_text',
+            name: unsafe.firstOrNull ?? '',
+            value: unsafe.isEmpty ? row.code : '',
+            message: 'This row has a line break or a hidden control character.',
+          ),
+        );
+        continue;
+      }
       var current = parent;
-      for (var depth = 0; depth < row.path.length; depth++) {
-        final name = row.path[depth].trim();
-        final key = '${current.id}/${name.toLowerCase()}';
+      for (var depth = 0; depth < names.length; depth++) {
+        final name = names[depth];
+        final key = '${current.id}/${placeNameKey(name)}';
         final stored = places
             .where(
               (p) =>
                   p.parentId == current.id &&
-                  p.name.trim().toLowerCase() == name.toLowerCase(),
+                  placeNameKey(p.name) == placeNameKey(name),
             )
             .firstOrNull;
         if (stored != null && stored.closed) {
@@ -890,7 +924,7 @@ class FakeManagerApi implements ManagerApi {
           );
           break;
         }
-        final last = depth == row.path.length - 1;
+        final last = depth == names.length - 1;
         if (last &&
             row.code.isNotEmpty &&
             places.any(

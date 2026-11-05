@@ -129,6 +129,91 @@ class PlaceImportResult {
 
 String _text(Object? value) => value is String ? value : '';
 
+// ---------------------------------------------------------------- names
+
+/// Characters that change nothing a person can see in a place name, which
+/// the server removes: zero-width space, word joiner, byte order mark and
+/// soft hyphen. Zero-width joiner and non-joiner stay: Bangla uses them to
+/// choose letter shapes.
+const Set<int> _invisible = <int>{0x200B, 0x2060, 0xFEFF, 0x00AD};
+
+/// Whether [rune] is white space as the server counts it (Go's
+/// `unicode.IsSpace`): spaces, tabs, line breaks, no-break spaces and the
+/// other Unicode spaces.
+bool _isSpace(int rune) => switch (rune) {
+  0x09 || 0x0A || 0x0B || 0x0C || 0x0D || 0x20 || 0x85 || 0xA0 => true,
+  0x1680 || 0x2028 || 0x2029 || 0x202F || 0x205F || 0x3000 => true,
+  >= 0x2000 && <= 0x200A => true,
+  _ => false,
+};
+
+/// A place name as the server stores it (server/internal/schema/
+/// placename.go): invisible characters removed, every run of white space
+/// (line breaks and no-break spaces too) one space, trimmed.
+///
+/// The server also puts the name in Unicode NFC first, so a Bangla letter
+/// typed as one character or as two is the same text. Dart cannot do that
+/// without a package the app does not have, so such a name may show as
+/// new in the preview and then be found by the server.
+String cleanPlaceName(String name) {
+  final out = StringBuffer();
+  var space = false;
+  for (final rune in name.runes) {
+    if (_invisible.contains(rune)) continue;
+    if (_isSpace(rune)) {
+      space = true;
+      continue;
+    }
+    if (space && out.isNotEmpty) out.write(' ');
+    space = false;
+    out.writeCharCode(rune);
+  }
+  return out.toString();
+}
+
+/// What two place names share when the server counts them as the same
+/// name: the clean name with capitals ignored, letter by letter, as Go's
+/// case folding does (so Σ, σ and ς match, and ß stays different from
+/// "ss").
+String placeNameKey(String name) {
+  final out = StringBuffer();
+  for (final rune in cleanPlaceName(name).runes) {
+    out.write(_fold(rune));
+  }
+  return out.toString();
+}
+
+/// One letter in a single case form, or the letter itself when changing
+/// its case would change how many letters it is.
+String _fold(int rune) {
+  final letter = String.fromCharCode(rune);
+  // The Turkish dotless i has no other case form for the server.
+  if (rune == 0x0131) return letter;
+  final upper = letter.toUpperCase();
+  if (upper.runes.length == 1) {
+    final lower = upper.toLowerCase();
+    if (lower.runes.length == 1) return lower;
+  }
+  final lower = letter.toLowerCase();
+  return lower.runes.length == 1 ? lower : letter;
+}
+
+/// Whether [rune] has no place in a name or code (server/internal/schema/
+/// placename.go `UnsafeTextRune`): control characters such as line breaks
+/// and tabs, and the characters that make text show in a misleading order.
+bool isUnsafeTextRune(int rune) =>
+    rune <= 0x1F ||
+    (rune >= 0x7F && rune <= 0x9F) ||
+    (rune >= 0x202A && rune <= 0x202E) ||
+    (rune >= 0x2066 && rune <= 0x2069);
+
+/// [text] safe to show inside a sentence: each character the server
+/// refuses becomes a visible replacement mark, so it cannot reorder or
+/// break the words around it.
+String showUnsafeText(String text) => String.fromCharCodes(<int>[
+  for (final rune in text.runes) isUnsafeTextRune(rune) ? 0xFFFD : rune,
+]);
+
 // ------------------------------------------------------------ the file
 
 /// Why a spreadsheet file cannot be used at all.
@@ -304,7 +389,8 @@ const Set<String> _levelWords = <String>{
 bool looksLikeHeader(List<CsvRecord> records) {
   if (records.isEmpty) return false;
   final first = <String>[
-    for (final field in records.first.fields) field.trim().toLowerCase(),
+    for (final field in records.first.fields)
+      cleanPlaceName(field).toLowerCase(),
   ];
   if (first.any(_codeNames.contains)) return true;
   final numberedLevel = RegExp(r'^(level|স্তর)\s*[\d০-৯]+$');
@@ -317,7 +403,7 @@ bool looksLikeHeader(List<CsvRecord> records) {
   if (top.isEmpty) return true;
   for (final record in records.skip(1)) {
     if (record.fields.isNotEmpty &&
-        record.fields.first.trim().toLowerCase() == top) {
+        placeNameKey(record.fields.first) == placeNameKey(top)) {
       return false;
     }
   }
@@ -362,9 +448,9 @@ PlaceSheet readPlaceSheet(Uint8List bytes, {bool? hasHeader}) {
   if (header) {
     final names = filled.first.fields;
     for (var i = names.length - 1; i >= 0; i--) {
-      if (_codeNames.contains(names[i].trim().toLowerCase())) {
+      if (_codeNames.contains(cleanPlaceName(names[i]).toLowerCase())) {
         codeIndex = i;
-        codeColumn = names[i].trim();
+        codeColumn = cleanPlaceName(names[i]);
         break;
       }
     }
@@ -385,11 +471,11 @@ PlaceSheet readPlaceSheet(Uint8List bytes, {bool? hasHeader}) {
     final code = codeIndex >= 0 && codeIndex < record.fields.length
         ? record.fields[codeIndex].trim()
         : '';
-    // The names with their columns, without the code and without the
-    // empty cells at the end of the row.
+    // The names with their columns, cleaned as the server cleans them,
+    // without the code and without the empty cells at the end of the row.
     final cells = <(int, String)>[
       for (var i = 0; i < record.fields.length; i++)
-        if (i != codeIndex) (i, record.fields[i].trim()),
+        if (i != codeIndex) (i, cleanPlaceName(record.fields[i])),
     ];
     while (cells.isNotEmpty && cells.last.$2.isEmpty) {
       cells.removeLast();
@@ -429,7 +515,7 @@ PlaceSheet readPlaceSheet(Uint8List bytes, {bool? hasHeader}) {
     columnNames: header
         ? <String>[
             for (final name in filled.first.fields)
-              if (name.trim().isNotEmpty) name.trim(),
+              if (cleanPlaceName(name).isNotEmpty) cleanPlaceName(name),
           ]
         : const <String>[],
   );
@@ -496,15 +582,15 @@ class _Node {
 }
 
 /// The places [rows] name, as they will sit inside [parent]: in the order
-/// of the file, each followed by the places inside it. A name already
-/// used at that level (ignoring capitals and spaces round it) is the same
-/// place, as the server decides.
+/// of the file, each followed by the places inside it. Names are cleaned
+/// and compared as the server does ([cleanPlaceName], [placeNameKey]): a
+/// name already used at that level is the same place, and a name that is
+/// empty once cleaned is left out.
 List<PlacePreviewNode> previewImport(
   PlaceDirectory directory,
   Place parent,
   List<PlaceImportRow> rows,
 ) {
-  String key(String name) => name.trim().toLowerCase();
   void load(_Node node) {
     if (node.loaded) return;
     node.loaded = true;
@@ -512,8 +598,8 @@ List<PlacePreviewNode> previewImport(
     if (place == null) return;
     for (final child in directory.childrenOf(place.id)) {
       node.children.putIfAbsent(
-        key(child.name),
-        () => _Node(child.name.trim(), place: child),
+        placeNameKey(child.name),
+        () => _Node(child.name, place: child),
       );
     }
   }
@@ -522,12 +608,19 @@ List<PlacePreviewNode> previewImport(
   final seen = <_Node>{};
   final order = <_Node, List<_Node>>{};
   for (final row in rows) {
+    final names = <String>[
+      for (final name in row.path)
+        if (cleanPlaceName(name).isNotEmpty) cleanPlaceName(name),
+    ];
     var current = top;
-    for (var depth = 0; depth < row.path.length; depth++) {
+    for (var depth = 0; depth < names.length; depth++) {
       load(current);
-      final name = row.path[depth].trim();
-      final next = current.children.putIfAbsent(key(name), () => _Node(name));
-      if (depth == row.path.length - 1 &&
+      final name = names[depth];
+      final next = current.children.putIfAbsent(
+        placeNameKey(name),
+        () => _Node(name),
+      );
+      if (depth == names.length - 1 &&
           row.code.isNotEmpty &&
           next.code.isEmpty &&
           (next.place?.code ?? '').isEmpty) {

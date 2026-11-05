@@ -6,13 +6,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// A file the person chose.
 class PickedFile {
   /// Creates a picked file.
-  const PickedFile({required this.name, required this.bytes});
+  const PickedFile({
+    required this.name,
+    required this.bytes,
+    this.tooLarge = false,
+  });
+
+  /// A file that was not read because it is bigger than allowed.
+  PickedFile.tooLarge(this.name) : bytes = Uint8List(0), tooLarge = true;
 
   /// File name without folders.
   final String name;
 
-  /// The whole file.
+  /// The whole file; empty when [tooLarge].
   final Uint8List bytes;
+
+  /// Whether the file is bigger than allowed and so was not read.
+  final bool tooLarge;
+}
+
+/// Reads [file], unless it is bigger than [maxBytes]: its size is asked
+/// first, so a huge file is never read into memory (a browser tab could
+/// run out of it).
+Future<PickedFile> readPickedFile(XFile file, {required int maxBytes}) async {
+  if (await file.length() > maxBytes) return PickedFile.tooLarge(file.name);
+  return PickedFile(name: file.name, bytes: await file.readAsBytes());
 }
 
 /// Asks the person for a form file. Tests replace it.
@@ -47,8 +65,10 @@ final formFilePickerProvider = Provider<FormFilePicker>(
 /// Asks the person for a spreadsheet saved as CSV. Tests replace it.
 // ignore: one_member_abstracts
 abstract interface class CsvFilePicker {
-  /// Opens the system file chooser; null when the person cancels.
-  Future<PickedFile?> pickCsvFile();
+  /// Opens the system file chooser; null when the person cancels. A file
+  /// bigger than [maxBytes] is not read: it comes back
+  /// [PickedFile.tooLarge].
+  Future<PickedFile?> pickCsvFile({required int maxBytes});
 }
 
 /// The real chooser (web, Windows and macOS).
@@ -57,7 +77,7 @@ class SystemCsvFilePicker implements CsvFilePicker {
   const SystemCsvFilePicker();
 
   @override
-  Future<PickedFile?> pickCsvFile() async {
+  Future<PickedFile?> pickCsvFile({required int maxBytes}) async {
     const group = XTypeGroup(
       label: 'CSV',
       extensions: <String>['csv'],
@@ -66,7 +86,7 @@ class SystemCsvFilePicker implements CsvFilePicker {
     );
     final file = await openFile(acceptedTypeGroups: <XTypeGroup>[group]);
     if (file == null) return null;
-    return PickedFile(name: file.name, bytes: await file.readAsBytes());
+    return readPickedFile(file, maxBytes: maxBytes);
   }
 }
 

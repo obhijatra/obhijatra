@@ -2255,4 +2255,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
     return 'This row has more than $limitString levels.';
   }
+
+  @override
+  String get placeErrorNameUnsafe =>
+      'The name has a line break or a hidden control character. Type it again.';
+
+  @override
+  String get placeErrorCodeUnsafe =>
+      'The code has a line break or a hidden control character. Type it again.';
+
+  @override
+  String importServerUnsafeName(String name) {
+    return 'The name ‘$name’ has a line break or a hidden control character.';
+  }
+
+  @override
+  String importServerUnsafeCode(String code) {
+    return 'The code $code has a line break or a hidden control character.';
+  }
 }

@@ -2734,5 +2734,31 @@
         "format": "decimalPattern"
       }
     }
+  },
+  "placeErrorNameUnsafe": "The name has a line break or a hidden control character. Type it again.",
+  "@placeErrorNameUnsafe": {
+    "description": "Problem: the name has a character the server refuses."
+  },
+  "placeErrorCodeUnsafe": "The code has a line break or a hidden control character. Type it again.",
+  "@placeErrorCodeUnsafe": {
+    "description": "Problem: the code has a character the server refuses."
+  },
+  "importServerUnsafeName": "The name ‘{name}’ has a line break or a hidden control character.",
+  "@importServerUnsafeName": {
+    "description": "Row problem from the server: a name has a character it refuses.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importServerUnsafeCode": "The code {code} has a line break or a hidden control character.",
+  "@importServerUnsafeCode": {
+    "description": "Row problem from the server: a code has a character it refuses.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
   }
 }

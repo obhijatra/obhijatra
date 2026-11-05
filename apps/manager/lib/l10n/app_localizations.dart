@@ -3427,6 +3427,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This row has more than {limit} levels.'**
   String importProblemTooDeep(int limit);
+
+  /// Problem: the name has a character the server refuses.
+  ///
+  /// In en, this message translates to:
+  /// **'The name has a line break or a hidden control character. Type it again.'**
+  String get placeErrorNameUnsafe;
+
+  /// Problem: the code has a character the server refuses.
+  ///
+  /// In en, this message translates to:
+  /// **'The code has a line break or a hidden control character. Type it again.'**
+  String get placeErrorCodeUnsafe;
+
+  /// Row problem from the server: a name has a character it refuses.
+  ///
+  /// In en, this message translates to:
+  /// **'The name ‘{name}’ has a line break or a hidden control character.'**
+  String importServerUnsafeName(String name);
+
+  /// Row problem from the server: a code has a character it refuses.
+  ///
+  /// In en, this message translates to:
+  /// **'The code {code} has a line break or a hidden control character.'**
+  String importServerUnsafeCode(String code);
 }
 
 class _AppLocalizationsDelegate

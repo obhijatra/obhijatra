@@ -556,5 +556,9 @@
   "importServerCodeTwice": "এই ফাইলে {code} কোডটি একাধিকবার ব্যবহার হয়েছে। প্রতিটি স্থানের কোড আলাদা হতে হবে।",
   "importServerCodeTaken": "অন্য একটি স্থানের কোড আগে থেকেই {code}। অন্য একটি কোড বেছে নিন।",
   "importProblemNoName": "এই সারিতে কোনো স্থানের নাম নেই।",
-  "importProblemTooDeep": "এই সারিতে {limit}টির বেশি স্তর আছে।"
+  "importProblemTooDeep": "এই সারিতে {limit}টির বেশি স্তর আছে।",
+  "placeErrorNameUnsafe": "নামে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে। নামটি আবার টাইপ করুন।",
+  "placeErrorCodeUnsafe": "কোডে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে। কোডটি আবার টাইপ করুন।",
+  "importServerUnsafeName": "‘{name}’ নামে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে।",
+  "importServerUnsafeCode": "{code} কোডে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে।"
 }
