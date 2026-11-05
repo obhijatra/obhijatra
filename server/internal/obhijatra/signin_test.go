@@ -361,10 +361,10 @@ func TestPhoneSignInWorksEndToEnd(t *testing.T) {
 		t.Errorf("a used code worked again: %d", status)
 	}
 
-	// The settings screen shows the last send, without the key the
-	// provider repeated.
+	// The settings screen shows that the last send worked, but never the
+	// provider's reply to a code, which may repeat the code.
 	_, body = call(mux, http.MethodGet, settingsURL, testutil.Token(t, o.Admin), nil)
-	if !strings.Contains(body, `"ok":true`) || strings.Contains(body, smsSecret) || !strings.Contains(body, "[key hidden]") {
+	if !strings.Contains(body, `"ok":true`) || strings.Contains(body, code) || strings.Contains(body, smsSecret) {
 		t.Errorf("last send: %s", body)
 	}
 	if r, err := audit.Verify(app); err != nil || !r.OK {
@@ -480,8 +480,8 @@ func TestPhoneCodeExpiresAndFollowsTheAccount(t *testing.T) {
 	// Expired.
 	_, r, _ := askForCode(t, mux, schema.FieldUsers, field1Phone)
 	code := codeOf(t, waitSMS(t, got))
-	old := time.Now().UTC().Add(-schema.PhoneCodeLifetime - time.Minute).Format("2006-01-02 15:04:05.000Z")
-	exec(t, app, "UPDATE _otps SET created = {:t} WHERE id = {:id}", dbx.Params{"t": old, "id": r.CodeID})
+	old := time.Now().UTC().Add(-schema.PhoneCodeLifetime - time.Minute).UnixMilli()
+	exec(t, app, "UPDATE "+schema.PhoneCodesTable+" SET created = {:t} WHERE id = {:id}", dbx.Params{"t": old, "id": r.CodeID})
 	if status, _ := checkCode(mux, r.CodeID, code); status != http.StatusBadRequest {
 		t.Error("an expired code worked")
 	}
@@ -520,8 +520,9 @@ func TestTestSMS(t *testing.T) {
 	}
 
 	status, resp := call(mux, http.MethodPost, testSMSURL, testutil.Token(t, o.Admin), body)
-	if status != http.StatusOK || !strings.Contains(resp, `"ok":true`) || strings.Contains(resp, smsSecret) {
-		t.Fatalf("test SMS: %d %s", status, resp)
+	if status != http.StatusOK || !strings.Contains(resp, `"ok":true`) || strings.Contains(resp, smsSecret) ||
+		!strings.Contains(resp, "[key hidden]") {
+		t.Fatalf("test SMS (the provider repeats the key; it must be hidden): %d %s", status, resp)
 	}
 	m := waitSMS(t, got)
 	if !strings.Contains(m.body, signin.TestMessage) || !strings.Contains(m.body, `"to":"8801744444444"`) {
@@ -589,16 +590,26 @@ func TestGoogleSignInReachesOnlyExistingConfirmedAccounts(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	gmailUser := testutil.User(t, app, schema.FieldUsers, "rahima.sample@gmail.com", schema.RoleFieldOfficer, o.Branch1, true)
+
+	// A Google Workspace account carries its domain ("hd"); a Gmail
+	// account does not need one; any other address has none.
 	profile := func(email string, verified bool) map[string]any {
-		return map[string]any{"sub": "g-" + email, "email": email, "email_verified": verified, "name": "Someone"}
+		return map[string]any{"sub": "g-" + email, "email": email, "email_verified": verified, "name": "Someone", "hd": "example.org"}
 	}
+	unmanaged := profile("field2@example.org", true)
+	delete(unmanaged, "hd")
+	gmail := profile("rahima.sample@gmail.com", true)
+	delete(gmail, "hd")
 	google := fakeGoogle(t, map[string]map[string]any{
 		"field1":      profile("Field1@example.org", true), // case differs
 		"admin":       profile("admin@example.org", true),
+		"gmail":       gmail,
 		"stranger":    profile("stranger@example.org", true),
 		"unconfirmed": profile("new@example.org", true),
 		"gone":        profile("gone1@example.org", true),
 		"noemail":     profile("field2@example.org", false),
+		"unmanaged":   unmanaged,
 	})
 
 	status, body := putSignInSettings(t, mux, o.Admin, map[string]any{
@@ -633,6 +644,8 @@ func TestGoogleSignInReachesOnlyExistingConfirmedAccounts(t *testing.T) {
 	}{
 		{"existing field user", schema.FieldUsers, "field1", "", http.StatusOK, o.Field1.Id},
 		{"org admin", schema.StaffUsers, "admin", "", http.StatusOK, o.Admin.Id},
+		{"Gmail address", schema.FieldUsers, "gmail", "", http.StatusOK, gmailUser.Id},
+		{"address Google cannot vouch for", schema.FieldUsers, "unmanaged", "", http.StatusBadRequest, `"code":"google_email_not_managed"`},
 		{"no account", schema.FieldUsers, "stranger", "", http.StatusBadRequest, `"code":"google_no_account"`},
 		{"account not confirmed", schema.FieldUsers, "unconfirmed", "", http.StatusBadRequest, `"code":"google_email_unconfirmed"`},
 		{"deactivated", schema.FieldUsers, "gone", "", http.StatusBadRequest, `"code":"account_not_allowed"`},
@@ -652,8 +665,8 @@ func TestGoogleSignInReachesOnlyExistingConfirmedAccounts(t *testing.T) {
 	if usersAfter, _ := app.CountRecords(schema.FieldUsers); usersAfter != usersBefore {
 		t.Errorf("Google sign-in created accounts: %d before, %d after", usersBefore, usersAfter)
 	}
-	if links, _ := app.CountRecords(core.CollectionNameExternalAuths); links != 2 {
-		t.Errorf("Google links: %d, want 2 (field1 and admin)", links)
+	if links, _ := app.CountRecords(core.CollectionNameExternalAuths); links != 3 {
+		t.Errorf("Google links: %d, want 3 (field1, admin and the Gmail user)", links)
 	}
 
 	// The link stops working when an admin changes the email address.
@@ -750,5 +763,214 @@ func TestUnlockByPhoneNumber(t *testing.T) {
 	}
 	if locked, _ := lockout.Locked(app, o.Field1, defaultIP); locked {
 		t.Error("still locked")
+	}
+}
+
+// ---------------------------------------------------------------------
+// Findings of the security review (5 November 2026)
+// ---------------------------------------------------------------------
+
+func TestPhoneCodeGuessesSideBySideStillGetThreeTries(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	srv, got := fakeSMSProvider(t)
+	enablePhone(t, mux, o.Admin, srv)
+	setPhone(t, app, o.Field1, field1Phone)
+
+	_, r, _ := askForCode(t, mux, schema.FieldUsers, field1Phone)
+	code := codeOf(t, waitSMS(t, got))
+
+	// 30 wrong guesses at once, then the right code: at most three
+	// guesses are checked, so the right code no longer works.
+	const guesses = 30
+	statuses := make(chan int, guesses)
+	for i := 0; i < guesses; i++ {
+		go func(i int) {
+			guess := fmt.Sprintf("%06d", i)
+			if guess == code {
+				guess = wrongCodeFor(code)
+			}
+			status, _ := callFrom(mux, fmt.Sprintf("198.51.100.%d", i+1), http.MethodPost, verifyURL, "",
+				map[string]string{"code_id": r.CodeID, "code": guess})
+			statuses <- status
+		}(i)
+	}
+	for i := 0; i < guesses; i++ {
+		if s := <-statuses; s != http.StatusBadRequest {
+			t.Errorf("a wrong guess got %d", s)
+		}
+	}
+	if n := failureCount(t, app, o.Field1); n > schema.PhoneCodeMaxTries {
+		t.Errorf("%d guesses were checked, want at most %d", n, schema.PhoneCodeMaxTries)
+	}
+	if status, _ := checkCode(mux, r.CodeID, code); status != http.StatusBadRequest {
+		t.Error("the right code worked after the tries were used up")
+	}
+}
+
+func TestPhoneCodeSignsInOnceEvenSideBySide(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	srv, got := fakeSMSProvider(t)
+	enablePhone(t, mux, o.Admin, srv)
+	setPhone(t, app, o.Field1, field1Phone)
+
+	_, r, _ := askForCode(t, mux, schema.FieldUsers, field1Phone)
+	code := codeOf(t, waitSMS(t, got))
+
+	statuses := make(chan int, 3)
+	for i := 0; i < 3; i++ {
+		go func() {
+			status, _ := checkCode(mux, r.CodeID, code)
+			statuses <- status
+		}()
+	}
+	ok := 0
+	for i := 0; i < 3; i++ {
+		if <-statuses == http.StatusOK {
+			ok++
+		}
+	}
+	if ok != 1 {
+		t.Fatalf("one code signed in %d times", ok)
+	}
+}
+
+func TestPhoneCodeLimitHoldsForRequestsSideBySide(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	srv, got := fakeSMSProvider(t)
+	enablePhone(t, mux, o.Admin, srv)
+	setPhone(t, app, o.Field1, field1Phone)
+
+	const requests = 30
+	statuses := make(chan int, requests)
+	for i := 0; i < requests; i++ {
+		go func(i int) {
+			status, _ := callFrom(mux, fmt.Sprintf("198.51.100.%d", i+1), http.MethodPost, codeURL, "",
+				map[string]string{"collection": schema.FieldUsers, "phone": field1Phone})
+			statuses <- status
+		}(i)
+	}
+	accepted := 0
+	for i := 0; i < requests; i++ {
+		if <-statuses == http.StatusOK {
+			accepted++
+		}
+	}
+	if accepted != schema.PhoneCodesPerWindow {
+		t.Errorf("%d code requests accepted, want %d", accepted, schema.PhoneCodesPerWindow)
+	}
+	for i := 0; i < accepted; i++ {
+		waitSMS(t, got)
+	}
+	noSMS(t, got)
+}
+
+func TestPhoneCodeRequestsDoNotGrowTheAuditChain(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	srv, got := fakeSMSProvider(t)
+	enablePhone(t, mux, o.Admin, srv)
+	setPhone(t, app, o.Field1, field1Phone)
+
+	before := auditCount(t, app)
+	_, r, _ := askForCode(t, mux, schema.FieldUsers, field1Phone)
+	code := codeOf(t, waitSMS(t, got))
+	askForCode(t, mux, schema.FieldUsers, "+8801799999999")
+	checkCode(mux, r.CodeID, wrongCodeFor(code))
+	checkCode(mux, "aaaaaaaaaaaaaaa", "123456")
+	if after := auditCount(t, app); after != before {
+		t.Errorf("strangers' requests added %d audit entries", after-before)
+	}
+}
+
+func TestStoredSMSKeyGoesOnlyToTheSameProvider(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	srv, got := fakeSMSProvider(t)
+	enablePhone(t, mux, o.Admin, srv)
+
+	elsewhere := gatewayFor(srv)
+	elsewhere["secret"] = ""
+	elsewhere["url"] = "https://collector.example.net/x?leak={secret}&to={phone}"
+	status, body := putSignInSettings(t, mux, o.Admin, map[string]any{"phone": map[string]any{"enabled": true, "sms": elsewhere}})
+	if status != http.StatusBadRequest || !strings.Contains(body, `"phone.sms.secret"`) || !strings.Contains(body, "Type the secret key again") {
+		t.Errorf("saving a new provider address without the key: %d %s", status, body)
+	}
+	status, body = call(mux, http.MethodPost, testSMSURL, testutil.Token(t, o.Admin),
+		map[string]any{"phone": "+8801744444444", "sms": elsewhere})
+	if status != http.StatusBadRequest || !strings.Contains(body, `"sms.secret"`) {
+		t.Errorf("test SMS to a new provider address without the key: %d %s", status, body)
+	}
+	noSMS(t, got)
+
+	placeholderHost := gatewayFor(srv)
+	placeholderHost["url"] = "https://{secret}.example.net/send?to={phone}"
+	if status, body := putSignInSettings(t, mux, o.Admin, map[string]any{"phone": map[string]any{"enabled": true, "sms": placeholderHost}}); status != http.StatusBadRequest {
+		t.Errorf("a placeholder in the server name: %d %s", status, body)
+	}
+
+	// Same provider, another path: the stored key is kept.
+	samePlace := gatewayFor(srv)
+	samePlace["secret"] = ""
+	samePlace["url"] = srv.URL + "/v2/send?key={secret}"
+	if status, body := putSignInSettings(t, mux, o.Admin, map[string]any{"phone": map[string]any{"enabled": true, "sms": samePlace}}); status != http.StatusOK {
+		t.Errorf("same provider without the key: %d %s", status, body)
+	}
+}
+
+func TestChangingSignInDetailsEndsSessions(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	srv, got := fakeSMSProvider(t)
+	enablePhone(t, mux, o.Admin, srv)
+	setPhone(t, app, o.Sup1, "+8801733333333")
+
+	_, r, _ := askForCode(t, mux, schema.StaffUsers, "+8801733333333")
+	status, body := checkCode(mux, r.CodeID, codeOf(t, waitSMS(t, got)))
+	if status != http.StatusOK {
+		t.Fatalf("SMS sign-in: %d %s", status, body)
+	}
+	var auth struct {
+		Token string `json:"token"`
+	}
+	_ = json.Unmarshal([]byte(body), &auth)
+
+	// The admin promotes the supervisor (or changes the number after a SIM
+	// swap): the session started by SMS ends.
+	sup, _ := app.FindRecordById(schema.StaffUsers, o.Sup1.Id)
+	sup.Set("role", schema.RoleOrgAdmin)
+	if err := app.Save(sup); err != nil {
+		t.Fatal(err)
+	}
+	if status, body := call(mux, http.MethodPost, "/api/collections/staff_users/auth-refresh", auth.Token, nil); status == http.StatusOK {
+		t.Errorf("the SMS session survived a promotion to org admin: %s", body)
+	}
+	if status, _ := call(mux, http.MethodGet, settingsURL, auth.Token, nil); status == http.StatusOK {
+		t.Error("the SMS session reached the org-admin settings")
+	}
+
+	// Changing only the name does not end sessions.
+	token := testutil.Token(t, o.Field1)
+	f, _ := app.FindRecordById(schema.FieldUsers, o.Field1.Id)
+	f.Set("name", "Renamed")
+	if err := app.Save(f); err != nil {
+		t.Fatal(err)
+	}
+	if status, body := call(mux, http.MethodPost, "/api/collections/field_users/auth-refresh", token, nil); status != http.StatusOK {
+		t.Errorf("a name change ended the session: %d %s", status, body)
 	}
 }

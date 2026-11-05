@@ -30,11 +30,11 @@ func init() {
 //     unique index is COLLATE NOCASE), so Google's address finds the
 //     account an admin typed as "Rahima.Khatun@…", and two accounts cannot
 //     differ only in capitals;
-//   - PocketBase's own one-time-code settings give codes 6 digits and 5
-//     minutes; its email-code routes stay switched off, because codes are
-//     sent only by SMS through the server's own routes;
-//   - two plain tables hold the phone sign-in settings and the counts
-//     behind the sending limits.
+//   - PocketBase's own email-code routes stay switched off: codes are sent
+//     only by SMS, through Obhijatra's own routes;
+//   - three plain tables hold the phone sign-in settings, the codes sent
+//     and not yet used, and the counts behind the limits;
+//   - PocketBase's per-address rate limit covers the SMS-code routes.
 //
 // Google and phone sign-in stay off until an org admin switches them on.
 // Every step can run again without harm.
@@ -46,6 +46,7 @@ func signinMethodsUp(app core.App) error {
 		{schema.FieldUsers, func(a core.App) error { return addPhoneSignIn(a, schema.FieldUsers) }},
 		{schema.StaffUsers, func(a core.App) error { return addPhoneSignIn(a, schema.StaffUsers) }},
 		{schema.SignInSettingsTable, createSignInTables},
+		{"rate limit", addPhoneRateLimit},
 		{"schema version", func(a core.App) error { return raiseSchemaVersion(a, SchemaVersion5) }},
 	}
 
@@ -98,8 +99,6 @@ func addPhoneSignIn(app core.App, name string) error {
 	// Codes are created and checked only by Obhijatra's phone routes;
 	// PocketBase's email-code routes stay off.
 	c.OTP.Enabled = false
-	c.OTP.Length = schema.PhoneCodeLength
-	c.OTP.Duration = int64(schema.PhoneCodeLifetime.Seconds())
 
 	return app.Save(c)
 }
@@ -117,10 +116,49 @@ func createSignInTables(app core.App) error {
 		"CREATE INDEX IF NOT EXISTS idx_obhijatra_signin_attempts ON {{" + schema.SignInAttemptsTable + "}} " +
 			"([[kind]], [[key]], [[at]])",
 		"CREATE INDEX IF NOT EXISTS idx_obhijatra_signin_attempts_at ON {{" + schema.SignInAttemptsTable + "}} ([[at]])",
+		"CREATE TABLE IF NOT EXISTS {{" + schema.PhoneCodesTable + "}} (" +
+			"[[id]] TEXT PRIMARY KEY NOT NULL, " +
+			"[[account_collection]] TEXT NOT NULL, " +
+			"[[account_id]] TEXT NOT NULL, " +
+			"[[phone]] TEXT NOT NULL, " +
+			"[[code_hash]] TEXT NOT NULL, " +
+			"[[tries]] INTEGER NOT NULL DEFAULT 0, " +
+			"[[created]] INTEGER NOT NULL)", // Unix time in milliseconds
+		"CREATE INDEX IF NOT EXISTS idx_obhijatra_phone_codes_created ON {{" + schema.PhoneCodesTable + "}} ([[created]])",
 	} {
 		if _, err := app.DB().NewQuery(q).Execute(); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// addPhoneRateLimit puts PocketBase's per-address rule for the SMS-code
+// routes in front of the others on a server that is set up (init adds it
+// on a new one).
+func addPhoneRateLimit(app core.App) error {
+	if !isSetUp(app) {
+		return nil
+	}
+	// Read the stored settings afresh: an earlier migration in the same
+	// upgrade may have changed them, and the cached copy is refreshed only
+	// after the transaction ends.
+	if err := app.ReloadSettings(); err != nil {
+		return err
+	}
+	s, err := app.Settings().Clone()
+	if err != nil {
+		return err
+	}
+	for _, r := range s.RateLimits.Rules {
+		if r.Label == schema.PhoneRoutesRateLimitLabel {
+			return nil
+		}
+	}
+	s.RateLimits.Rules = append([]core.RateLimitRule{{
+		Label:       schema.PhoneRoutesRateLimitLabel,
+		MaxRequests: schema.AuthRateLimitRequests,
+		Duration:    schema.AuthRateLimitSeconds,
+	}}, s.RateLimits.Rules...)
+	return app.Save(s)
 }

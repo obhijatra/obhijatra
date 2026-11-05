@@ -29,6 +29,22 @@ const (
 // testSMSPerWindow test messages per org admin per schema.PhoneCodeWindow.
 const testSMSPerWindow = 10
 
+// WithPhoneRateLimit returns rules with PocketBase's per-address rule for
+// the SMS-code routes added in front (prefix rules are tried in order, so
+// it must come before the general "/api/" rule), unless it is there.
+func WithPhoneRateLimit(rules []core.RateLimitRule) []core.RateLimitRule {
+	for _, r := range rules {
+		if r.Label == schema.PhoneRoutesRateLimitLabel {
+			return rules
+		}
+	}
+	return append([]core.RateLimitRule{{
+		Label:       schema.PhoneRoutesRateLimitLabel,
+		MaxRequests: schema.AuthRateLimitRequests,
+		Duration:    schema.AuthRateLimitSeconds,
+	}}, rules...)
+}
+
 // Register binds the Google sign-in guard and the sign-in routes to app.
 func Register(app core.App) {
 	app.OnRecordAuthWithOAuth2Request(schema.FieldUsers, schema.StaffUsers).Bind(&hook.Handler[*core.RecordAuthWithOAuth2RequestEvent]{
@@ -139,10 +155,7 @@ func testSMS(e *core.RequestEvent) error {
 	}
 	gateway := stored.SMS
 	if body.SMS != nil {
-		gateway = body.SMS.normalised()
-		if gateway.Secret == "" {
-			gateway.Secret = stored.SMS.Secret
-		}
+		gateway = body.SMS.normalised().withStoredSecret(stored.SMS)
 	}
 	if errs := gateway.Validate(); len(errs) > 0 {
 		prefixed := FieldErrors{}
@@ -152,16 +165,12 @@ func testSMS(e *core.RequestEvent) error {
 		return fieldErrors(prefixed)
 	}
 
-	now := time.Now().UTC()
-	ok, err := withinLimits(e.App, now, limit{kindTestSMS, e.Auth.Id, testSMSPerWindow, schema.PhoneCodeWindow})
+	ok, err := reserve(e.App, time.Now().UTC(), []limit{{kindTestSMS, e.Auth.Id, testSMSPerWindow, schema.PhoneCodeWindow}})
 	if err != nil {
 		return e.InternalServerError("", err)
 	}
 	if !ok {
 		return e.TooManyRequestsError("Too many test messages. Wait 15 minutes and try again.", nil)
-	}
-	if err := note(e.App, now, kindTestSMS, e.Auth.Id); err != nil {
-		return e.InternalServerError("", err)
 	}
 
 	res := gateway.Send(context.WithoutCancel(e.Request.Context()), phone, TestMessage)

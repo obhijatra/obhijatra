@@ -55,6 +55,13 @@ func Register(app core.App) {
 			if err := checkUserSignIn(e.Record); err != nil {
 				return err
 			}
+			// A change to how someone signs in, or to what they may do,
+			// ends every session they have: a session started by SMS must
+			// not carry on as an org admin, nor outlive a changed number
+			// or email address.
+			if anyChanged(old, e.Record, "phone", "email", "verified", "role", "active") {
+				e.Record.RefreshTokenKey()
+			}
 			return syncUserLocationPath(e)
 		})
 	}

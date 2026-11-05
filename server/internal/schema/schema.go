@@ -43,6 +43,11 @@ const (
 	// LoginFailuresTable, so unauthenticated traffic cannot grow the
 	// audit chain.
 	SignInAttemptsTable = "_obhijatra_signin_attempts"
+
+	// PhoneCodesTable holds the SMS sign-in codes sent and not yet used
+	// (hashed), with their tries. A plain table, so unauthenticated
+	// requests cannot grow the audit chain.
+	PhoneCodesTable = "_obhijatra_phone_codes"
 )
 
 // CoreCollections cannot be renamed or deleted, because the API rules,
@@ -175,6 +180,11 @@ const (
 	PhoneCodesPerIP     = 30
 	PhoneChecksPerIP    = 60
 	PhoneCodeWindow     = 15 * time.Minute
+
+	// PhoneRoutesRateLimitLabel is PocketBase's own per-address rate limit
+	// rule for the SMS-code routes (AuthRateLimitRequests per
+	// AuthRateLimitSeconds, like sign-in), before Obhijatra's own counts.
+	PhoneRoutesRateLimitLabel = "/api/obhijatra/v1/signin/phone/"
 )
 
 // PhoneSignInCollections are the auth collections whose users may sign in

@@ -150,6 +150,23 @@ func TestInitSetsUpTheSecurityBaseline(t *testing.T) {
 	}
 }
 
+// The SMS-code routes fall under their own per-address rule, not the
+// looser general "/api/" rule.
+func TestInitLimitsTheSMSCodeRoutes(t *testing.T) {
+	app := newFreshApp(t)
+	defer app.Cleanup()
+
+	if _, err := setup.Run(app, options(filepath.Join(t.TempDir(), setup.EnvFileName))); err != nil {
+		t.Fatal(err)
+	}
+	path := schema.PhoneRoutesRateLimitLabel + "verify"
+	rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"POST " + path, path})
+	if !ok || rule.Label != schema.PhoneRoutesRateLimitLabel ||
+		rule.MaxRequests != schema.AuthRateLimitRequests || rule.Duration != schema.AuthRateLimitSeconds {
+		t.Fatalf("the SMS-code routes fall under %+v", rule)
+	}
+}
+
 // A branch office of 30 staff behind one internet connection can all sign
 // in within the same minute; the 31st attempt from that address in the
 // minute is refused with 429 until the minute is over.
@@ -310,14 +327,25 @@ func windBackSchemaVersion5(t *testing.T, app core.App) {
 			c.RemoveIndex(idx.IndexName)
 			c.AddIndex(idx.IndexName, true, "`email`", "`email` != ''")
 		}
-		c.OTP.Length, c.OTP.Duration = 8, 180
 		if err := app.Save(c); err != nil {
 			t.Fatal(err)
 		}
 	}
+	s, _ := app.Settings().Clone()
+	rules := s.RateLimits.Rules[:0]
+	for _, r := range s.RateLimits.Rules {
+		if r.Label != schema.PhoneRoutesRateLimitLabel {
+			rules = append(rules, r)
+		}
+	}
+	s.RateLimits.Rules = rules
+	if err := app.Save(s); err != nil {
+		t.Fatal(err)
+	}
 	for _, q := range []string{
 		"DROP TABLE " + schema.SignInSettingsTable,
 		"DROP TABLE " + schema.SignInAttemptsTable,
+		"DROP TABLE " + schema.PhoneCodesTable,
 	} {
 		if _, err := app.DB().NewQuery(q).Execute(); err != nil {
 			t.Fatalf("%s: %v", q, err)
@@ -338,11 +366,15 @@ func checkSchemaVersion5(t *testing.T, app core.App) {
 		if idx, ok := dbutils.FindSingleColumnUniqueIndex(c.Indexes, core.FieldNameEmail); !ok || !strings.EqualFold(idx.Columns[0].Collate, "nocase") {
 			t.Errorf("after the upgrade %s email index is %+v", name, idx)
 		}
-		if c.OTP.Enabled || c.OTP.Length != schema.PhoneCodeLength || c.OTP.Duration != int64(schema.PhoneCodeLifetime.Seconds()) {
-			t.Errorf("after the upgrade %s has code settings %+v", name, c.OTP)
+		if c.OTP.Enabled {
+			t.Errorf("after the upgrade PocketBase's email codes are on for %s", name)
 		}
 	}
-	for _, table := range []string{schema.SignInSettingsTable, schema.SignInAttemptsTable} {
+	if rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"POST " + schema.PhoneRoutesRateLimitLabel + "code", schema.PhoneRoutesRateLimitLabel + "code"}); !ok ||
+		rule.Label != schema.PhoneRoutesRateLimitLabel {
+		t.Errorf("after the upgrade the SMS-code routes fall under the rule %+v", rule)
+	}
+	for _, table := range []string{schema.SignInSettingsTable, schema.SignInAttemptsTable, schema.PhoneCodesTable} {
 		if ok := app.HasTable(table); !ok {
 			t.Errorf("after the upgrade the table %s is missing", table)
 		}

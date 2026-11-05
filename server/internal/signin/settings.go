@@ -336,10 +336,7 @@ func Apply(app core.App, actor audit.Actor, u Update) error {
 			}
 		}
 
-		sms := u.Phone.SMS.normalised()
-		if sms.Secret == "" {
-			sms.Secret = current.SMS.Secret
-		}
+		sms := u.Phone.SMS.normalised().withStoredSecret(current.SMS)
 		if sms.URL != "" || u.Phone.Enabled {
 			for field, msg := range sms.Validate() {
 				errs["phone.sms."+field] = msg

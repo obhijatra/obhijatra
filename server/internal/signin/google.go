@@ -15,6 +15,7 @@ const (
 	ReasonGoogleNoAccount   = "google_no_account"
 	ReasonGoogleUnconfirmed = "google_email_unconfirmed"
 	ReasonNotAllowed        = "account_not_allowed"
+	ReasonGoogleUnmanaged   = "google_email_not_managed"
 )
 
 // Answers to a refused Google sign-in. The person has proved who they are
@@ -27,7 +28,28 @@ const (
 	GoogleUnconfirmedMessage = "Your organisation admin must confirm your email address on your account " +
 		"before you can sign in with Google."
 	GoogleNotAllowedMessage = "This account cannot sign in. Ask your organisation admin."
+	GoogleUnmanagedMessage  = "Google cannot vouch that this email address belongs to this Google account. " +
+		"Sign in with a Gmail address or your organisation's Google Workspace account, or use another way to sign in."
 )
+
+// googleOwnsAddress reports whether Google is the authority for email, as
+// Google's guide "Verify the Google ID token on your server side" puts it:
+// a Gmail address, or a Google Workspace account (the "hd" claim is set).
+// Any other address Google confirmed once, when the account was made, but
+// its owner may have changed since (a reused work mailbox), so it does not
+// prove who is signing in.
+func googleOwnsAddress(email string, rawUser map[string]any) bool {
+	at := strings.LastIndex(email, "@")
+	if at < 0 {
+		return false
+	}
+	switch strings.ToLower(email[at+1:]) {
+	case "gmail.com", "googlemail.com":
+		return true
+	}
+	hd, _ := rawUser["hd"].(string)
+	return strings.TrimSpace(hd) != ""
+}
 
 // guardGoogle runs before PocketBase completes a Google sign-in. It lets
 // the sign-in through only to an existing, active account whose confirmed
@@ -52,6 +74,8 @@ func guardGoogle(e *core.RecordAuthWithOAuth2RequestEvent) error {
 	switch {
 	case email == "":
 		return refuse(ReasonGoogleNoEmail, GoogleNoEmailMessage, "no confirmed email from Google")
+	case !googleOwnsAddress(email, e.OAuth2User.RawUser):
+		return refuse(ReasonGoogleUnmanaged, GoogleUnmanagedMessage, "address is neither Gmail nor a Google Workspace account")
 	case e.Record == nil:
 		return refuse(ReasonGoogleNoAccount, GoogleNoAccountMessage, "no account")
 	case !strings.EqualFold(e.Record.Email(), email):

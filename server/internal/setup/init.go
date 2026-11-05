@@ -23,6 +23,7 @@ import (
 
 	"github.com/obhijatra/obhijatra/server/internal/audit"
 	"github.com/obhijatra/obhijatra/server/internal/schema"
+	"github.com/obhijatra/obhijatra/server/internal/signin"
 	"github.com/obhijatra/obhijatra/server/internal/version"
 )
 
@@ -345,7 +346,7 @@ func seed(txApp core.App, o Options) error {
 	s.Meta.AppName = truncate(o.OrgName, 255)
 	s.Meta.AppURL = o.AppURL
 	s.RateLimits.Enabled = true
-	s.RateLimits.Rules = withLoginRule(s.RateLimits.Rules)
+	s.RateLimits.Rules = signin.WithPhoneRateLimit(withLoginRule(s.RateLimits.Rules))
 	s.Logs.MaxDays = LogRetentionDays
 	s.Logs.LogAuthId = true
 	s.Logs.LogIP = true

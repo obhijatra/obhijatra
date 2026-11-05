@@ -3,6 +3,7 @@ package signin
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,6 +52,36 @@ type SMSGateway struct {
 	Headers     []Header `json:"headers"`
 	Secret      string   `json:"secret,omitempty"` // API key or token, put where {secret} is
 	SuccessText string   `json:"success_text"`     // text the provider's reply must contain, if set
+
+	// secretMissing marks a gateway whose secret was left empty although
+	// the stored one cannot be reused (see withStoredSecret).
+	secretMissing bool
+}
+
+// providerHost is the server name and port of an address template, in
+// lower case, or "" if it cannot be read or holds a placeholder.
+func providerHost(template string) string {
+	u, err := url.Parse(template)
+	if err != nil || u.Host == "" || strings.ContainsAny(u.Host, "{}") {
+		return ""
+	}
+	return strings.ToLower(u.Host)
+}
+
+// withStoredSecret fills an empty secret with the stored one, but only if
+// the message still goes to the same provider server. Otherwise the secret
+// must be typed again, so a stolen admin session cannot send the stored
+// key to a server of its choosing.
+func (g SMSGateway) withStoredSecret(stored SMSGateway) SMSGateway {
+	if g.Secret != "" || stored.Secret == "" {
+		return g
+	}
+	if h := providerHost(g.URL); h != "" && h == providerHost(stored.URL) {
+		g.Secret = stored.Secret
+		return g
+	}
+	g.secretMissing = true
+	return g
 }
 
 const (
@@ -116,7 +147,12 @@ func (g SMSGateway) Validate() FieldErrors {
 			errs["url"] = "This is not a complete web address. It should start with https://"
 		case u.Scheme != "https":
 			errs["url"] = "The address must start with https:// so the codes and your key travel encrypted."
+		case providerHost(g.URL) == "":
+			errs["url"] = "The server name in the address (the part after https://) cannot hold a placeholder."
 		}
+	}
+	if g.secretMissing {
+		errs["secret"] = "Type the secret key again: the SMS provider's address changed."
 	}
 
 	if g.Method == http.MethodPost {
@@ -285,7 +321,8 @@ func (g SMSGateway) Send(ctx context.Context, phone, message string) SendResult 
 
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	res.Status = resp.StatusCode
-	res.Reply = g.hideSecret(printable(raw, maxReply))
+	// Hide the key before shortening, so no part of it survives the cut.
+	res.Reply = printable([]byte(g.hideSecret(string(raw))), maxReply)
 	res.OK = resp.StatusCode >= 200 && resp.StatusCode < 300 &&
 		(g.SuccessText == "" || bytes.Contains(raw, []byte(g.SuccessText)))
 	return res
@@ -308,7 +345,11 @@ func (g SMSGateway) hideSecret(text string) string {
 	if len(g.Secret) < 4 {
 		return text
 	}
-	for _, s := range []string{g.Secret, escapeURL(g.Secret), escapeJSON(g.Secret)} {
+	for _, s := range []string{
+		g.Secret, escapeURL(g.Secret), escapeJSON(g.Secret),
+		base64.StdEncoding.EncodeToString([]byte(g.Secret)),
+		base64.RawURLEncoding.EncodeToString([]byte(g.Secret)),
+	} {
 		text = strings.ReplaceAll(text, s, "[key hidden]")
 	}
 	return text
