@@ -19,5 +19,5 @@ const (
 	// SchemaVersion is the database schema version this build's migrations
 	// produce. It is stored in the settings record by `init` and bumped by
 	// every migration that changes the data model.
-	SchemaVersion = 6
+	SchemaVersion = 7
 )

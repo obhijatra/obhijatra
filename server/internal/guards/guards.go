@@ -15,6 +15,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strings"
 
 	"ganigeorgiev.com/pocketbase/dbx"
 	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
@@ -32,10 +33,35 @@ import (
 // Register binds every guard to app.
 func Register(app core.App) {
 	// Locations: the materialised path is computed here and never changes.
-	app.OnRecordCreate(schema.Locations).BindFunc(setLocationPath)
+	// One root (the organisation); every other place sits under an open
+	// place, with a name of its own among its siblings. A place closes only
+	// when nothing open or active is left in it, and is deleted only when
+	// nothing uses it.
+	app.OnRecordCreate(schema.Locations).BindFunc(func(e *core.RecordEvent) error {
+		if err := checkNewPlace(e.App, e.Record); err != nil {
+			return err
+		}
+		return setLocationPath(e)
+	})
 	onUpdate(app, schema.Locations, func(e *core.RecordEvent, old *core.Record) error {
 		if anyChanged(old, e.Record, "parent", "path") {
 			return errors.New("a location cannot be moved: its parent and path are fixed once created")
+		}
+		if changed(old, e.Record, "name") {
+			if err := checkPlaceName(e.App, e.Record); err != nil {
+				return err
+			}
+		}
+		if changed(old, e.Record, "closed") {
+			if err := checkPlaceClosing(e.App, e.Record); err != nil {
+				return err
+			}
+		}
+		return e.Next()
+	})
+	app.OnRecordDelete(schema.Locations).BindFunc(func(e *core.RecordEvent) error {
+		if err := checkPlaceUnused(e.App, e.Record); err != nil {
+			return err
 		}
 		return e.Next()
 	})
@@ -46,6 +72,9 @@ func Register(app core.App) {
 	for _, name := range []string{schema.FieldUsers, schema.StaffUsers} {
 		app.OnRecordCreate(name).BindFunc(func(e *core.RecordEvent) error {
 			if err := checkUserSignIn(e.Record); err != nil {
+				return err
+			}
+			if err := checkOpenPlace(e.App, e.Record.GetString("location")); err != nil {
 				return err
 			}
 			return syncUserLocationPath(e)
@@ -77,6 +106,11 @@ func Register(app core.App) {
 			}
 			if err := checkUserSignIn(e.Record); err != nil {
 				return err
+			}
+			if changed(old, e.Record, "location") {
+				if err := checkOpenPlace(e.App, e.Record.GetString("location")); err != nil {
+					return err
+				}
 			}
 			if name == schema.StaffUsers {
 				if err := keepAnOrgAdmin(e.App, old, e.Record); err != nil {
@@ -679,4 +713,183 @@ func openXForm(app core.App, r *core.Record) (io.Reader, func(), error) {
 		return nil, nil, fmt.Errorf("the stored XForm file could not be opened: %w", err)
 	}
 	return br, func() { br.Close(); fsys.Close() }, nil
+}
+
+// ---------------------------------------------------------------------
+// Places
+// ---------------------------------------------------------------------
+
+func placeError(field, code, message string) error {
+	return validation.Errors{field: validation.NewError(code, message)}
+}
+
+// checkNewPlace: one root, a parent that is open, and a name of its own.
+func checkNewPlace(app core.App, r *core.Record) error {
+	r.Set("name", strings.TrimSpace(r.GetString("name")))
+	r.Set("code", strings.TrimSpace(r.GetString("code")))
+	if r.GetBool("closed") {
+		return placeError("closed", "validation_place_closed_on_create", "A new place cannot start closed.")
+	}
+	if r.GetString("parent") == "" {
+		total, err := app.CountRecords(schema.Locations)
+		if err != nil {
+			return err
+		}
+		if total > 0 {
+			return placeError("parent", "validation_place_parent_required",
+				"Choose the place this one belongs under. Only the organisation itself has nothing above it.")
+		}
+		return nil
+	}
+	if err := checkOpenPlace(app, r.GetString("parent")); err != nil {
+		return validation.Errors{"parent": validation.NewError("validation_place_parent_closed",
+			"The place above is closed. Reopen it first, or choose an open place.")}
+	}
+	return checkPlaceName(app, r)
+}
+
+// checkPlaceName refuses an empty name, or one a sibling already has
+// (ignoring capital letters and surrounding spaces), so a place is never
+// confused with its neighbour and a spreadsheet import finds it again.
+func checkPlaceName(app core.App, r *core.Record) error {
+	name := strings.TrimSpace(r.GetString("name"))
+	r.Set("name", name)
+	if name == "" {
+		return placeError("name", "validation_required", "Give the place a name.")
+	}
+	siblings, err := app.FindRecordsByFilter(schema.Locations,
+		"parent = {:parent} && id != {:id}", "", 0, 0,
+		dbx.Params{"parent": r.GetString("parent"), "id": r.Id})
+	if err != nil {
+		return err
+	}
+	for _, s := range siblings {
+		if strings.EqualFold(strings.TrimSpace(s.GetString("name")), name) {
+			return placeError("name", "validation_place_name_taken",
+				"Another place at this level already has this name. Choose a different name.")
+		}
+	}
+	return nil
+}
+
+// checkOpenPlace refuses a place id that does not exist or is closed.
+func checkOpenPlace(app core.App, id string) error {
+	if id == "" {
+		return nil // the relation field decides whether a place is required
+	}
+	p, err := app.FindRecordById(schema.Locations, id)
+	if err != nil {
+		return placeError("location", "validation_place_missing", "This place does not exist.")
+	}
+	if p.GetBool("closed") {
+		return placeError("location", "validation_place_closed", "This place is closed. Choose an open place.")
+	}
+	return nil
+}
+
+// checkPlaceClosing: the organisation itself never closes; a place closes
+// only when no open place and no active person is left in it; it reopens
+// only under an open place.
+func checkPlaceClosing(app core.App, r *core.Record) error {
+	if !r.GetBool("closed") {
+		if parent := r.GetString("parent"); parent != "" {
+			if err := checkOpenPlace(app, parent); err != nil {
+				return placeError("closed", "validation_place_parent_closed",
+					"The place above is closed. Reopen it first.")
+			}
+		}
+		return nil
+	}
+	if r.GetString("parent") == "" {
+		return placeError("closed", "validation_place_root", "The organisation itself cannot be closed.")
+	}
+	open, err := app.CountRecords(schema.Locations, dbx.HashExp{"parent": r.Id, "closed": false})
+	if err != nil {
+		return err
+	}
+	if open > 0 {
+		return placeError("closed", "validation_place_has_open_places",
+			fmt.Sprintf("%d open place(s) are inside this place. Close or delete them first.", open))
+	}
+	people := 0
+	for _, c := range []string{schema.FieldUsers, schema.StaffUsers} {
+		n, err := app.CountRecords(c, dbx.HashExp{"location": r.Id, "active": true})
+		if err != nil {
+			return err
+		}
+		people += int(n)
+	}
+	if people > 0 {
+		return placeError("closed", "validation_place_has_people",
+			fmt.Sprintf("%d active person(s) work here. Move them to another place, or deactivate them, first.", people))
+	}
+	return nil
+}
+
+// checkPlaceUnused allows deleting a place only when nothing refers to it:
+// no place inside it, nobody assigned to it, and no record stamped with its
+// path, in any collection, so that records never point at a missing place.
+// The organisation itself is never deleted.
+func checkPlaceUnused(app core.App, r *core.Record) error {
+	old, err := app.FindRecordById(schema.Locations, r.Id)
+	if err != nil {
+		return err
+	}
+	if old.GetString("parent") == "" {
+		return placeError("id", "validation_place_root", "The organisation itself cannot be deleted.")
+	}
+	locations, err := app.FindCollectionByNameOrId(schema.Locations)
+	if err != nil {
+		return err
+	}
+	collections, err := app.FindAllCollections()
+	if err != nil {
+		return err
+	}
+	uses := 0
+	for _, c := range collections {
+		if c.IsView() {
+			continue
+		}
+		// A collection with a place relation is counted through it; its
+		// location_path copy would count the same records twice.
+		hasRelation := false
+		for _, f := range c.Fields {
+			if rf, ok := f.(*core.RelationField); ok && rf.CollectionId == locations.Id {
+				hasRelation = true
+			}
+		}
+		for _, f := range c.Fields {
+			var n int64
+			switch field := f.(type) {
+			case *core.RelationField:
+				if field.CollectionId != locations.Id {
+					continue
+				}
+				if field.IsMultiple() {
+					n, err = app.CountRecords(c, dbx.NewExp("EXISTS (SELECT 1 FROM json_each([["+field.Name+"]]) WHERE value = {:id})",
+						dbx.Params{"id": r.Id}))
+				} else {
+					n, err = app.CountRecords(c, dbx.HashExp{field.Name: r.Id})
+				}
+			case *core.TextField:
+				if field.Name != "location_path" || hasRelation {
+					continue
+				}
+				n, err = app.CountRecords(c, dbx.HashExp{"location_path": old.GetString("path")})
+			default:
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			uses += int(n)
+		}
+	}
+	if uses > 0 {
+		return router.NewBadRequestError("This place is in use, so it cannot be deleted. Close it instead.",
+			map[string]validation.Error{"id": validation.NewError("validation_place_in_use",
+				fmt.Sprintf("This place is used by %d place(s), people or record(s), so it cannot be deleted. Close it instead.", uses))})
+	}
+	return nil
 }

@@ -259,7 +259,8 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			windBackSchemaVersion4(t, app)
 			windBackSchemaVersion5(t, app)
 			windBackSchemaVersion6(t, app)
-			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%' OR file LIKE '1793836800_%'").Execute(); err != nil {
+			windBackSchemaVersion7(t, app)
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%' OR file LIKE '1793836800_%' OR file LIKE '1793840400_%'").Execute(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -269,6 +270,7 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			checkSchemaVersion4(t, app)
 			checkSchemaVersion5(t, app)
 			checkSchemaVersion6(t, app)
+			checkSchemaVersion7(t, app)
 
 			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
 			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
@@ -364,6 +366,30 @@ func windBackSchemaVersion6(t *testing.T, app core.App) {
 		if err := app.Save(c); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// windBackSchemaVersion7 undoes schema version 7: no closed field, no
+// delete rule and no unique code index on locations.
+func windBackSchemaVersion7(t *testing.T, app core.App) {
+	t.Helper()
+	c, _ := app.FindCollectionByNameOrId(schema.Locations)
+	c.Fields.RemoveByName("closed")
+	c.RemoveIndex("idx_locations_code")
+	c.DeleteRule = nil
+	if err := app.Save(c); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func checkSchemaVersion7(t *testing.T, app core.App) {
+	t.Helper()
+	c, _ := app.FindCollectionByNameOrId(schema.Locations)
+	if c.Fields.GetByName("closed") == nil || c.DeleteRule == nil || *c.DeleteRule != schema.LocationsDelete {
+		t.Errorf("after the upgrade locations has closed=%v delete rule=%v", c.Fields.GetByName("closed") != nil, c.DeleteRule)
+	}
+	if _, ok := dbutils.FindSingleColumnUniqueIndex(c.Indexes, "code"); !ok {
+		t.Error("after the upgrade place codes are not unique")
 	}
 }
 

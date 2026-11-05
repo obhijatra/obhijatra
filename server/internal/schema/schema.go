@@ -193,6 +193,14 @@ const (
 // other account.
 var PhoneSignInCollections = []string{FieldUsers, StaffUsers}
 
+// Places (the locations collection).
+const (
+	// MaxPlacesImport rows in one spreadsheet import, and MaxPlaceDepth
+	// levels in one row.
+	MaxPlacesImport = 5000
+	MaxPlaceDepth   = 10
+)
+
 // MustChangePassword is the user field an org admin sets with a one-time
 // password. While it is set, the server answers only the requests needed
 // to choose a new password (package api); the person's own password change
@@ -304,6 +312,10 @@ const (
 	LocationsRead = Active + ` && (` + isStaff +
 		` || (` + isField + ` && @request.auth.location_path != "" && path ~ @request.auth.location_path))`
 	LocationsWrite = OrgAdminOnly
+	// LocationsDelete lets an org admin delete a place; the guards allow it
+	// only for a place nothing uses (no places inside, no people, no
+	// records), so records never point at a missing place.
+	LocationsDelete = OrgAdminOnly
 )
 
 // userSelfUpdate lets users change their own name and password but none of

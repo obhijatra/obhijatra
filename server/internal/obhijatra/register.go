@@ -10,6 +10,7 @@ import (
 	"github.com/obhijatra/obhijatra/server/internal/audit"
 	"github.com/obhijatra/obhijatra/server/internal/guards"
 	"github.com/obhijatra/obhijatra/server/internal/lockout"
+	"github.com/obhijatra/obhijatra/server/internal/places"
 	"github.com/obhijatra/obhijatra/server/internal/signin"
 
 	// Registers the Go migrations with PocketBase.
@@ -24,5 +25,6 @@ func Register(app core.App) {
 	guards.Register(app)
 	lockout.Register(app)
 	signin.Register(app)
+	places.Register(app)
 	api.Register(app)
 }
