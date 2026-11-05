@@ -7,6 +7,7 @@ environment:
 
 workspace:
   - packages/obhijatra_core
+  - packages/obhijatra_device
   - packages/obhijatra_ui
   - apps/field
   - apps/manager

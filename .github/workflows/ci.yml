@@ -54,6 +54,12 @@ jobs:
       - name: dart test (unit)
         working-directory: packages/obhijatra_core
         run: dart test -x e2e
+      - name: dart test (device trust, on the VM and compiled for browsers)
+        working-directory: packages/obhijatra_device
+        run: |
+          dart test
+          dart test -p chrome
+          dart test -p chrome -c dart2wasm
 
   phase1-gate:
     name: Phase 1 gate (offline form reaches the real server)

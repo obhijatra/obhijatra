@@ -1,0 +1,17 @@
+name: obhijatra_device
+description: Device trust for Obhijatra (docs/decisions/0008-device-trust.md) - the check code, signed requests and device keys, shared by the field and manager apps. Pure Dart and web-safe.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  crypto: 3.0.8
+  cryptography: 2.9.0
+  http: 1.6.0
+
+dev_dependencies:
+  lints: 6.1.0
+  test: 1.31.1

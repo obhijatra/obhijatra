@@ -15,6 +15,7 @@ dependencies:
   drift: 2.35.3
   http: 1.6.0
   http_parser: 4.1.2
+  obhijatra_device: any
   pocketbase: 0.25.3
   riverpod: 3.4.3
   sodium: 4.1.2+1
