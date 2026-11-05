@@ -119,6 +119,25 @@ enum ProblemCode {
   /// The phone could not open a web page for signing in (no browser).
   browserUnavailable,
 
+  /// An organisation admin gave this account a one-time password: the
+  /// person must choose their own password before anything else works (the
+  /// server answers HTTP 403 with the reason `password_change_required`).
+  /// Finished forms stay queued until they have.
+  passwordChangeRequired,
+
+  /// The current password typed while choosing a new one (usually the
+  /// one-time password) is not right. Nothing was changed.
+  currentPasswordWrong,
+
+  /// The new password cannot be used: it is shorter than 12 or longer than
+  /// 71 characters, or the server refused it. Nothing was changed.
+  newPasswordInvalid,
+
+  /// The new password is saved, but signing in with it straight afterwards
+  /// did not work (for example, the connection dropped). Every earlier
+  /// session has ended; the person signs in again with the new password.
+  passwordChangedSignInAgain,
+
   /// Something unexpected happened inside the app.
   unknown;
 
@@ -151,7 +170,8 @@ enum ProblemCode {
     appUpdateRequired ||
     serverIncompatible ||
     serverNotSetUp ||
-    clockSkew => true,
+    clockSkew ||
+    passwordChangeRequired => true,
     _ => false,
   };
 }

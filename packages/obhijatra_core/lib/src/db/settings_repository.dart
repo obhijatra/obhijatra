@@ -52,11 +52,17 @@ final class SettingsRepository {
   /// closed (the app lock's online sign-in): [onSave] receives the data
   /// that [authStore] would have stored, or `null` when the session is
   /// cleared. Store it with [saveSession] once the database is open.
-  static AuthStore detachedAuthStore(void Function(String? data) onSave) =>
-      AsyncAuthStore(
-        save: (data) async => onSave(data.isEmpty ? null : data),
-        clear: () async => onSave(null),
-      );
+  ///
+  /// [initial] is session data an earlier detached store gave, to carry on
+  /// with that session (for example, to replace a one-time password).
+  static AuthStore detachedAuthStore(
+    void Function(String? data) onSave, {
+    String? initial,
+  }) => AsyncAuthStore(
+    initial: initial,
+    save: (data) async => onSave(data.isEmpty ? null : data),
+    clear: () async => onSave(null),
+  );
 
   /// Stores session [data] captured by [detachedAuthStore], replacing the
   /// saved session.

@@ -162,6 +162,14 @@ final class StoredSubmission {
 /// (the realtime connection the app holds gets the code, as the server's
 /// redirect page would hand it over).
 ///
+/// One-time passwords follow the server as well: [giveOneTimePassword] does
+/// what an organisation admin does (the sign-in answer then says
+/// `must_change_password`, every other request gets 403 with the reason
+/// `password_change_required`, and every session of the user ends), and
+/// `PATCH /api/collections/field_users/records/{own id}` with only
+/// `oldPassword`, `password` and `passwordConfirm` chooses a new password
+/// (at least 12 characters), which ends every session again.
+///
 /// ```dart
 /// final fake = FakeObhijatraServer(xform: myXForm);
 /// final server = ObhijatraServer(
@@ -232,6 +240,10 @@ final class FakeObhijatraServer {
   /// Glitches for the next submission requests, used up one per request.
   final List<Glitch> submissionGlitches = [];
 
+  /// Glitches for the next password changes (`PATCH` of a user's own
+  /// record), used up one per request.
+  final List<Glitch> passwordChangeGlitches = [];
+
   /// A glitch for every meta request while set, once [metaGlitches] is
   /// empty.
   Glitch? metaGlitch;
@@ -248,6 +260,34 @@ final class FakeObhijatraServer {
     fakeEmail: const FakeFieldUser(id: 'fielduser1abcde', phone: fakePhone),
   };
 
+  /// Passwords other than [fakePassword], by email.
+  final Map<String, String> passwords = {};
+
+  /// The password of the user with [email] now.
+  String passwordOf(String email) => passwords[email] ?? fakePassword;
+
+  /// Ids of the users who must choose their own password first.
+  final Set<String> _mustChange = {};
+
+  /// Gives the user with [email] the one-time [password], as an
+  /// organisation admin does: they must choose their own password before
+  /// anything else, and every session they have ends.
+  void giveOneTimePassword(String email, String password) {
+    final user = users[email]!;
+    passwords[email] = password;
+    _mustChange.add(user.id);
+    _endSessionsOf(user.id);
+  }
+
+  /// Makes the user with [email] choose a new password before anything
+  /// else, keeping their password and their sessions (the admin set only
+  /// the flag): their next request with a session gets the 403.
+  void requirePasswordChange(String email) => _mustChange.add(users[email]!.id);
+
+  /// Whether the user with [email] must still choose their own password.
+  bool mustChangePassword(String email) =>
+      _mustChange.contains(users[email]?.id);
+
   /// Stored submissions by instance ID.
   final Map<String, StoredSubmission> submissions = {};
 
@@ -259,6 +299,7 @@ final class FakeObhijatraServer {
 
   final Map<String, String> _published = {};
   final Map<String, String> _tokens = {};
+  int _tokenSerial = 0;
   final List<String> _fileTokens = [];
 
   // SMS codes by code id, and when codes were asked for, by number.
@@ -337,13 +378,17 @@ final class FakeObhijatraServer {
   /// Registers a session token for [userId], as if the user signed in
   /// earlier, expiring [inHours] from now.
   String issueToken(String userId, {int inHours = 24}) {
-    final token = fakeToken(userId, inHours: inHours);
+    final token = fakeToken(userId, inHours: inHours, serial: ++_tokenSerial);
     _tokens[token] = userId;
     return token;
   }
 
   /// Forgets every session, as when sessions expire on the server.
   void expireSessions() => _tokens.clear();
+
+  /// Ends every session of [userId], as a password change does.
+  void _endSessionsOf(String userId) =>
+      _tokens.removeWhere((_, owner) => owner == userId);
 
   /// An HTTP client routed to this fake.
   http.Client client() => MockClient.streaming(_handleStreamed);
@@ -389,6 +434,8 @@ final class FakeObhijatraServer {
         ),
       );
     }
+    final refused = _passwordGate(request);
+    if (refused != null) return _withDate(refused);
     final response = switch (path) {
       '/api/obhijatra/v1/meta' => _meta(request),
       '/api/collections/field_users/auth-with-password' => _signIn(request),
@@ -402,6 +449,10 @@ final class FakeObhijatraServer {
       '/api/files/token' => _fileToken(request),
       '/api/obhijatra/v1/submissions' => _submit(request),
       _ when path.startsWith('/api/files/form_versions/') => _download(request),
+      _ when path.startsWith(_userRecords) => _updateOwnRecord(
+        request,
+        path.substring(_userRecords.length),
+      ),
       _ => _error(404, "The requested resource wasn't found."),
     };
     return _withDate(response);
@@ -447,7 +498,9 @@ final class FakeObhijatraServer {
     final body = jsonDecode(request.body) as Map<String, Object?>;
     final email = body['identity'];
     final user = users[email];
-    if (user == null || body['password'] != fakePassword || !user.active) {
+    if (user == null ||
+        body['password'] != passwordOf(email! as String) ||
+        !user.active) {
       // One answer for every refused sign-in, as the server gives.
       return _error(
         400,
@@ -461,17 +514,132 @@ final class FakeObhijatraServer {
   /// user's record.
   http.Response _authResponse(String email, FakeFieldUser user) => _json(200, {
     'token': issueToken(user.id),
-    'record': {
-      'id': user.id,
-      'collectionId': 'pbc_field_users',
-      'collectionName': 'field_users',
-      'email': email,
-      'name': user.name,
-      'location_path': user.locationPath,
-      'phone': user.phone ?? '',
-      'active': true,
-    },
+    'record': _recordOf(email, user),
   });
+
+  /// The user's record, as the server shows it to the user.
+  Map<String, Object?> _recordOf(String email, FakeFieldUser user) => {
+    'id': user.id,
+    'collectionId': 'pbc_field_users',
+    'collectionName': 'field_users',
+    'email': email,
+    'name': user.name,
+    'location_path': user.locationPath,
+    'phone': user.phone ?? '',
+    'active': user.active,
+    'must_change_password': _mustChange.contains(user.id),
+  };
+
+  static const String _userRecords = '/api/collections/field_users/records/';
+
+  /// The server's password gate: a user who must choose their own password
+  /// may only sign in, refresh the session, read or change their own
+  /// record (only the password fields), and use the public routes.
+  http.Response? _passwordGate(http.Request request) {
+    final userId = _user(request);
+    if (userId == null || !_mustChange.contains(userId)) return null;
+    final path = request.url.path;
+    final allowed = switch (path) {
+      '/api/obhijatra/v1/meta' || '/api/obhijatra/v1/signin/methods' => true,
+      _
+          when path.startsWith('/api/collections/field_users/auth-with-') ||
+              path == '/api/collections/field_users/auth-refresh' =>
+        request.method == 'POST',
+      _ when path == '$_userRecords$userId' => switch (request.method) {
+        'GET' => true,
+        'PATCH' => _onlyPasswordFields(request),
+        _ => false,
+      },
+      _ => false,
+    };
+    if (allowed) return null;
+    const message = 'Choose a new password before you continue.';
+    return _json(403, {
+      'status': 403,
+      'message': message,
+      'data': {
+        'reason': {'code': 'password_change_required', 'message': message},
+      },
+    });
+  }
+
+  static bool _onlyPasswordFields(http.Request request) {
+    final Object? body;
+    try {
+      body = jsonDecode(request.body);
+    } on FormatException {
+      return false;
+    }
+    const fields = {'oldPassword', 'password', 'passwordConfirm'};
+    return body is Map<String, Object?> && body.keys.every(fields.contains);
+  }
+
+  /// `PATCH` of a user's own record: only a password change, with
+  /// PocketBase's checks (the old password, the repeat, then the length).
+  http.Response _updateOwnRecord(http.Request request, String id) {
+    final glitch = _next(passwordChangeGlitches, null);
+    if (glitch is Redirect) return _redirect(glitch);
+    if (glitch is NoConnection || glitch is LostResponse) _drop(request);
+    if (glitch is ErrorStatus) return _error(glitch.status, glitch.message);
+    final userId = _user(request);
+    if (userId == null) {
+      return _error(
+        401,
+        'The request requires valid record authorization token.',
+      );
+    }
+    final entry = users.entries.where((e) => e.value.id == id).firstOrNull;
+    // The update rule hides other people's records and inactive accounts.
+    if (request.method != 'PATCH' ||
+        userId != id ||
+        entry == null ||
+        !entry.value.active) {
+      return _error(404, "The requested resource wasn't found.");
+    }
+    final body = jsonDecode(request.body) as Map<String, Object?>;
+    final password = body['password'];
+    final errors = <String, Object?>{
+      if (body['oldPassword'] != passwordOf(entry.key))
+        'oldPassword': {
+          'code': 'validation_invalid_old_password',
+          'message': 'Missing or invalid old password.',
+        },
+      if (body['passwordConfirm'] != password)
+        'passwordConfirm': {
+          'code': 'validation_values_mismatch',
+          'message': "Values don't match.",
+        },
+    };
+    if (errors.isEmpty && password is! String) {
+      errors['password'] = {
+        'code': 'validation_required',
+        'message': 'Cannot be blank.',
+      };
+    } else if (errors.isEmpty && password is String) {
+      final length = password.runes.length;
+      if (length < 12 || length > 71) {
+        errors['password'] = {
+          'code': length < 12
+              ? 'validation_min_text_constraint'
+              : 'validation_max_text_constraint',
+          'message': length < 12
+              ? 'Must be at least 12 character(s)'
+              : 'Must be less than 71 character(s)',
+        };
+      }
+    }
+    if (errors.isNotEmpty) {
+      return _json(400, {
+        'status': 400,
+        'message': 'Failed to update record.',
+        'data': errors,
+      });
+    }
+    passwords[entry.key] = password! as String;
+    _mustChange.remove(id);
+    _endSessionsOf(id);
+    return _json(200, _recordOf(entry.key, entry.value));
+  }
 
   http.Response _signInMethods(http.Request request) {
     final glitch = _next(signInMethodsGlitches, null);
@@ -893,15 +1061,16 @@ final class _RealtimeClient {
 /// A session token PocketBase's `AuthStore.isValid` accepts for [userId],
 /// expiring [inHours] from now (negative for an expired token). It is not
 /// signed; only a [FakeObhijatraServer] accepts it, after
-/// [FakeObhijatraServer.issueToken].
-String fakeToken(String userId, {int inHours = 24}) {
+/// [FakeObhijatraServer.issueToken]. A [serial] makes each token unique.
+String fakeToken(String userId, {int inHours = 24, int? serial}) {
   String encode(Map<String, Object?> json) =>
       base64Url.encode(utf8.encode(jsonEncode(json))).replaceAll('=', '');
   final exp =
       DateTime.now().add(Duration(hours: inHours)).millisecondsSinceEpoch ~/
       1000;
   return '${encode({'alg': 'HS256'})}.'
-      '${encode({'id': userId, 'exp': exp, 'type': 'auth'})}.sig';
+      '${encode({'id': userId, 'exp': exp, 'type': 'auth', 'n': ?serial})}'
+      '.sig';
 }
 
 /// Splits a `multipart/form-data` [body] using the boundary in

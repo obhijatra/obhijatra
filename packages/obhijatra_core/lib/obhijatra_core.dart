@@ -8,8 +8,8 @@
 ///   from an app-supplied [KeyStore] and [DeviceDatabaseOpener].
 /// - Forms: [FormRepository], [FormEntrySession], [DraftRepository].
 /// - Server: [ObhijatraServer] (handshake, sign-in by email and password,
-///   SMS code or Google, forms, submissions); [parsePhoneNumber] reads a
-///   typed mobile number.
+///   SMS code or Google, replacing a one-time password, forms,
+///   submissions); [parsePhoneNumber] reads a typed mobile number.
 /// - Sync: [OutboxRepository] and [SyncEngine] with its [SyncStatus].
 /// - Problems: every failure carries a plain-language [ProblemCode].
 /// - App lock: [AppLock] (app PIN, wrong-PIN waits, offline limit) over an

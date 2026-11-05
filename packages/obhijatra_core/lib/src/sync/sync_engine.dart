@@ -127,7 +127,9 @@ final class SyncReport {
 ///   submission) when the app is older than the server's
 ///   `min_client_version` or speaks another API version, or when the
 ///   phone's clock differs from the server's `Date` header by more than
-///   [maxClockSkew] ([ProblemCode.clockSkew]).
+///   [maxClockSkew] ([ProblemCode.clockSkew]), or while the person must
+///   still replace a one-time password ([ProblemCode.passwordChangeRequired],
+///   also when the server first says so in answer to a submission).
 /// - Sends due entries oldest first; a confirmation (`received` or
 ///   `already_received`) marks an entry sent; a 409 or other refusal marks
 ///   it as a problem with a plain-language code; a temporary failure
@@ -376,9 +378,13 @@ final class SyncEngine {
     }
     final stop =
         blocker ??
-        (_server.hasValidSession
-            ? await _checkOwner()
-            : ProblemCode.signInRequired);
+        (!_server.hasValidSession
+            ? ProblemCode.signInRequired
+            // A session started with a one-time password can only choose a
+            // new password; the server would refuse every submission.
+            : _server.currentUser!.mustChangePassword
+            ? ProblemCode.passwordChangeRequired
+            : await _checkOwner());
     _update(
       _status.copyWith(
         isOffline: false,

@@ -88,6 +88,13 @@ final class ObhijatraServer {
   /// The realtime topic on which the server hands back an OAuth2 code.
   static const String _oauth2Topic = '@oauth2';
 
+  /// The user field that is `true` while the person has a one-time password.
+  static const String mustChangePasswordField = 'must_change_password';
+
+  /// The reason code of the server's HTTP 403 answer to a person who must
+  /// choose a new password first (`data.reason.code`).
+  static const String passwordChangeRequiredReason = 'password_change_required';
+
   /// Whether a field user is signed in with an unexpired session.
   bool get hasValidSession {
     final store = _pb.authStore;
@@ -117,11 +124,7 @@ final class ObhijatraServer {
       http.Request('GET', _pb.buildURL('$apiPrefix/meta')),
     );
     if (response.statusCode >= 400) {
-      throw _problemForStatus(
-        response.statusCode,
-        _messageOf(response),
-        onBadRequest: ProblemCode.unexpectedResponse,
-      );
+      throw _problemOf(response, onBadRequest: ProblemCode.unexpectedResponse);
     }
     return ServerMeta.fromJson(
       _asJsonObject(_decodeJson(response)),
@@ -152,11 +155,7 @@ final class ObhijatraServer {
     );
     if (response.statusCode == 404) return SignInMethods.passwordOnly;
     if (response.statusCode != 200) {
-      throw _problemForStatus(
-        response.statusCode,
-        _messageOf(response),
-        onBadRequest: ProblemCode.unexpectedResponse,
-      );
+      throw _problemOf(response, onBadRequest: ProblemCode.unexpectedResponse);
     }
     return SignInMethods.fromJson(_asJsonObject(_decodeJson(response)));
   }
@@ -177,9 +176,8 @@ final class ObhijatraServer {
       'phone': phone,
     });
     if (response.statusCode != 200) {
-      throw _problemForStatus(
-        response.statusCode,
-        _messageOf(response),
+      throw _problemOf(
+        response,
         onBadRequest: ProblemCode.phoneNumberInvalid,
         overrides: const {
           403: ProblemCode.signInMethodOff,
@@ -227,9 +225,8 @@ final class ObhijatraServer {
       'code': digits,
     });
     if (response.statusCode != 200) {
-      throw _problemForStatus(
-        response.statusCode,
-        _messageOf(response),
+      throw _problemOf(
+        response,
         onBadRequest: ProblemCode.signInCodeWrong,
         overrides: const {
           403: ProblemCode.signInMethodOff,
@@ -285,9 +282,8 @@ final class ObhijatraServer {
         }),
       );
       if (response.statusCode != 200) {
-        throw _problemForStatus(
-          response.statusCode,
-          _messageOf(response),
+        throw _problemOf(
+          response,
           onBadRequest: ProblemCode.googleSignInRefused,
           overrides: const {403: ProblemCode.signInMethodOff},
         );
@@ -301,6 +297,78 @@ final class ObhijatraServer {
 
   /// Forgets the session on this device.
   void signOut() => _pb.authStore.clear();
+
+  /// Chooses the signed-in field user's own password, in place of the
+  /// one-time password an organisation admin gave them (see
+  /// [SignedInUser.mustChangePassword]); [currentPassword] is the password
+  /// they have now.
+  ///
+  /// The server ends every session of the account when its password
+  /// changes, so this then signs in again with the account's email address
+  /// and [newPassword]. The new session replaces the old one in the session
+  /// store, and the returned user no longer has to change the password.
+  ///
+  /// Failures that change nothing: [ProblemCode.newPasswordInvalid] (checked
+  /// here first: [minPasswordLength] to [maxPasswordLength] characters),
+  /// [ProblemCode.currentPasswordWrong], [ProblemCode.signInRequired] (no
+  /// session) and connection problems. [ProblemCode.passwordChangedSignInAgain]
+  /// means the new password is saved but the sign-in after it did not work:
+  /// no session is left, and the person signs in with the new password.
+  Future<SignedInUser> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = currentUser;
+    if (user == null || !hasValidSession) {
+      throw const ObhijatraException(ProblemCode.signInRequired);
+    }
+    final length = newPassword.runes.length;
+    if (length < minPasswordLength || length > maxPasswordLength) {
+      throw const ObhijatraException(ProblemCode.newPasswordInvalid);
+    }
+    if (currentPassword.isEmpty) {
+      throw const ObhijatraException(ProblemCode.currentPasswordWrong);
+    }
+    // The server gives one-time passwords only to accounts with an email
+    // address; without one, nobody could sign in with the new password.
+    if (user.email.isEmpty) {
+      throw const ObhijatraException(ProblemCode.unexpectedResponse);
+    }
+    final response = await _sendRaw(
+      http.Request(
+          'PATCH',
+          _pb.buildURL(
+            '/api/collections/$fieldUsersCollection/records/'
+            '${Uri.encodeComponent(user.id)}',
+          ),
+        )
+        ..headers['content-type'] = 'application/json'
+        ..headers['Authorization'] = _pb.authStore.token
+        // Only these three fields: the server refuses anything more while
+        // a one-time password is set.
+        ..bodyBytes = utf8.encode(
+          jsonEncode({
+            'oldPassword': currentPassword,
+            'password': newPassword,
+            'passwordConfirm': newPassword,
+          }),
+        ),
+    );
+    if (response.statusCode != 200) throw _passwordChangeProblem(response);
+
+    // The old session has ended on the server; do not keep or send it.
+    _pb.authStore.clear();
+    try {
+      return await signIn(email: user.email, password: newPassword);
+    } on ObhijatraException catch (e) {
+      throw ObhijatraException(
+        ProblemCode.passwordChangedSignInAgain,
+        statusCode: e.statusCode,
+        serverMessage: e.serverMessage,
+        cause: e,
+      );
+    }
+  }
 
   /// Lists every form version the server has published to this user.
   Future<List<RemoteFormVersion>> listPublishedFormVersions() async {
@@ -332,9 +400,7 @@ final class ObhijatraServer {
     );
     final request = http.Request('GET', url);
     final response = await _sendRaw(request);
-    if (response.statusCode != 200) {
-      throw _problemForStatus(response.statusCode, _messageOf(response));
-    }
+    if (response.statusCode != 200) throw _problemOf(response);
     try {
       return utf8.decode(response.bodyBytes);
     } on FormatException catch (e) {
@@ -384,9 +450,7 @@ final class ObhijatraServer {
     }
 
     final response = await _sendRaw(request);
-    if (response.statusCode != 200) {
-      throw _problemForStatus(response.statusCode, _messageOf(response));
-    }
+    if (response.statusCode != 200) throw _problemOf(response);
     final json = _asJsonObject(_decodeJson(response));
     final id = json['id'];
     final instanceId = json['instance_id'];
@@ -526,11 +590,7 @@ final class ObhijatraServer {
       ),
     );
     if (response.statusCode != 200) {
-      throw _problemForStatus(
-        response.statusCode,
-        _messageOf(response),
-        onBadRequest: ProblemCode.unexpectedResponse,
-      );
+      throw _problemOf(response, onBadRequest: ProblemCode.unexpectedResponse);
     }
     final json = _asJsonObject(_decodeJson(response));
     final AuthMethodsList methods;
@@ -573,9 +633,8 @@ final class ObhijatraServer {
       'subscriptions': [topic],
     });
     if (response.statusCode >= 300) {
-      throw _problemForStatus(
-        response.statusCode,
-        _messageOf(response),
+      throw _problemOf(
+        response,
         onBadRequest: ProblemCode.unexpectedResponse,
         overrides: const {404: ProblemCode.unexpectedResponse},
       );
@@ -704,17 +763,86 @@ final class ObhijatraServer {
       throw _problemForStatus(
         e.statusCode,
         message is String ? message : null,
+        reason: _reasonOf(e.response),
         onBadRequest: onBadRequest,
       );
     }
   }
 
-  static ObhijatraException _problemForStatus(
-    int status,
-    String? message, {
+  /// The problem for an error [response], from its status, message and
+  /// reason code.
+  static ObhijatraException _problemOf(
+    http.Response response, {
     ProblemCode onBadRequest = ProblemCode.submissionInvalid,
     Map<int, ProblemCode> overrides = const {},
   }) {
+    final json = _decodeJson(response);
+    final message = json is Map<String, Object?> ? json['message'] : null;
+    return _problemForStatus(
+      response.statusCode,
+      message is String ? message : null,
+      reason: _reasonOf(json),
+      onBadRequest: onBadRequest,
+      overrides: overrides,
+    );
+  }
+
+  /// The problem for a refused password change: the current password, or
+  /// the new one, is named by the server's field errors (`data.oldPassword`,
+  /// `data.password`).
+  static ObhijatraException _passwordChangeProblem(http.Response response) {
+    final json = _decodeJson(response);
+    final data = json is Map<String, Object?> ? json['data'] : null;
+    if (response.statusCode == 400 && data is Map<String, Object?>) {
+      final message = json is Map<String, Object?> ? json['message'] : null;
+      final code = data.containsKey('oldPassword')
+          ? ProblemCode.currentPasswordWrong
+          : data.containsKey('password') || data.containsKey('passwordConfirm')
+          ? ProblemCode.newPasswordInvalid
+          : null;
+      if (code != null) {
+        return ObhijatraException(
+          code,
+          statusCode: 400,
+          serverMessage: message is String ? message : null,
+        );
+      }
+    }
+    // 404: the account is gone or no longer active.
+    return _problemOf(
+      response,
+      onBadRequest: ProblemCode.unexpectedResponse,
+      overrides: const {404: ProblemCode.accountNotPermitted},
+    );
+  }
+
+  /// The reason code in an error answer (`data.reason.code`), if any.
+  static String? _reasonOf(Object? json) {
+    if (json is! Map<String, Object?>) return null;
+    final data = json['data'];
+    if (data is! Map<String, Object?>) return null;
+    final reason = data['reason'];
+    if (reason is! Map<String, Object?>) return null;
+    final code = reason['code'];
+    return code is String ? code : null;
+  }
+
+  static ObhijatraException _problemForStatus(
+    int status,
+    String? message, {
+    String? reason,
+    ProblemCode onBadRequest = ProblemCode.submissionInvalid,
+    Map<int, ProblemCode> overrides = const {},
+  }) {
+    // A person with a one-time password may do nothing else until they
+    // choose their own; this wins over every other meaning of a 403.
+    if (status == 403 && reason == passwordChangeRequiredReason) {
+      return ObhijatraException(
+        ProblemCode.passwordChangeRequired,
+        statusCode: status,
+        serverMessage: message,
+      );
+    }
     final code =
         overrides[status] ??
         switch (status) {
@@ -754,15 +882,6 @@ final class ObhijatraServer {
     return null;
   }
 
-  static String? _messageOf(http.Response response) {
-    final json = _decodeJson(response);
-    if (json is Map<String, Object?>) {
-      final message = json['message'];
-      if (message is String) return message;
-    }
-    return null;
-  }
-
   static Map<String, Object?> _asJsonObject(Object? json) {
     if (json is Map<String, Object?>) return json;
     throw const ObhijatraException(ProblemCode.unexpectedResponse);
@@ -773,6 +892,7 @@ final class ObhijatraServer {
     email: record.getStringValue('email'),
     name: record.getStringValue('name'),
     locationPath: record.getStringValue('location_path'),
+    mustChangePassword: record.getBoolValue(mustChangePasswordField),
   );
 
   static RemoteFormVersion _formVersionOf(RecordModel r) {

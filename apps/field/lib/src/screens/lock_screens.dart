@@ -567,7 +567,8 @@ class _OnlineSignInState extends ConsumerState<OnlineSignInScreen> {
 /// [AppLockController.signInOnlineWith], which accepts only the account
 /// that last used this phone, refuses an SMS code or Google where only a
 /// password may sign in, and after one of them still asks for the phone's
-/// own unlock.
+/// own unlock. Replacing a one-time password
+/// ([AppLockController.changePasswordOnline]) ends the same way.
 class _LockSignIn implements SignInActions {
   _LockSignIn(this._ref);
 
@@ -596,4 +597,14 @@ class _LockSignIn implements SignInActions {
       _lock.signInOnlineWith(
         GoogleBrowserSignIn(_ref.read(signInBrowserProvider), cancellation),
       );
+
+  @override
+  Future<void> changePassword(String currentPassword, String newPassword) =>
+      _lock.changePasswordOnline(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+
+  @override
+  void cancelPasswordChange() => _lock.cancelPasswordChange();
 }

@@ -12,6 +12,7 @@ import 'package:obhijatra_field/src/providers/locale_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
 import 'package:obhijatra_field/src/providers/sync_providers.dart';
+import 'package:obhijatra_field/src/screens/change_password_screen.dart';
 import 'package:obhijatra_field/src/screens/form_entry_screen.dart';
 import 'package:obhijatra_field/src/util/bangla.dart' as fmt;
 import 'package:obhijatra_field/src/widgets/bottom_nav.dart';
@@ -62,6 +63,11 @@ class TodayScreen extends ConsumerWidget {
     final drafts = ref.watch(draftsProvider).value ?? const <Draft>[];
     final refresh = ref.watch(formsRefreshProvider);
     final offline = !online || status.isOffline;
+    // Sending or updating forms stopped: the person must replace a one-time
+    // password first.
+    final mustChangePassword =
+        status.blockedBy == ProblemCode.passwordChangeRequired ||
+        refresh.problem == ProblemCode.passwordChangeRequired;
     final scale = MediaQuery.textScalerOf(context).scale(16) / 16;
 
     final stats = <Widget>[
@@ -119,6 +125,17 @@ class TodayScreen extends ConsumerWidget {
                 action: PrimaryButton(
                   label: l.signInTitle,
                   onPressed: () => ref.read(sessionProvider.notifier).signOut(),
+                ),
+              )
+            else if (mustChangePassword)
+              _Notice(
+                icon: LucideIcons.keyRound,
+                text: l.passwordChangeBanner,
+                color: p.warning,
+                background: p.warningSubtle,
+                action: PrimaryButton(
+                  label: l.passwordChangeOpen,
+                  onPressed: () => openPasswordChange(context),
                 ),
               )
             else if (status.blockedBy != null)
@@ -215,7 +232,9 @@ class TodayScreen extends ConsumerWidget {
             ),
             if (refresh.problem != null &&
                 refresh.problem != ProblemCode.offline &&
-                refresh.problem != ProblemCode.timeout) ...<Widget>[
+                refresh.problem != ProblemCode.timeout &&
+                refresh.problem !=
+                    ProblemCode.passwordChangeRequired) ...<Widget>[
               const SizedBox(height: Spacing.space3),
               _Notice(
                 icon: LucideIcons.triangleAlert,

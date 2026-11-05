@@ -354,6 +354,14 @@
   "@signInAgainBanner": {
     "description": "Banner shown on the home screen when the session has ended."
   },
+  "passwordChangeBanner": "Your organisation gave you a one-time password. Choose your own password to send your forms. Your answers stay on this phone.",
+  "@passwordChangeBanner": {
+    "description": "Banner on the home screen when sending stopped because the person must replace a one-time password."
+  },
+  "passwordChangeOpen": "Choose password",
+  "@passwordChangeOpen": {
+    "description": "Button on the home-screen banner that opens the step to choose a new password."
+  },
   "syncBlockedUpdate": "Please update the app to send your forms. Your answers are kept.",
   "@syncBlockedUpdate": {
     "description": "Banner shown when the app is too old for the server."
@@ -911,6 +919,70 @@
   "@reSignInPasswordForLock": {
     "description": "On a phone with no screen lock and no app PIN only email and password can sign in. Shown when the server also offers SMS or Google sign-in."
   },
+  "passwordChangeTitle": "Choose your own password",
+  "@passwordChangeTitle": {
+    "description": "Title of the full-screen step where a person replaces the one-time password an organisation admin gave them."
+  },
+  "passwordChangeBody": "Your organisation gave you a one-time password. Choose your own password now. From now on, you will sign in with it.",
+  "@passwordChangeBody": {
+    "description": "Why the person must choose a password, under the title of the step."
+  },
+  "passwordChangeCurrent": "One-time password",
+  "@passwordChangeCurrent": {
+    "description": "Label of the field for the one-time password the organisation gave (the current password)."
+  },
+  "passwordChangeCurrentHelp": "The password your organisation gave you.",
+  "@passwordChangeCurrentHelp": {
+    "description": "Help under the one-time password label."
+  },
+  "passwordChangeNew": "New password",
+  "@passwordChangeNew": {
+    "description": "Label of the field for the person's own new password."
+  },
+  "passwordChangeHint": "Use 3 or 4 words you will remember, at least 12 characters.",
+  "@passwordChangeHint": {
+    "description": "Plain hint under the new password label. The server needs at least 12 characters."
+  },
+  "passwordChangeRepeat": "Type the new password again",
+  "@passwordChangeRepeat": {
+    "description": "Label of the field where the new password is typed a second time."
+  },
+  "passwordChangeCurrentEmpty": "Type the one-time password from your organisation.",
+  "@passwordChangeCurrentEmpty": {
+    "description": "Shown under the one-time password field when it is empty."
+  },
+  "passwordChangeTooShort": "Use at least 12 characters.",
+  "@passwordChangeTooShort": {
+    "description": "Shown under the new password field when it is shorter than 12 characters."
+  },
+  "passwordChangeTooLong": "Use no more than 71 characters.",
+  "@passwordChangeTooLong": {
+    "description": "Shown under the new password field when it is longer than the server allows (71 characters)."
+  },
+  "passwordChangeSameAsOld": "Choose a new password, not the one-time password.",
+  "@passwordChangeSameAsOld": {
+    "description": "Shown under the new password field when it is the same as the one-time password."
+  },
+  "passwordChangeMismatch": "The two passwords are not the same. Type the new password again.",
+  "@passwordChangeMismatch": {
+    "description": "Shown under the repeat field when it differs from the new password."
+  },
+  "passwordChangeSave": "Save password",
+  "@passwordChangeSave": {
+    "description": "Main button of the step: saves the new password."
+  },
+  "passwordChangeSaving": "Saving…",
+  "@passwordChangeSaving": {
+    "description": "The main button while the new password is being saved."
+  },
+  "passwordChangeSignOut": "Sign out",
+  "@passwordChangeSignOut": {
+    "description": "Quiet button on the step: leaves without choosing a password and goes back to signing in."
+  },
+  "passwordChangeSignInAgain": "Sign in again",
+  "@passwordChangeSignInAgain": {
+    "description": "Main button when the new password was saved but the app could not sign in with it: goes back to signing in."
+  },
   "aboutSecurityHeading": "Keeping the data safe",
   "@aboutSecurityHeading": {
     "description": "Heading of the security notes on the About screen."
@@ -1046,6 +1118,22 @@
   "problem_browserUnavailable": "This phone could not open a web page to sign in. Use another way to sign in.",
   "@problem_browserUnavailable": {
     "description": "Plain-language explanation of the problem code \"browserUnavailable\". Shown to a field officer."
+  },
+  "problem_passwordChangeRequired": "Choose your own password before you continue. Your organisation gave you a one-time password. Your work is safe on this phone.",
+  "@problem_passwordChangeRequired": {
+    "description": "Plain-language explanation of the problem code \"passwordChangeRequired\". Shown to a field officer."
+  },
+  "problem_currentPasswordWrong": "That password is not right. Type the one-time password exactly as your organisation gave it to you.",
+  "@problem_currentPasswordWrong": {
+    "description": "Plain-language explanation of the problem code \"currentPasswordWrong\". Shown to a field officer."
+  },
+  "problem_newPasswordInvalid": "This new password cannot be used. Use at least 12 characters, for example 3 or 4 words.",
+  "@problem_newPasswordInvalid": {
+    "description": "Plain-language explanation of the problem code \"newPasswordInvalid\". Shown to a field officer."
+  },
+  "problem_passwordChangedSignInAgain": "Your new password is saved. Sign in again with your new password.",
+  "@problem_passwordChangedSignInAgain": {
+    "description": "Plain-language explanation of the problem code \"passwordChangedSignInAgain\". Shown to a field officer."
   },
   "problem_unknown": "Something went wrong. Your work is safe on this phone. Please try again.",
   "@problem_unknown": {

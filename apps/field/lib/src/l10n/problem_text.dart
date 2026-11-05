@@ -42,6 +42,11 @@ String problemText(AppLocalizations l10n, ProblemCode code) => switch (code) {
   ProblemCode.googleSignInRefused => l10n.problem_googleSignInRefused,
   ProblemCode.signInCancelled => l10n.problem_signInCancelled,
   ProblemCode.browserUnavailable => l10n.problem_browserUnavailable,
+  ProblemCode.passwordChangeRequired => l10n.problem_passwordChangeRequired,
+  ProblemCode.currentPasswordWrong => l10n.problem_currentPasswordWrong,
+  ProblemCode.newPasswordInvalid => l10n.problem_newPasswordInvalid,
+  ProblemCode.passwordChangedSignInAgain =>
+    l10n.problem_passwordChangedSignInAgain,
   ProblemCode.unknown => l10n.problem_unknown,
 };
 

@@ -572,6 +572,18 @@ abstract class AppLocalizations {
   /// **'Please sign in again to send your forms. Your answers stay on this phone.'**
   String get signInAgainBanner;
 
+  /// Banner on the home screen when sending stopped because the person must replace a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation gave you a one-time password. Choose your own password to send your forms. Your answers stay on this phone.'**
+  String get passwordChangeBanner;
+
+  /// Button on the home-screen banner that opens the step to choose a new password.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose password'**
+  String get passwordChangeOpen;
+
   /// Banner shown when the app is too old for the server.
   ///
   /// In en, this message translates to:
@@ -1250,6 +1262,102 @@ abstract class AppLocalizations {
   /// **'To choose an app PIN, sign in with your email and password. If your account has no password, ask your organisation admin.'**
   String get reSignInPasswordForLock;
 
+  /// Title of the full-screen step where a person replaces the one-time password an organisation admin gave them.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your own password'**
+  String get passwordChangeTitle;
+
+  /// Why the person must choose a password, under the title of the step.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation gave you a one-time password. Choose your own password now. From now on, you will sign in with it.'**
+  String get passwordChangeBody;
+
+  /// Label of the field for the one-time password the organisation gave (the current password).
+  ///
+  /// In en, this message translates to:
+  /// **'One-time password'**
+  String get passwordChangeCurrent;
+
+  /// Help under the one-time password label.
+  ///
+  /// In en, this message translates to:
+  /// **'The password your organisation gave you.'**
+  String get passwordChangeCurrentHelp;
+
+  /// Label of the field for the person's own new password.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get passwordChangeNew;
+
+  /// Plain hint under the new password label. The server needs at least 12 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 3 or 4 words you will remember, at least 12 characters.'**
+  String get passwordChangeHint;
+
+  /// Label of the field where the new password is typed a second time.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the new password again'**
+  String get passwordChangeRepeat;
+
+  /// Shown under the one-time password field when it is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the one-time password from your organisation.'**
+  String get passwordChangeCurrentEmpty;
+
+  /// Shown under the new password field when it is shorter than 12 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 12 characters.'**
+  String get passwordChangeTooShort;
+
+  /// Shown under the new password field when it is longer than the server allows (71 characters).
+  ///
+  /// In en, this message translates to:
+  /// **'Use no more than 71 characters.'**
+  String get passwordChangeTooLong;
+
+  /// Shown under the new password field when it is the same as the one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password, not the one-time password.'**
+  String get passwordChangeSameAsOld;
+
+  /// Shown under the repeat field when it differs from the new password.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords are not the same. Type the new password again.'**
+  String get passwordChangeMismatch;
+
+  /// Main button of the step: saves the new password.
+  ///
+  /// In en, this message translates to:
+  /// **'Save password'**
+  String get passwordChangeSave;
+
+  /// The main button while the new password is being saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get passwordChangeSaving;
+
+  /// Quiet button on the step: leaves without choosing a password and goes back to signing in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get passwordChangeSignOut;
+
+  /// Main button when the new password was saved but the app could not sign in with it: goes back to signing in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get passwordChangeSignInAgain;
+
   /// Heading of the security notes on the About screen.
   ///
   /// In en, this message translates to:
@@ -1453,6 +1561,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This phone could not open a web page to sign in. Use another way to sign in.'**
   String get problem_browserUnavailable;
+
+  /// Plain-language explanation of the problem code "passwordChangeRequired". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your own password before you continue. Your organisation gave you a one-time password. Your work is safe on this phone.'**
+  String get problem_passwordChangeRequired;
+
+  /// Plain-language explanation of the problem code "currentPasswordWrong". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'That password is not right. Type the one-time password exactly as your organisation gave it to you.'**
+  String get problem_currentPasswordWrong;
+
+  /// Plain-language explanation of the problem code "newPasswordInvalid". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This new password cannot be used. Use at least 12 characters, for example 3 or 4 words.'**
+  String get problem_newPasswordInvalid;
+
+  /// Plain-language explanation of the problem code "passwordChangedSignInAgain". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new password is saved. Sign in again with your new password.'**
+  String get problem_passwordChangedSignInAgain;
 
   /// Plain-language explanation of the problem code "unknown". Shown to a field officer.
   ///

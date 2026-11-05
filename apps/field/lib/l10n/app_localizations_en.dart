@@ -297,6 +297,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please sign in again to send your forms. Your answers stay on this phone.';
 
   @override
+  String get passwordChangeBanner =>
+      'Your organisation gave you a one-time password. Choose your own password to send your forms. Your answers stay on this phone.';
+
+  @override
+  String get passwordChangeOpen => 'Choose password';
+
+  @override
   String get syncBlockedUpdate =>
       'Please update the app to send your forms. Your answers are kept.';
 
@@ -779,6 +786,60 @@ class AppLocalizationsEn extends AppLocalizations {
       'To choose an app PIN, sign in with your email and password. If your account has no password, ask your organisation admin.';
 
   @override
+  String get passwordChangeTitle => 'Choose your own password';
+
+  @override
+  String get passwordChangeBody =>
+      'Your organisation gave you a one-time password. Choose your own password now. From now on, you will sign in with it.';
+
+  @override
+  String get passwordChangeCurrent => 'One-time password';
+
+  @override
+  String get passwordChangeCurrentHelp =>
+      'The password your organisation gave you.';
+
+  @override
+  String get passwordChangeNew => 'New password';
+
+  @override
+  String get passwordChangeHint =>
+      'Use 3 or 4 words you will remember, at least 12 characters.';
+
+  @override
+  String get passwordChangeRepeat => 'Type the new password again';
+
+  @override
+  String get passwordChangeCurrentEmpty =>
+      'Type the one-time password from your organisation.';
+
+  @override
+  String get passwordChangeTooShort => 'Use at least 12 characters.';
+
+  @override
+  String get passwordChangeTooLong => 'Use no more than 71 characters.';
+
+  @override
+  String get passwordChangeSameAsOld =>
+      'Choose a new password, not the one-time password.';
+
+  @override
+  String get passwordChangeMismatch =>
+      'The two passwords are not the same. Type the new password again.';
+
+  @override
+  String get passwordChangeSave => 'Save password';
+
+  @override
+  String get passwordChangeSaving => 'Saving…';
+
+  @override
+  String get passwordChangeSignOut => 'Sign out';
+
+  @override
+  String get passwordChangeSignInAgain => 'Sign in again';
+
+  @override
   String get aboutSecurityHeading => 'Keeping the data safe';
 
   @override
@@ -912,6 +973,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get problem_browserUnavailable =>
       'This phone could not open a web page to sign in. Use another way to sign in.';
+
+  @override
+  String get problem_passwordChangeRequired =>
+      'Choose your own password before you continue. Your organisation gave you a one-time password. Your work is safe on this phone.';
+
+  @override
+  String get problem_currentPasswordWrong =>
+      'That password is not right. Type the one-time password exactly as your organisation gave it to you.';
+
+  @override
+  String get problem_newPasswordInvalid =>
+      'This new password cannot be used. Use at least 12 characters, for example 3 or 4 words.';
+
+  @override
+  String get problem_passwordChangedSignInAgain =>
+      'Your new password is saved. Sign in again with your new password.';
 
   @override
   String get problem_unknown =>

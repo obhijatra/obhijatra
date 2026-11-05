@@ -136,6 +136,39 @@ class PasswordRequired implements Exception {
   final OnlineSignInReason? reason;
 }
 
+/// The sign-in worked, but [user] signed in with a one-time password from an
+/// organisation admin: they must choose their own password (see
+/// `SessionNotifier.changePassword` and
+/// [AppLockController.changePasswordOnline]) before anything opens. Nothing
+/// is recorded until they have.
+class PasswordChangeNeeded implements Exception {
+  /// Creates the exception for [user].
+  const PasswordChangeNeeded(this.user);
+
+  /// Who signed in.
+  final SignedInUser user;
+}
+
+/// A one-time-password sign-in from a lock screen, waiting for the person to
+/// choose their own password.
+final class _PendingPasswordChange {
+  const _PendingPasswordChange({
+    required this.address,
+    required this.session,
+    required this.byPassword,
+  });
+
+  /// The server it was made with.
+  final Uri address;
+
+  /// The one-time session (it may only change the password).
+  final String session;
+
+  /// Whether the person signed in with email and password (not an SMS code
+  /// or Google); the app lock carries on as that sign-in would have.
+  final bool byPassword;
+}
+
 /// A way to sign in with the server from a lock screen. The app lock runs it
 /// itself ([AppLockController.signInOnlineWith]), so it always knows which
 /// way was used: an SMS code or Google only shows that someone holds this
@@ -205,6 +238,7 @@ final appLockProvider = AsyncNotifierProvider<AppLockController, AppLockState>(
 class AppLockController extends AsyncNotifier<AppLockState> {
   DateTime? _backgroundedAt;
   String? _pendingSession;
+  _PendingPasswordChange? _pendingChange;
 
   AppLock get _lock => ref.read(appLockStoreProvider);
 
@@ -295,8 +329,10 @@ class AppLockController extends AsyncNotifier<AppLockState> {
   );
 
   /// Back from "forgot PIN" to the PIN.
-  void backToPin() =>
-      state = const AsyncData<AppLockState>(LockLocked(UnlockMethod.pin));
+  void backToPin() {
+    _pendingChange = null;
+    state = const AsyncData<AppLockState>(LockLocked(UnlockMethod.pin));
+  }
 
   /// Stores [pin] as the app PIN and opens the data.
   Future<void> choosePin(String pin) async {
@@ -370,7 +406,12 @@ class AppLockController extends AsyncNotifier<AppLockState> {
   /// with [PasswordRequired] when [passwordOnly], and otherwise (after 30
   /// days offline) the phone's screen lock or the app PIN must still unlock
   /// the data afterwards. Email and password work as before.
+  ///
+  /// An account with a one-time password throws [PasswordChangeNeeded]
+  /// (after the same-account check) and records nothing: the person chooses
+  /// their own password with [changePasswordOnline] first.
   Future<void> signInOnlineWith(OnlineSignIn signIn) async {
+    _pendingChange = null;
     final reason = switch (state.value) {
       LockNeedsSignIn(:final reason) => reason,
       _ => null,
@@ -393,25 +434,119 @@ class AppLockController extends AsyncNotifier<AppLockState> {
     );
     try {
       final user = await signIn._signIn(server);
-      final last = await _lock.lastOnlineSignIn();
-      if (last != null && last.userId != user.id) {
-        server.signOut();
-        throw const WrongAccount();
-      }
-      _pendingSession = session;
-      await _lock.recordOnlineSignIn(user.id);
-      state = AsyncData<AppLockState>(
-        byPassword
-            ? await _afterOnlineSignIn(
-                newPin: reason == OnlineSignInReason.forgotPin,
-              )
-            // Holding the phone is not enough: its screen lock or the app
-            // PIN opens the data, as on any other day.
-            : await _evaluate(),
+      await _finishOnlineSignIn(
+        server,
+        user,
+        () => session,
+        address: address,
+        reason: reason,
+        byPassword: byPassword,
       );
     } finally {
       server.close();
     }
+  }
+
+  /// Chooses the person's own password in place of the one-time password
+  /// of the sign-in that threw [PasswordChangeNeeded], then carries on
+  /// exactly as that sign-in would have: same account only, the online
+  /// sign-in recorded, and after an SMS code or Google the phone's screen
+  /// lock or the app PIN still opens the data. Failures throw an
+  /// [ObhijatraException]; after [ProblemCode.passwordChangedSignInAgain]
+  /// or [ProblemCode.signInRequired] the person signs in again from the
+  /// start.
+  Future<void> changePasswordOnline({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final pending = _pendingChange;
+    final reason = switch (state.value) {
+      LockNeedsSignIn(:final reason) => reason,
+      _ => null,
+    };
+    if (pending == null || reason == null) {
+      throw const ObhijatraException(ProblemCode.signInRequired);
+    }
+    String? session = pending.session;
+    final server = ObhijatraServer(
+      baseUrl: pending.address,
+      appVersion: appReleaseVersion,
+      authStore: SettingsRepository.detachedAuthStore(
+        (data) => session = data,
+        initial: pending.session,
+      ),
+      httpClientFactory: ref.read(httpClientFactoryProvider),
+    );
+    try {
+      final SignedInUser user;
+      try {
+        user = await server.changePassword(
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        );
+      } on ObhijatraException catch (e) {
+        if (e.code == ProblemCode.passwordChangedSignInAgain ||
+            e.code == ProblemCode.signInRequired) {
+          _pendingChange = null; // The one-time session has ended.
+        }
+        rethrow;
+      }
+      _pendingChange = null;
+      await _finishOnlineSignIn(
+        server,
+        user,
+        () => session,
+        address: pending.address,
+        reason: reason,
+        byPassword: pending.byPassword,
+      );
+    } finally {
+      server.close();
+    }
+  }
+
+  /// Gives up the one-time-password sign-in waiting for a new password.
+  void cancelPasswordChange() => _pendingChange = null;
+
+  /// The end of every online sign-in from a lock screen: only the account
+  /// that last used this phone, nothing before a one-time password is
+  /// replaced, then the sign-in is recorded and the lock moves on.
+  Future<void> _finishOnlineSignIn(
+    ObhijatraServer server,
+    SignedInUser user,
+    String? Function() session, {
+    required Uri address,
+    required OnlineSignInReason reason,
+    required bool byPassword,
+  }) async {
+    final last = await _lock.lastOnlineSignIn();
+    if (last != null && last.userId != user.id) {
+      server.signOut();
+      throw const WrongAccount();
+    }
+    final saved = session();
+    if (user.mustChangePassword) {
+      if (saved == null) {
+        throw const ObhijatraException(ProblemCode.unexpectedResponse);
+      }
+      _pendingChange = _PendingPasswordChange(
+        address: address,
+        session: saved,
+        byPassword: byPassword,
+      );
+      throw PasswordChangeNeeded(user);
+    }
+    _pendingSession = saved;
+    await _lock.recordOnlineSignIn(user.id);
+    state = AsyncData<AppLockState>(
+      byPassword
+          ? await _afterOnlineSignIn(
+              newPin: reason == OnlineSignInReason.forgotPin,
+            )
+          // Holding the phone is not enough: its screen lock or the app
+          // PIN opens the data, as on any other day.
+          : await _evaluate(),
+    );
   }
 
   /// The session of an online sign-in made while the database was closed,

@@ -91,7 +91,12 @@ final sessionProvider = NotifierProvider<SessionNotifier, SignedInUser?>(
 /// Holds the signed-in [SignedInUser].
 class SessionNotifier extends Notifier<SignedInUser?> {
   @override
-  SignedInUser? build() => ref.watch(serverProvider).value?.server.currentUser;
+  SignedInUser? build() {
+    final user = ref.watch(serverProvider).value?.server.currentUser;
+    // A saved one-time-password session (the app closed before the person
+    // chose their own password) is no sign-in: they sign in again.
+    return user != null && user.mustChangePassword ? null : user;
+  }
 
   /// Signs in with [email] and [password] (see [signInWith]).
   Future<void> signIn({required String email, required String password}) =>
@@ -101,14 +106,34 @@ class SessionNotifier extends Notifier<SignedInUser?> {
   /// saved server. Throws an [ObhijatraException] with a plain-language
   /// code. Every method ends the same way: the app lock records the online
   /// sign-in (and may ask for an app PIN).
+  ///
+  /// An account with a one-time password throws [PasswordChangeNeeded] and
+  /// records nothing: the person chooses their own password with
+  /// [changePassword] first.
   Future<void> signInWith(
     Future<SignedInUser> Function(ObhijatraServer server) method,
   ) async {
     final server = ref.read(serverProvider).requireValue!.server;
     final user = await method(server);
+    if (user.mustChangePassword) throw PasswordChangeNeeded(user);
     state = user;
     await ref.read(appLockProvider.notifier).signedInOnline(user);
   }
+
+  /// Chooses the person's own password in place of a one-time password,
+  /// then carries on exactly as a sign-in does (see [signInWith]): the new
+  /// password signs in again, because the change ends every session.
+  /// Throws an [ObhijatraException]; after
+  /// [ProblemCode.passwordChangedSignInAgain] no session is left.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => signInWith(
+    (server) => server.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    ),
+  );
 
   /// Forgets the session on this phone. Unsent forms stay.
   void signOut() {

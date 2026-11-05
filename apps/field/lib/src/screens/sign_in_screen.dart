@@ -11,6 +11,7 @@ import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
 import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
+import 'package:obhijatra_field/src/screens/change_password_screen.dart';
 import 'package:obhijatra_field/src/util/bangla.dart';
 import 'package:obhijatra_field/src/widgets/labeled_field.dart';
 import 'package:obhijatra_field/src/widgets/screen_frame.dart';
@@ -78,11 +79,23 @@ class _SessionSignIn implements SignInActions {
       (server) => signInWithGoogleIn(server, browser, cancellation),
     );
   }
+
+  @override
+  Future<void> changePassword(String currentPassword, String newPassword) =>
+      _session.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+
+  @override
+  void cancelPasswordChange() => _session.signOut();
 }
 
 /// What the sign-in form asks of the server. Each screen supplies its own:
 /// the first sign-in, or the app lock's online sign-in. Every call throws
-/// an [ObhijatraException] (or [WrongAccount]) when it does not work.
+/// an [ObhijatraException] (or [WrongAccount]) when it does not work, and a
+/// sign-in throws [PasswordChangeNeeded] for an account with a one-time
+/// password.
 abstract interface class SignInActions {
   /// Which ways to sign in the server offers.
   Future<SignInMethods> methods();
@@ -98,6 +111,14 @@ abstract interface class SignInActions {
 
   /// Signs in with Google in a browser tab, until [cancellation].
   Future<void> withGoogle(SignInCancellation cancellation);
+
+  /// Chooses the person's own password in place of the one-time password of
+  /// the sign-in that threw [PasswordChangeNeeded], and carries on exactly
+  /// as that sign-in would have.
+  Future<void> changePassword(String currentPassword, String newPassword);
+
+  /// Gives up that sign-in, to sign in again.
+  void cancelPasswordChange();
 }
 
 /// Why a sign-in did not work, in plain words.
@@ -131,6 +152,10 @@ SignInProblem? signInProblemFor(AppLocalizations l, Object error) =>
         reason == OnlineSignInReason.forgotPin
             ? l.reSignInPasswordForPin
             : l.reSignInPasswordForLock,
+      ),
+      PasswordChangeNeeded() => SignInProblem.of(
+        l,
+        ProblemCode.passwordChangeRequired,
       ),
       ObhijatraException(code: ProblemCode.signInCancelled) => null,
       ObhijatraException(:final code) => SignInProblem.of(l, code),
@@ -233,6 +258,14 @@ class _SignInFormState extends State<SignInForm> {
   /// Set while Google's page is open.
   SignInCancellation? _google;
 
+  /// Whether the person signed in with a one-time password and must choose
+  /// their own now (the full-screen step replaces the form).
+  bool _changingPassword = false;
+
+  /// The one-time password just typed to sign in, if the person signed in
+  /// with email and password; the step does not ask for it again.
+  String? _oneTimePassword;
+
   bool get _offersPhone => !widget.passwordOnly && (_methods?.phone ?? false);
   bool get _offersGoogle => !widget.passwordOnly && (_methods?.google ?? false);
 
@@ -290,14 +323,21 @@ class _SignInFormState extends State<SignInForm> {
   }
 
   /// Runs [body] with the form busy; returns what went wrong, if anything,
-  /// after showing it.
-  Future<Object?> _run(Future<void> Function() body) async {
+  /// after showing it. A sign-in with a one-time password moves on to
+  /// choosing a new one, with [typedPassword] if the person typed it.
+  Future<Object?> _run(
+    Future<void> Function() body, {
+    String? typedPassword,
+  }) async {
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       await body();
+      return null;
+    } on PasswordChangeNeeded {
+      if (mounted) _startPasswordChange(typedPassword);
       return null;
     } on Object catch (e) {
       if (mounted) setState(() => _error = e);
@@ -332,7 +372,39 @@ class _SignInFormState extends State<SignInForm> {
       _error = null;
     });
     if (emailMissing || passwordMissing) return;
-    await _run(() => widget.actions.withPassword(_email.text, _password.text));
+    final password = _password.text;
+    await _run(
+      () => widget.actions.withPassword(_email.text, password),
+      typedPassword: password,
+    );
+  }
+
+  // ---- One-time password ------------------------------------------------
+
+  void _startPasswordChange(String? typedPassword) => setState(() {
+    _changingPassword = true;
+    _oneTimePassword = typedPassword;
+  });
+
+  /// Back to the form, without a new password; the one-time sign-in is
+  /// given up.
+  void _leavePasswordChange() {
+    widget.actions.cancelPasswordChange();
+    _countdown?.cancel();
+    _password.clear();
+    _code.clear();
+    setState(() {
+      _changingPassword = false;
+      _oneTimePassword = null;
+      _error = null;
+      if (_step == _Step.code) {
+        // That code is used up: start again from the number.
+        _request = null;
+        _newCodeIn = 0;
+        _newCodeSent = false;
+        _step = _Step.phone;
+      }
+    });
   }
 
   // ---- SMS code ----------------------------------------------------------
@@ -446,6 +518,8 @@ class _SignInFormState extends State<SignInForm> {
     });
     try {
       await widget.actions.withGoogle(cancellation);
+    } on PasswordChangeNeeded {
+      if (mounted) _startPasswordChange(null);
     } on Object catch (e) {
       if (mounted && !cancellation.isCancelled) setState(() => _error = e);
     } finally {
@@ -470,6 +544,14 @@ class _SignInFormState extends State<SignInForm> {
 
   @override
   Widget build(BuildContext context) {
+    if (_changingPassword) {
+      return ChangePasswordScreen(
+        key: const ValueKey<String>('change-password'),
+        currentPassword: _oneTimePassword,
+        onSave: widget.actions.changePassword,
+        onSignOut: _leavePasswordChange,
+      );
+    }
     final l = AppLocalizations.of(context);
     final waitingForGoogle = _google != null;
     final error = _error;

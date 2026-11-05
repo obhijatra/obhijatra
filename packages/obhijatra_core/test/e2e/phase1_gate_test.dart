@@ -1,6 +1,8 @@
 // Phase 1 gate: a submission queued on the phone syncs to the real
 // obhijatra-server, and one queued before a server restart (an upgrade on
-// the same data) syncs afterwards.
+// the same data) syncs afterwards. Also against the real server: sign-in
+// methods, the Google realtime connection, and replacing a one-time
+// password.
 //
 // Runs the server binary from server/dist (or OBHIJATRA_SERVER_BIN).
 // Run only this test with:  dart test -t e2e
@@ -17,6 +19,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_core/src/server/realtime_channel.dart';
+import 'package:pocketbase/pocketbase.dart' show AuthStore;
 import 'package:test/test.dart';
 
 import '../support/test_support.dart';
@@ -182,6 +185,106 @@ void main() {
     );
     expect(opened, isEmpty);
     expect(client.hasValidSession, isFalse);
+  });
+
+  test('a one-time password: everything else is refused until the person '
+      'chooses their own, then they carry on with it', () async {
+    const email = 'one.time@example.org';
+    const oneTime = 'kfmw-tqzp-hrvx';
+    const own = 'river tea mango kite';
+    Matcher problem(ProblemCode code) =>
+        throwsA(isA<ObhijatraException>().having((e) => e.code, 'code', code));
+
+    // ---- The organisation admin adds a person with a one-time password.
+    final admin = await _Admin.signIn(server.baseUrl);
+    addTearDown(admin.close);
+    final root = (await admin.list('locations', filter: "parent = ''")).single;
+    final branch = await admin.create('locations', {
+      'name': 'One-time branch',
+      'parent': root['id'],
+    });
+    final person = await admin.create('field_users', {
+      'email': email,
+      'password': oneTime,
+      'passwordConfirm': oneTime,
+      'name': 'Sample Officer',
+      'role': 'field_officer',
+      'location': branch['id'],
+      'active': true,
+      'must_change_password': true,
+    });
+    expect(person['must_change_password'], isTrue);
+
+    // ---- The phone signs in with it.
+    final store = AuthStore();
+    final client = ObhijatraServer(
+      baseUrl: server.baseUrl,
+      appVersion: obhijatraCoreVersion,
+      authStore: store,
+      timeout: const Duration(seconds: 10),
+    );
+    addTearDown(client.close);
+    final user = await client.signIn(email: email, password: oneTime);
+    expect(user.mustChangePassword, isTrue);
+    expect(user.email, email);
+    final oneTimeToken = store.token;
+
+    // Nothing else works, and the app can tell why.
+    await expectLater(
+      client.listPublishedFormVersions(),
+      problem(ProblemCode.passwordChangeRequired),
+    );
+    final instance = await fillHouseholdVisit();
+    await expectLater(
+      client.submit(instanceXml: instance.xml),
+      problem(ProblemCode.passwordChangeRequired),
+    );
+    expect((await client.fetchMeta()).syncBlocker('0.1.0'), isNull);
+    expect((await client.fetchSignInMethods()).password, isTrue);
+
+    // A wrong one-time password changes nothing.
+    await expectLater(
+      client.changePassword(
+        currentPassword: 'not-the-one-time',
+        newPassword: own,
+      ),
+      problem(ProblemCode.currentPasswordWrong),
+    );
+    expect(client.hasValidSession, isTrue);
+
+    // ---- The person chooses their own password.
+    final changed = await client.changePassword(
+      currentPassword: oneTime,
+      newPassword: own,
+    );
+    expect(changed.id, person['id']);
+    expect(changed.mustChangePassword, isFalse);
+    expect(client.hasValidSession, isTrue);
+    expect(store.token, isNot(oneTimeToken));
+    await client.listPublishedFormVersions(); // no longer refused
+
+    // The one-time session ended, and the one-time password no longer
+    // signs in; the server holds the change.
+    final refresh = await http.post(
+      server.baseUrl.resolve('/api/collections/field_users/auth-refresh'),
+      headers: {'Authorization': oneTimeToken},
+    );
+    expect(refresh.statusCode, isNot(200), reason: refresh.body);
+    final again = ObhijatraServer(
+      baseUrl: server.baseUrl,
+      appVersion: obhijatraCoreVersion,
+      timeout: const Duration(seconds: 10),
+    );
+    addTearDown(again.close);
+    await expectLater(
+      again.signIn(email: email, password: oneTime),
+      problem(ProblemCode.signInFailed),
+    );
+    final stored = (await admin.list(
+      'field_users',
+      filter: "id = '${person['id']}'",
+    )).single;
+    expect(stored['must_change_password'], isFalse);
   });
 
   test('the realtime connection of Google sign-in outlives the request '

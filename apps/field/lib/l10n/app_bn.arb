@@ -317,6 +317,14 @@
   "@signInAgainBanner": {
     "x-translation-status": "draft: owner to check"
   },
+  "passwordChangeBanner": "আপনার প্রতিষ্ঠান আপনাকে একটি এককালীন পাসওয়ার্ড দিয়েছে। ফর্ম পাঠাতে নিজের পাসওয়ার্ড বেছে নিন। আপনার উত্তর এই ফোনেই থাকবে।",
+  "@passwordChangeBanner": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeOpen": "পাসওয়ার্ড বেছে নিন",
+  "@passwordChangeOpen": {
+    "x-translation-status": "draft: owner to check"
+  },
   "syncBlockedUpdate": "ফর্ম পাঠাতে অ্যাপটি আপডেট করুন। আপনার উত্তর রাখা আছে।",
   "@syncBlockedUpdate": {
     "x-translation-status": "draft: owner to check"
@@ -769,6 +777,70 @@
   "@reSignInPasswordForLock": {
     "x-translation-status": "draft: owner to check"
   },
+  "passwordChangeTitle": "নিজের পাসওয়ার্ড বেছে নিন",
+  "@passwordChangeTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeBody": "আপনার প্রতিষ্ঠান আপনাকে একটি এককালীন পাসওয়ার্ড দিয়েছে। এখন নিজের একটি পাসওয়ার্ড বেছে নিন। এখন থেকে আপনি এটি দিয়েই সাইন ইন করবেন।",
+  "@passwordChangeBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeCurrent": "এককালীন পাসওয়ার্ড",
+  "@passwordChangeCurrent": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeCurrentHelp": "আপনার প্রতিষ্ঠান যে পাসওয়ার্ড দিয়েছে।",
+  "@passwordChangeCurrentHelp": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeNew": "নতুন পাসওয়ার্ড",
+  "@passwordChangeNew": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeHint": "মনে রাখতে পারবেন এমন ৩ বা ৪টি শব্দ ব্যবহার করুন, কমপক্ষে ১২টি অক্ষর।",
+  "@passwordChangeHint": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeRepeat": "নতুন পাসওয়ার্ডটি আবার লিখুন",
+  "@passwordChangeRepeat": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeCurrentEmpty": "প্রতিষ্ঠানের দেওয়া এককালীন পাসওয়ার্ডটি লিখুন।",
+  "@passwordChangeCurrentEmpty": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeTooShort": "কমপক্ষে ১২টি অক্ষর ব্যবহার করুন।",
+  "@passwordChangeTooShort": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeTooLong": "৭১টির বেশি অক্ষর ব্যবহার করবেন না।",
+  "@passwordChangeTooLong": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeSameAsOld": "এককালীন পাসওয়ার্ডটি নয়, একটি নতুন পাসওয়ার্ড বেছে নিন।",
+  "@passwordChangeSameAsOld": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeMismatch": "দুটি পাসওয়ার্ড এক নয়। নতুন পাসওয়ার্ডটি আবার লিখুন।",
+  "@passwordChangeMismatch": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeSave": "পাসওয়ার্ড সেভ করুন",
+  "@passwordChangeSave": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeSaving": "সেভ করা হচ্ছে…",
+  "@passwordChangeSaving": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeSignOut": "সাইন আউট করুন",
+  "@passwordChangeSignOut": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "passwordChangeSignInAgain": "আবার সাইন ইন করুন",
+  "@passwordChangeSignInAgain": {
+    "x-translation-status": "draft: owner to check"
+  },
   "aboutSecurityHeading": "তথ্য নিরাপদ রাখা",
   "@aboutSecurityHeading": {
     "x-translation-status": "draft: owner to check"
@@ -903,6 +975,22 @@
   },
   "problem_browserUnavailable": "সাইন ইনের জন্য এই ফোনে ওয়েব পেজ খোলা যায়নি। অন্য উপায়ে সাইন ইন করুন।",
   "@problem_browserUnavailable": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_passwordChangeRequired": "এগিয়ে যাওয়ার আগে নিজের পাসওয়ার্ড বেছে নিন। আপনার প্রতিষ্ঠান আপনাকে একটি এককালীন পাসওয়ার্ড দিয়েছে। আপনার কাজ এই ফোনে নিরাপদ আছে।",
+  "@problem_passwordChangeRequired": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_currentPasswordWrong": "পাসওয়ার্ডটি ঠিক নয়। আপনার প্রতিষ্ঠান যেভাবে দিয়েছে, ঠিক সেভাবে এককালীন পাসওয়ার্ডটি লিখুন।",
+  "@problem_currentPasswordWrong": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_newPasswordInvalid": "এই নতুন পাসওয়ার্ডটি ব্যবহার করা যাবে না। কমপক্ষে ১২টি অক্ষর ব্যবহার করুন, যেমন ৩ বা ৪টি শব্দ।",
+  "@problem_newPasswordInvalid": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_passwordChangedSignInAgain": "আপনার নতুন পাসওয়ার্ড সেভ হয়েছে। নতুন পাসওয়ার্ড দিয়ে আবার সাইন ইন করুন।",
+  "@problem_passwordChangedSignInAgain": {
     "x-translation-status": "draft: owner to check"
   },
   "problem_unknown": "কিছু একটা ভুল হয়েছে। আপনার কাজ এই ফোনে নিরাপদ আছে। আবার চেষ্টা করুন।",

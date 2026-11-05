@@ -284,6 +284,13 @@ class AppLocalizationsBn extends AppLocalizations {
       'ফর্ম পাঠাতে আবার সাইন ইন করুন। আপনার উত্তর এই ফোনেই থাকবে।';
 
   @override
+  String get passwordChangeBanner =>
+      'আপনার প্রতিষ্ঠান আপনাকে একটি এককালীন পাসওয়ার্ড দিয়েছে। ফর্ম পাঠাতে নিজের পাসওয়ার্ড বেছে নিন। আপনার উত্তর এই ফোনেই থাকবে।';
+
+  @override
+  String get passwordChangeOpen => 'পাসওয়ার্ড বেছে নিন';
+
+  @override
   String get syncBlockedUpdate =>
       'ফর্ম পাঠাতে অ্যাপটি আপডেট করুন। আপনার উত্তর রাখা আছে।';
 
@@ -733,6 +740,60 @@ class AppLocalizationsBn extends AppLocalizations {
       'অ্যাপ পিন বেছে নিতে আপনার ইমেইল ও পাসওয়ার্ড দিয়ে সাইন ইন করুন। আপনার অ্যাকাউন্টে পাসওয়ার্ড না থাকলে আপনার প্রতিষ্ঠানের অ্যাডমিনকে বলুন।';
 
   @override
+  String get passwordChangeTitle => 'নিজের পাসওয়ার্ড বেছে নিন';
+
+  @override
+  String get passwordChangeBody =>
+      'আপনার প্রতিষ্ঠান আপনাকে একটি এককালীন পাসওয়ার্ড দিয়েছে। এখন নিজের একটি পাসওয়ার্ড বেছে নিন। এখন থেকে আপনি এটি দিয়েই সাইন ইন করবেন।';
+
+  @override
+  String get passwordChangeCurrent => 'এককালীন পাসওয়ার্ড';
+
+  @override
+  String get passwordChangeCurrentHelp =>
+      'আপনার প্রতিষ্ঠান যে পাসওয়ার্ড দিয়েছে।';
+
+  @override
+  String get passwordChangeNew => 'নতুন পাসওয়ার্ড';
+
+  @override
+  String get passwordChangeHint =>
+      'মনে রাখতে পারবেন এমন ৩ বা ৪টি শব্দ ব্যবহার করুন, কমপক্ষে ১২টি অক্ষর।';
+
+  @override
+  String get passwordChangeRepeat => 'নতুন পাসওয়ার্ডটি আবার লিখুন';
+
+  @override
+  String get passwordChangeCurrentEmpty =>
+      'প্রতিষ্ঠানের দেওয়া এককালীন পাসওয়ার্ডটি লিখুন।';
+
+  @override
+  String get passwordChangeTooShort => 'কমপক্ষে ১২টি অক্ষর ব্যবহার করুন।';
+
+  @override
+  String get passwordChangeTooLong => '৭১টির বেশি অক্ষর ব্যবহার করবেন না।';
+
+  @override
+  String get passwordChangeSameAsOld =>
+      'এককালীন পাসওয়ার্ডটি নয়, একটি নতুন পাসওয়ার্ড বেছে নিন।';
+
+  @override
+  String get passwordChangeMismatch =>
+      'দুটি পাসওয়ার্ড এক নয়। নতুন পাসওয়ার্ডটি আবার লিখুন।';
+
+  @override
+  String get passwordChangeSave => 'পাসওয়ার্ড সেভ করুন';
+
+  @override
+  String get passwordChangeSaving => 'সেভ করা হচ্ছে…';
+
+  @override
+  String get passwordChangeSignOut => 'সাইন আউট করুন';
+
+  @override
+  String get passwordChangeSignInAgain => 'আবার সাইন ইন করুন';
+
+  @override
   String get aboutSecurityHeading => 'তথ্য নিরাপদ রাখা';
 
   @override
@@ -866,6 +927,22 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get problem_browserUnavailable =>
       'সাইন ইনের জন্য এই ফোনে ওয়েব পেজ খোলা যায়নি। অন্য উপায়ে সাইন ইন করুন।';
+
+  @override
+  String get problem_passwordChangeRequired =>
+      'এগিয়ে যাওয়ার আগে নিজের পাসওয়ার্ড বেছে নিন। আপনার প্রতিষ্ঠান আপনাকে একটি এককালীন পাসওয়ার্ড দিয়েছে। আপনার কাজ এই ফোনে নিরাপদ আছে।';
+
+  @override
+  String get problem_currentPasswordWrong =>
+      'পাসওয়ার্ডটি ঠিক নয়। আপনার প্রতিষ্ঠান যেভাবে দিয়েছে, ঠিক সেভাবে এককালীন পাসওয়ার্ডটি লিখুন।';
+
+  @override
+  String get problem_newPasswordInvalid =>
+      'এই নতুন পাসওয়ার্ডটি ব্যবহার করা যাবে না। কমপক্ষে ১২টি অক্ষর ব্যবহার করুন, যেমন ৩ বা ৪টি শব্দ।';
+
+  @override
+  String get problem_passwordChangedSignInAgain =>
+      'আপনার নতুন পাসওয়ার্ড সেভ হয়েছে। নতুন পাসওয়ার্ড দিয়ে আবার সাইন ইন করুন।';
 
   @override
   String get problem_unknown =>

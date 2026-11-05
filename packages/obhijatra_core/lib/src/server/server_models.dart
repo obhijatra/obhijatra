@@ -173,6 +173,12 @@ final class SignInCancellation {
   }
 }
 
+/// The fewest characters a password may have (the server's rule).
+const int minPasswordLength = 12;
+
+/// The most characters a password may have (the server's limit).
+const int maxPasswordLength = 71;
+
 /// The field user signed in on this device.
 final class SignedInUser {
   /// Creates the user description.
@@ -181,6 +187,7 @@ final class SignedInUser {
     required this.email,
     required this.name,
     required this.locationPath,
+    this.mustChangePassword = false,
   });
 
   /// The `field_users` record id.
@@ -194,6 +201,11 @@ final class SignedInUser {
 
   /// The user's place in the organisation tree.
   final String locationPath;
+
+  /// Whether an organisation admin gave this account a one-time password,
+  /// so the person must choose their own (see
+  /// `ObhijatraServer.changePassword`) before anything else works.
+  final bool mustChangePassword;
 }
 
 /// A published form version on the server.
