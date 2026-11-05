@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
@@ -38,6 +40,16 @@ class _OneTimePasswordRevealState extends State<OneTimePasswordReveal> {
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: widget.password));
     if (mounted) setState(() => _copied = true);
+  }
+
+  /// Done, Add another person, or leaving the page all close the reveal.
+  /// A copied password must not stay on the clipboard (Windows keeps a
+  /// clipboard history and can sync it to other devices), so it is
+  /// overwritten then.
+  @override
+  void dispose() {
+    if (_copied) unawaited(Clipboard.setData(const ClipboardData(text: '')));
+    super.dispose();
   }
 
   @override

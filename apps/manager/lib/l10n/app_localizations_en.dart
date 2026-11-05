@@ -1546,7 +1546,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpCopy => 'Copy password';
 
   @override
-  String get otpCopied => 'Password copied.';
+  String get otpCopied =>
+      'Password copied. Paste it now: it is cleared from the clipboard when you close this.';
 
   @override
   String get otpDone => 'Done';
@@ -1612,4 +1613,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get choosePasswordSaved => 'Your new password is saved.';
+
+  @override
+  String get problemPersonChanged =>
+      'Someone changed this person a moment ago. Reload, then make your change again.';
+
+  @override
+  String get actionReload => 'Reload';
 }

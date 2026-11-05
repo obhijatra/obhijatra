@@ -765,6 +765,10 @@ class PocketBaseApi implements ManagerApi {
   }
 
   static AppProblem _detailsProblem(ClientException e) {
+    // Another admin changed the person between loading and saving.
+    if (e.statusCode == 409) {
+      return const AppProblem(ProblemKind.personChanged, statusCode: 409);
+    }
     final fields = e.statusCode == 400
         ? fieldProblems(e)
         : const <String, String>{};

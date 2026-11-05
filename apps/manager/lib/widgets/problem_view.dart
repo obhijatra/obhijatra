@@ -38,6 +38,7 @@ String problemMessage(AppLocalizations l10n, ProblemKind kind) =>
       ProblemKind.detailsInvalid => l10n.problemDetailsInvalid,
       ProblemKind.passwordChangeRequired => l10n.problemPasswordChangeRequired,
       ProblemKind.passwordSavedSignIn => l10n.problemPasswordSavedSignIn,
+      ProblemKind.personChanged => l10n.problemPersonChanged,
       ProblemKind.unknown => l10n.problemUnknown,
     };
 
@@ -48,6 +49,7 @@ String problemActionLabel(AppLocalizations l10n, ProblemAction action) =>
       ProblemAction.signInAgain => l10n.actionSignInAgain,
       ProblemAction.close => l10n.actionClose,
       ProblemAction.chooseFile => l10n.actionChooseFile,
+      ProblemAction.reload => l10n.actionReload,
     };
 
 /// A problem as a sentence with its one action, filling the space it is

@@ -1548,7 +1548,8 @@ class AppLocalizationsBn extends AppLocalizations {
   String get otpCopy => 'পাসওয়ার্ড কপি করুন';
 
   @override
-  String get otpCopied => 'পাসওয়ার্ড কপি হয়েছে।';
+  String get otpCopied =>
+      'পাসওয়ার্ড কপি হয়েছে। এখনই পেস্ট করুন: এটি বন্ধ করলে ক্লিপবোর্ড থেকে পাসওয়ার্ডটি মুছে যাবে।';
 
   @override
   String get otpDone => 'হয়ে গেছে';
@@ -1614,4 +1615,11 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get choosePasswordSaved => 'আপনার নতুন পাসওয়ার্ড সংরক্ষিত হয়েছে।';
+
+  @override
+  String get problemPersonChanged =>
+      'কিছুক্ষণ আগে অন্য কেউ এই ব্যক্তির তথ্য বদলেছেন। আবার লোড করুন, তারপর আপনার পরিবর্তনটি আবার করুন।';
+
+  @override
+  String get actionReload => 'আবার লোড করুন';
 }

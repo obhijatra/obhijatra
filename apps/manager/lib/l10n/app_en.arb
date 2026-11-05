@@ -1913,9 +1913,9 @@
   "@otpCopy": {
     "description": "Button: copy the one-time password."
   },
-  "otpCopied": "Password copied.",
+  "otpCopied": "Password copied. Paste it now: it is cleared from the clipboard when you close this.",
   "@otpCopied": {
-    "description": "Message after copying the one-time password."
+    "description": "Shown after copying the one-time password, which is cleared from the clipboard when the reveal closes."
   },
   "otpDone": "Done",
   "@otpDone": {
@@ -1997,5 +1997,13 @@
   "choosePasswordSaved": "Your new password is saved.",
   "@choosePasswordSaved": {
     "description": "Message after choosing a new password."
+  },
+  "problemPersonChanged": "Someone changed this person a moment ago. Reload, then make your change again.",
+  "@problemPersonChanged": {
+    "description": "Problem: another admin changed the person between loading and saving."
+  },
+  "actionReload": "Reload",
+  "@actionReload": {
+    "description": "Button: load the record again from the server."
   }
 }

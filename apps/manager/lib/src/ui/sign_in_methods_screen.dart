@@ -415,7 +415,9 @@ class _SignInMethodsScreenState extends ConsumerState<SignInMethodsScreen> {
         ref.read(sessionProvider.notifier).signOut();
       case ProblemAction.tryAgain:
         unawaited(_save());
-      case ProblemAction.close || ProblemAction.chooseFile:
+      case ProblemAction.close ||
+          ProblemAction.chooseFile ||
+          ProblemAction.reload:
         setState(() => _saveProblem = null);
     }
   }
@@ -469,7 +471,9 @@ class _SignInMethodsScreenState extends ConsumerState<SignInMethodsScreen> {
         ref.read(sessionProvider.notifier).signOut();
       case ProblemAction.tryAgain:
         unawaited(_sendTest());
-      case ProblemAction.close || ProblemAction.chooseFile:
+      case ProblemAction.close ||
+          ProblemAction.chooseFile ||
+          ProblemAction.reload:
         setState(() => _testProblem = null);
     }
   }

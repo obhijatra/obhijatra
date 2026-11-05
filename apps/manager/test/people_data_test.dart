@@ -501,6 +501,44 @@ void main() {
     });
   });
 
+  test(
+    'a change someone else made meanwhile (409) asks for a reload',
+    () async {
+      final api = PocketBaseApi(
+        server,
+        httpClient: MockClient(
+          (request) async => json(<String, Object?>{
+            'status': 409,
+            'message':
+                'Someone changed this person a moment ago. Reload, then make '
+                'your change again.',
+            'data': <String, Object?>{},
+          }, 409),
+        ),
+      );
+      final draft = PersonDraft.of(karim);
+      for (final change in <Future<Object?> Function()>[
+        () => api.createPerson(
+          PersonKind.staff,
+          draft,
+          password: 'kfmw-tqzp-hrvx',
+          oneTimePassword: true,
+        ),
+        () => api.updatePerson(karim, draft.copyWithName('Karim H')),
+        () => api.resetOneTimePassword(karim, 'kfmw-tqzp-hrvx'),
+        () => api.setPersonActive(karim, active: false),
+      ]) {
+        try {
+          await change();
+          fail('no problem');
+        } on AppProblem catch (problem) {
+          expect(problem.kind, ProblemKind.personChanged);
+          expect(problem.action, ProblemAction.reload);
+        }
+      }
+    },
+  );
+
   group('one-time password gate', () {
     test('403 with the reason opens the "choose a password" step', () {
       final gate = problemFrom(

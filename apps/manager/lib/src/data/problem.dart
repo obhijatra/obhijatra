@@ -102,6 +102,10 @@ enum ProblemKind {
   /// The new password was saved, but signing in again with it failed.
   passwordSavedSignIn,
 
+  /// HTTP 409 on a change to a person: someone changed the record between
+  /// loading and saving it.
+  personChanged,
+
   /// Anything else.
   unknown,
 }
@@ -119,6 +123,9 @@ enum ProblemAction {
 
   /// Pick a different file.
   chooseFile,
+
+  /// Load the record again from the server.
+  reload,
 }
 
 /// An error that carries a [ProblemKind]. Raw exceptions never reach a screen.
@@ -161,6 +168,7 @@ class AppProblem implements Exception {
     ProblemKind.signInRequired ||
     ProblemKind.passwordSavedSignIn => ProblemAction.signInAgain,
     ProblemKind.unreadableFile => ProblemAction.chooseFile,
+    ProblemKind.personChanged => ProblemAction.reload,
     ProblemKind.notAllowed ||
     ProblemKind.notFound ||
     ProblemKind.tooLarge ||

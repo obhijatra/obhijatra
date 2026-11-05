@@ -94,6 +94,8 @@ class _ChoosePasswordScreenState extends ConsumerState<ChoosePasswordScreen> {
       entry.key: switch ((entry.key, p.codes[entry.key])) {
         (_kCurrent, _) => l10n.choosePasswordWrongCurrent,
         (_kRepeat, 'validation_values_mismatch') => l10n.choosePasswordMismatch,
+        // The one-time password may not be kept as the person's own.
+        (_kNew, 'validation_password_unchanged') => l10n.choosePasswordSame,
         _ when entry.value.isNotEmpty => entry.value,
         _ => l10n.problemRejected,
       },
@@ -149,7 +151,9 @@ class _ChoosePasswordScreenState extends ConsumerState<ChoosePasswordScreen> {
         _signOut();
       case ProblemAction.tryAgain:
         unawaited(_submit());
-      case ProblemAction.close || ProblemAction.chooseFile:
+      case ProblemAction.close ||
+          ProblemAction.chooseFile ||
+          ProblemAction.reload:
         setState(() => _problem = null);
     }
   }

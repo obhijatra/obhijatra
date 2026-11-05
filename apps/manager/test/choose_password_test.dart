@@ -164,6 +164,28 @@ void main() {
         expect(find.byType(SignInScreen), findsOneWidget);
       });
 
+      testWidgets('keeping the one-time password is refused in plain words', (
+        tester,
+      ) async {
+        final api = FakeManagerApi()..signInMustChange = true;
+        await pumpManager(tester, api, lang: lang);
+        final l10n = l10nOf(tester);
+        await signInWith(tester, l10n, 'shila@example.org', oneTime);
+        api.passwordChangeFailure = const AppProblem(
+          ProblemKind.detailsInvalid,
+          statusCode: 400,
+          fields: <String, String>{
+            'password': 'The new password must be different.',
+          },
+          codes: <String, String>{'password': 'validation_password_unchanged'},
+        );
+        await tester.enterText(fieldIn('new-password'), chosen);
+        await tester.enterText(fieldIn('repeat-password'), chosen);
+        await save(tester, l10n);
+        expect(find.text(l10n.choosePasswordSame), findsOneWidget);
+        expect(find.byType(ChoosePasswordScreen), findsOneWidget);
+      });
+
       testWidgets('signing out is always possible', (tester) async {
         final api = FakeManagerApi()..signInMustChange = true;
         await pumpManager(tester, api, lang: lang);

@@ -257,15 +257,24 @@ class _PersonEditorState extends ConsumerState<PersonEditor> {
     switch (problem.action) {
       case ProblemAction.signInAgain:
         ref.read(sessionProvider.notifier).signOut();
-      case ProblemAction.tryAgain:
-        setState(() {
-          _loading = true;
-          _loadProblem = null;
-        });
-        unawaited(_load());
+      case ProblemAction.tryAgain || ProblemAction.reload:
+        unawaited(_reload());
       case ProblemAction.close || ProblemAction.chooseFile:
         _toList();
     }
+  }
+
+  /// Loads the person again as the server has them now: after someone else
+  /// changed them, the admin starts again from the saved record.
+  Future<void> _reload() async {
+    setState(() {
+      _loading = true;
+      _loadProblem = null;
+      _saveProblem = null;
+      _statusProblem = null;
+      _statusError = null;
+    });
+    await _load();
   }
 
   /// Records an edit: the field's old problem no longer applies.
@@ -465,7 +474,11 @@ class _PersonEditorState extends ConsumerState<PersonEditor> {
         ref.read(sessionProvider.notifier).signOut();
       case ProblemAction.tryAgain:
         unawaited(_save());
-      case ProblemAction.close || ProblemAction.chooseFile:
+      case ProblemAction.reload when !_adding:
+        unawaited(_reload());
+      case ProblemAction.close ||
+          ProblemAction.chooseFile ||
+          ProblemAction.reload:
         setState(() => _saveProblem = null);
     }
   }
@@ -1082,43 +1095,46 @@ class _PersonEditorState extends ConsumerState<PersonEditor> {
               ),
             ),
           ],
-          const SizedBox(height: Spacing.space4),
-          const Divider(),
-          const SizedBox(height: Spacing.space4),
-          Text(l10n.resetTitle, style: text.labelLarge),
-          const SizedBox(height: Spacing.space1),
-          if (saved.mustChangePassword) ...<Widget>[
+          // Nobody gives themselves a one-time password (the server refuses
+          // it too): it would hand their own account to whoever saw it.
+          if (!_isSelf) ...<Widget>[
+            const SizedBox(height: Spacing.space4),
+            const Divider(),
+            const SizedBox(height: Spacing.space4),
+            Text(l10n.resetTitle, style: text.labelLarge),
+            const SizedBox(height: Spacing.space1),
+            if (saved.mustChangePassword) ...<Widget>[
+              Text(
+                l10n.personMustChooseNote(saved.displayName),
+                style: text.bodyMedium,
+              ),
+              const SizedBox(height: Spacing.space2),
+            ],
             Text(
-              l10n.personMustChooseNote(saved.displayName),
-              style: text.bodyMedium,
+              saved.email.isEmpty ? l10n.resetNeedsEmail : l10n.resetHelp,
+              style: muted,
             ),
-            const SizedBox(height: Spacing.space2),
+            const SizedBox(height: Spacing.space3),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: _statusBusy || saved.email.isEmpty
+                    ? null
+                    : () => unawaited(_giveNewPassword()),
+                icon: const Icon(Icons.key_outlined),
+                label: Text(l10n.resetButton),
+              ),
+            ),
           ],
-          Text(
-            saved.email.isEmpty ? l10n.resetNeedsEmail : l10n.resetHelp,
-            style: muted,
-          ),
-          const SizedBox(height: Spacing.space3),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: OutlinedButton.icon(
-              onPressed: _statusBusy || saved.email.isEmpty
-                  ? null
-                  : () => unawaited(_giveNewPassword()),
-              icon: const Icon(Icons.key_outlined),
-              label: Text(l10n.resetButton),
-            ),
-          ),
           if (_statusProblem != null) ...<Widget>[
             const SizedBox(height: Spacing.space3),
             ProblemBanner(
               problem: _statusProblem!,
-              onAction: () {
-                if (_statusProblem!.action == ProblemAction.signInAgain) {
-                  ref.read(sessionProvider.notifier).signOut();
-                } else {
-                  setState(() => _statusProblem = null);
-                }
+              onAction: () => switch (_statusProblem!.action) {
+                ProblemAction.signInAgain =>
+                  ref.read(sessionProvider.notifier).signOut(),
+                ProblemAction.reload => unawaited(_reload()),
+                _ => setState(() => _statusProblem = null),
               },
             ),
           ],

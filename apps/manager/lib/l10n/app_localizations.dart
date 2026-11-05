@@ -2516,10 +2516,10 @@ abstract class AppLocalizations {
   /// **'Copy password'**
   String get otpCopy;
 
-  /// Message after copying the one-time password.
+  /// Shown after copying the one-time password, which is cleared from the clipboard when the reveal closes.
   ///
   /// In en, this message translates to:
-  /// **'Password copied.'**
+  /// **'Password copied. Paste it now: it is cleared from the clipboard when you close this.'**
   String get otpCopied;
 
   /// Button: close the one-time password.
@@ -2635,6 +2635,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your new password is saved.'**
   String get choosePasswordSaved;
+
+  /// Problem: another admin changed the person between loading and saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone changed this person a moment ago. Reload, then make your change again.'**
+  String get problemPersonChanged;
+
+  /// Button: load the record again from the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get actionReload;
 }
 
 class _AppLocalizationsDelegate

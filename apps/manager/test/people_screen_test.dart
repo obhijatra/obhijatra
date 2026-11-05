@@ -349,6 +349,8 @@ void main() {
         await tapAndSettle(tester, button<FilledButton>(l10n.otpDone));
         expect(find.byType(PersonEditor), findsNothing);
         expect(find.text(added.password), findsNothing);
+        // Closing the reveal takes the copied password off the clipboard.
+        expect(copied, <String>[added.password, '']);
         expect(inList(find.text('Shila Das')), findsOneWidget);
         // Opening Shila again never shows the password.
         await openPerson(tester, 'Shila Das');
@@ -646,6 +648,83 @@ void main() {
         await tapAndSettle(tester, button<FilledButton>(l10n.otpDone));
         expect(find.text(password), findsNothing);
         expect(find.text(l10n.statusMustChoose), findsOneWidget);
+        expect(copied, <String>[password, '']);
+
+        // Without Copy, the clipboard is left alone.
+        copied.clear();
+        await tapAndSettle(tester, button<OutlinedButton>(l10n.resetButton));
+        await tapAndSettle(
+          tester,
+          button<FilledButton>(l10n.resetConfirmButton),
+        );
+        await tapAndSettle(tester, button<FilledButton>(l10n.otpDone));
+        expect(api.resets, hasLength(2));
+        expect(copied, isEmpty);
+      });
+
+      testWidgets('an admin cannot give themselves a one-time password', (
+        tester,
+      ) async {
+        final api = peopleApi(FakeManagerApi(user: staff('org_admin')));
+        final l10n = await openPeople(tester, api, lang: lang);
+        await openPerson(tester, 'Tania Rahman');
+        expect(find.text(l10n.resetTitle), findsNothing);
+        expect(find.text(l10n.resetButton), findsNothing);
+        // Someone else's page still has it.
+        await tapAndSettle(tester, button<TextButton>(l10n.peopleBack));
+        await openPerson(tester, 'Karim Hossain');
+        expect(find.text(l10n.resetButton), findsOneWidget);
+      });
+
+      testWidgets('a person changed by someone else meanwhile: reload, then '
+          'change again', (tester) async {
+        final api = peopleApi(FakeManagerApi(user: staff('org_admin')));
+        final l10n = await openPeople(tester, api, lang: lang);
+        await openPerson(tester, 'Karim Hossain');
+        await pickFromMenu(tester, l10n.accountRole, l10n.roleBranchManager);
+
+        // Another admin renames Karim while this page is open.
+        final staffList = api.people[PersonKind.staff]!;
+        staffList[staffList.indexWhere((p) => p.id == 's2')] = person(
+          id: 's2',
+          name: 'Karim Hossain Chowdhury',
+          email: 'karim@example.org',
+          phone: '+8801711111111',
+        );
+        api.personFailure = const AppProblem(
+          ProblemKind.personChanged,
+          statusCode: 409,
+        );
+        await tapAndSettle(tester, find.byKey(const ValueKey('person-save')));
+        expect(api.updates, isEmpty);
+        expect(find.text(l10n.problemPersonChanged), findsOneWidget);
+        await tapAndSettle(tester, button<TextButton>(l10n.actionReload));
+        expect(find.text(l10n.problemPersonChanged), findsNothing);
+        expect(
+          tester.widget<EditableText>(fieldIn('person-name')).controller.text,
+          'Karim Hossain Chowdhury',
+        );
+        // The admin's unsaved choice is gone; they make it again.
+        expect(find.text(l10n.unsavedChanges), findsNothing);
+        await pickFromMenu(tester, l10n.accountRole, l10n.roleBranchManager);
+        await tapAndSettle(tester, find.byKey(const ValueKey('person-save')));
+        expect(api.updates.single.$2.role, 'branch_manager');
+        expect(api.updates.single.$2.name, 'Karim Hossain Chowdhury');
+
+        // The same from the status panel.
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        api.personFailure = const AppProblem(
+          ProblemKind.personChanged,
+          statusCode: 409,
+        );
+        await tapAndSettle(tester, find.byKey(const ValueKey('person-active')));
+        await tapAndSettle(tester, button<FilledButton>(l10n.deactivateButton));
+        expect(api.activeChanges, isEmpty);
+        expect(find.text(l10n.problemPersonChanged), findsOneWidget);
+        await tapAndSettle(tester, button<TextButton>(l10n.actionReload));
+        expect(find.text(l10n.problemPersonChanged), findsNothing);
+        expect(find.byType(PersonEditor), findsOneWidget);
       });
 
       testWidgets('no one-time password without an email address', (
