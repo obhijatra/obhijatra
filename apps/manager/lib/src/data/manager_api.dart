@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
+import 'package:obhijatra_manager/src/data/places.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 
 /// Everything the manager screens ask of the server.
@@ -133,8 +134,46 @@ abstract interface class ManagerApi {
   /// Lifts a sign-in lock early.
   Future<void> unlockSignIn(SignInLock lock);
 
-  /// Every place in the organisation.
+  /// Every place in the organisation, read a page at a time until done.
   Future<List<Place>> listPlaces();
+
+  // ------------------------------------------------------------- places
+
+  /// Adds a place inside the place [parentId] (organisation admins only).
+  /// Refused fields (a name its neighbour has, a code another place has, a
+  /// closed place above) come back as [ProblemKind.detailsInvalid] with the
+  /// server's codes and messages.
+  Future<Place> createPlace({
+    required String parentId,
+    required String name,
+    required String code,
+  });
+
+  /// Renames [place] and changes its code; only what changed is sent.
+  /// Refusals come back as for [createPlace].
+  Future<Place> updatePlace(
+    Place place, {
+    required String name,
+    required String code,
+  });
+
+  /// Closes or reopens [place]. A refusal (places or people still inside,
+  /// a closed place above, the organisation itself) comes back as
+  /// [ProblemKind.detailsInvalid] with its reason under `closed`.
+  Future<Place> setPlaceClosed(Place place, {required bool closed});
+
+  /// Deletes [place]. Refused, under `id`, when anything uses it.
+  Future<void> deletePlace(Place place);
+
+  /// Checks ([dryRun] true) or imports spreadsheet [rows] under the place
+  /// [parentId]. Problems with rows are in the answer, not thrown; nothing
+  /// is saved while there is any. A missing or closed [parentId] comes back
+  /// as [ProblemKind.detailsInvalid] under `parent`.
+  Future<PlaceImportResult> importPlaces({
+    required String parentId,
+    required List<PlaceImportRow> rows,
+    required bool dryRun,
+  });
 
   /// How many organisation admins are active.
   Future<int> countActiveOrgAdmins();

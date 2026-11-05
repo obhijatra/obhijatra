@@ -850,7 +850,12 @@ class _PersonEditorState extends ConsumerState<PersonEditor> {
               label: l10n.personPlace,
               value: place == null ? '' : places!.trail(place).join(' › '),
               placeholder: l10n.personPlaceChoose,
-              helper: l10n.personPlaceHelp,
+              // A closed place is kept while the person stays there, but
+              // only an open place can be chosen.
+              marker: place != null && place.closed ? l10n.placeClosed : null,
+              helper: place != null && place.closed
+                  ? l10n.personPlaceClosedHelp
+                  : l10n.personPlaceHelp,
               error: _errors[_kLocation],
               onTap: () => unawaited(_choosePlace()),
             ),

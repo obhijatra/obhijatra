@@ -83,7 +83,7 @@ void main() {
     });
 
     group('Shell ($lang)', () {
-      testWidgets('an organisation admin has five places and nothing '
+      testWidgets('an organisation admin has six places and nothing '
           'unfinished', (tester) async {
         final api = FakeManagerApi(user: staff('org_admin'));
         await pumpManager(tester, api, lang: lang);
@@ -92,6 +92,7 @@ void main() {
           l10n.navForms,
           l10n.navSubmissions,
           l10n.navPeople,
+          l10n.navPlaces,
           l10n.navSettings,
           l10n.navAbout,
         ]) {

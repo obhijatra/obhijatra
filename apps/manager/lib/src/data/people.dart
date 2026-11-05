@@ -371,6 +371,7 @@ class Place {
     required this.code,
     required this.parentId,
     required this.path,
+    this.closed = false,
   });
 
   /// Record id.
@@ -388,8 +389,29 @@ class Place {
   /// Materialised path, for example `/abc.../def.../`.
   final String path;
 
+  /// Whether the place is closed: kept for its records, but no longer
+  /// offered for people or new places.
+  final bool closed;
+
+  /// Whether this is the organisation itself, the one place with nothing
+  /// above it.
+  bool get isRoot => parentId.isEmpty;
+
   /// The name, or the code when there is no name.
   String get displayName => name.trim().isNotEmpty ? name.trim() : code;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Place &&
+      other.id == id &&
+      other.name == name &&
+      other.code == code &&
+      other.parentId == parentId &&
+      other.path == path &&
+      other.closed == closed;
+
+  @override
+  int get hashCode => Object.hash(id, name, code, parentId, path, closed);
 }
 
 /// Every place, as a tree: the order to list them in, how deep each one is
@@ -401,7 +423,7 @@ class PlaceDirectory {
       _byId[place.id] = place;
       _byPath[place.path] = place;
     }
-    final children = <String, List<Place>>{};
+    final children = _children;
     for (final place in _byId.values) {
       final parent = _byId.containsKey(place.parentId) ? place.parentId : '';
       children.putIfAbsent(parent, () => <Place>[]).add(place);
@@ -424,11 +446,31 @@ class PlaceDirectory {
 
   final Map<String, Place> _byId = <String, Place>{};
   final Map<String, Place> _byPath = <String, Place>{};
+  final Map<String, List<Place>> _children = <String, List<Place>>{};
   final List<Place> _ordered = <Place>[];
   final Map<String, int> _depth = <String, int>{};
 
   /// Every place, each followed by the places below it, by name.
   List<Place> get ordered => List<Place>.unmodifiable(_ordered);
+
+  /// The places with nothing above them: normally just the organisation.
+  List<Place> get tops => childrenOf('');
+
+  /// The organisation itself (the place with nothing above it), or null.
+  Place? get root {
+    for (final place in tops) {
+      if (place.isRoot) return place;
+    }
+    return null;
+  }
+
+  /// The places directly inside the place with record id [id], by name.
+  /// An empty [id] gives the places with nothing above them.
+  List<Place> childrenOf(String id) =>
+      List<Place>.unmodifiable(_children[id] ?? const <Place>[]);
+
+  /// How many places there are.
+  int get length => _ordered.length;
 
   /// Whether there are no places.
   bool get isEmpty => _ordered.isEmpty;

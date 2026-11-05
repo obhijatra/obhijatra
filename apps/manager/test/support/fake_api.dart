@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
+import 'package:obhijatra_manager/src/data/places.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 
 /// A server stand-in for widget tests.
@@ -608,6 +609,340 @@ class FakeManagerApi implements ManagerApi {
   Future<int> countActiveOrgAdmins() async {
     await _enter();
     return activeOrgAdmins;
+  }
+
+  // ------------------------------------------------------------- places
+
+  /// Places some record uses, by id: deleting them is refused.
+  final Set<String> placesInUse = <String>{};
+
+  /// Set to make the next change to a place fail; it is then cleared.
+  AppProblem? placeFailure;
+
+  /// Every place change, in order, as a word and the place.
+  final List<(String, Place)> placeChanges = <(String, Place)>[];
+
+  /// Every import, in order.
+  final List<({String parentId, List<PlaceImportRow> rows, bool dryRun})>
+  imports = <({String parentId, List<PlaceImportRow> rows, bool dryRun})>[];
+
+  /// Problems the next real import finds (something changed after the
+  /// check); then cleared.
+  List<PlaceImportProblem>? importSurprise;
+
+  int _placeIds = 0;
+
+  void _failPlace() {
+    final failure = placeFailure;
+    if (failure != null) {
+      placeFailure = null;
+      throw failure;
+    }
+  }
+
+  static AppProblem _refusal(String field, String code, String message) =>
+      AppProblem(
+        ProblemKind.detailsInvalid,
+        statusCode: 400,
+        fields: <String, String>{field: message},
+        codes: <String, String>{field: code},
+      );
+
+  Place? _place(String id) => places.where((p) => p.id == id).firstOrNull;
+
+  void _storePlace(Place place) {
+    final index = places.indexWhere((p) => p.id == place.id);
+    if (index < 0) {
+      places = <Place>[...places, place];
+    } else {
+      places = <Place>[for (final p in places) p.id == place.id ? place : p];
+    }
+  }
+
+  /// The server's checks of a name and code (see guards.go, "Places").
+  void _checkPlace({
+    required String id,
+    required String parentId,
+    required String name,
+    required String code,
+  }) {
+    if (name.isEmpty) {
+      throw _refusal('name', 'validation_required', 'Give the place a name.');
+    }
+    final taken = places.any(
+      (p) =>
+          p.id != id &&
+          p.parentId == parentId &&
+          p.name.trim().toLowerCase() == name.toLowerCase(),
+    );
+    if (taken) {
+      throw _refusal(
+        'name',
+        'validation_place_name_taken',
+        'Another place at this level already has this name. Choose a '
+            'different name.',
+      );
+    }
+    if (code.isNotEmpty &&
+        places.any(
+          (p) => p.id != id && p.code.toLowerCase() == code.toLowerCase(),
+        )) {
+      throw _refusal('code', 'validation_not_unique', 'Value must be unique.');
+    }
+  }
+
+  int _activePeopleAt(String placeId) => <Person>[
+    ...people[PersonKind.staff]!,
+    ...people[PersonKind.field]!,
+  ].where((p) => p.active && p.locationId == placeId).length;
+
+  @override
+  Future<Place> createPlace({
+    required String parentId,
+    required String name,
+    required String code,
+  }) async {
+    await _enter();
+    _failPlace();
+    final parent = _place(parentId);
+    if (parent == null || parent.closed) {
+      throw _refusal(
+        'parent',
+        'validation_place_parent_closed',
+        'The place above is closed. Reopen it first, or choose an open place.',
+      );
+    }
+    _checkPlace(
+      id: '',
+      parentId: parentId,
+      name: name.trim(),
+      code: code.trim(),
+    );
+    final id = 'newplace${(++_placeIds).toString().padLeft(7, '0')}';
+    final place = Place(
+      id: id,
+      name: name.trim(),
+      code: code.trim(),
+      parentId: parentId,
+      path: '${parent.path}$id/',
+    );
+    _storePlace(place);
+    placeChanges.add(('create', place));
+    return place;
+  }
+
+  @override
+  Future<Place> updatePlace(
+    Place place, {
+    required String name,
+    required String code,
+  }) async {
+    await _enter();
+    _failPlace();
+    _checkPlace(
+      id: place.id,
+      parentId: place.parentId,
+      name: name.trim(),
+      code: code.trim(),
+    );
+    final updated = Place(
+      id: place.id,
+      name: name.trim(),
+      code: code.trim(),
+      parentId: place.parentId,
+      path: place.path,
+      closed: place.closed,
+    );
+    _storePlace(updated);
+    placeChanges.add(('update', updated));
+    return updated;
+  }
+
+  @override
+  Future<Place> setPlaceClosed(Place place, {required bool closed}) async {
+    await _enter();
+    _failPlace();
+    if (closed) {
+      if (place.isRoot) {
+        throw _refusal(
+          'closed',
+          'validation_place_root',
+          'The organisation itself cannot be closed.',
+        );
+      }
+      final open = places
+          .where((p) => p.parentId == place.id && !p.closed)
+          .length;
+      if (open > 0) {
+        throw _refusal(
+          'closed',
+          'validation_place_has_open_places',
+          '$open open place(s) are inside this place. Close or delete them '
+              'first.',
+        );
+      }
+      final active = _activePeopleAt(place.id);
+      if (active > 0) {
+        throw _refusal(
+          'closed',
+          'validation_place_has_people',
+          '$active active person(s) work here. Move them to another place, '
+              'or deactivate them, first.',
+        );
+      }
+    } else if (_place(place.parentId)?.closed ?? false) {
+      throw _refusal(
+        'closed',
+        'validation_place_parent_closed',
+        'The place above is closed. Reopen it first.',
+      );
+    }
+    final updated = Place(
+      id: place.id,
+      name: place.name,
+      code: place.code,
+      parentId: place.parentId,
+      path: place.path,
+      closed: closed,
+    );
+    _storePlace(updated);
+    placeChanges.add((closed ? 'close' : 'reopen', updated));
+    return updated;
+  }
+
+  @override
+  Future<void> deletePlace(Place place) async {
+    await _enter();
+    _failPlace();
+    if (place.isRoot) {
+      throw _refusal(
+        'id',
+        'validation_place_root',
+        'The organisation itself cannot be deleted.',
+      );
+    }
+    final everyone = <Person>[
+      ...people[PersonKind.staff]!,
+      ...people[PersonKind.field]!,
+    ];
+    if (places.any((p) => p.parentId == place.id) ||
+        everyone.any((p) => p.locationId == place.id) ||
+        placesInUse.contains(place.id)) {
+      throw _refusal(
+        'id',
+        'validation_place_in_use',
+        'This place is used by 1 place(s), people or record(s), so it '
+            'cannot be deleted. Close it instead.',
+      );
+    }
+    places = <Place>[
+      for (final p in places)
+        if (p.id != place.id) p,
+    ];
+    placeChanges.add(('delete', place));
+  }
+
+  @override
+  Future<PlaceImportResult> importPlaces({
+    required String parentId,
+    required List<PlaceImportRow> rows,
+    required bool dryRun,
+  }) async {
+    await _enter();
+    _failPlace();
+    imports.add((parentId: parentId, rows: rows, dryRun: dryRun));
+    final parent = _place(parentId);
+    if (parent == null || parent.closed) {
+      throw _refusal(
+        'parent',
+        'validation_place_closed',
+        'This place is closed. Choose an open place.',
+      );
+    }
+    // The server's walk, simplified: names match ignoring capitals.
+    final problems = <PlaceImportProblem>[];
+    final made = <String, Place>{}; // by parent id + lower-case name
+    final seen = <String>{};
+    var created = 0;
+    var existing = 0;
+    for (final row in rows) {
+      var current = parent;
+      for (var depth = 0; depth < row.path.length; depth++) {
+        final name = row.path[depth].trim();
+        final key = '${current.id}/${name.toLowerCase()}';
+        final stored = places
+            .where(
+              (p) =>
+                  p.parentId == current.id &&
+                  p.name.trim().toLowerCase() == name.toLowerCase(),
+            )
+            .firstOrNull;
+        if (stored != null && stored.closed) {
+          problems.add(
+            PlaceImportProblem(
+              line: row.line,
+              code: 'place_closed',
+              name: stored.name,
+              message:
+                  '"${stored.name}" is closed. Reopen it first, or '
+                  'remove this row.',
+            ),
+          );
+          break;
+        }
+        final last = depth == row.path.length - 1;
+        if (last &&
+            row.code.isNotEmpty &&
+            places.any(
+              (p) =>
+                  p.code.toLowerCase() == row.code.toLowerCase() &&
+                  p.id != stored?.id,
+            )) {
+          problems.add(
+            PlaceImportProblem(
+              line: row.line,
+              code: 'code_taken',
+              value: row.code,
+              message: 'Another place already has the code "${row.code}".',
+            ),
+          );
+          break;
+        }
+        final next =
+            stored ??
+            made.putIfAbsent(key, () {
+              final id = 'imported${(++_placeIds).toString().padLeft(7, '0')}';
+              return Place(
+                id: id,
+                name: name,
+                code: last ? row.code : '',
+                parentId: current.id,
+                path: '${current.path}$id/',
+              );
+            });
+        if (seen.add(next.id)) {
+          if (stored == null) {
+            created++;
+          } else {
+            existing++;
+          }
+        }
+        current = next;
+      }
+    }
+    final surprise = importSurprise;
+    if (!dryRun && surprise != null) {
+      importSurprise = null;
+      problems.addAll(surprise);
+    }
+    final save = !dryRun && problems.isEmpty;
+    if (save) places = <Place>[...places, ...made.values];
+    return PlaceImportResult(
+      created: created,
+      existing: existing,
+      problems: problems,
+      saved: save,
+    );
   }
 
   // ------------------------------------------------- one-time password

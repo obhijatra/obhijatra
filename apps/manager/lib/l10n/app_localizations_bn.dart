@@ -1622,4 +1622,637 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get actionReload => 'আবার লোড করুন';
+
+  @override
+  String get navPlaces => 'স্থান';
+
+  @override
+  String get placesTitle => 'স্থান';
+
+  @override
+  String get placesSummary =>
+      'ওপর থেকে নিচে আপনার সংস্থা: প্রধান কার্যালয়, অঞ্চল, এলাকা ও শাখা। প্রত্যেক ব্যক্তি একটি স্থানে কাজ করেন।';
+
+  @override
+  String get placesAdd => 'স্থান যোগ করুন';
+
+  @override
+  String get placesImport => 'স্প্রেডশিট থেকে আনুন';
+
+  @override
+  String get placesSearchHint => 'নাম বা কোড';
+
+  @override
+  String get placesShowClosed => 'বন্ধ স্থানও দেখান';
+
+  @override
+  String placesClosedHidden(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি বন্ধ স্থান লুকানো আছে।',
+      one: '১টি বন্ধ স্থান লুকানো আছে।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String placesMatches(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি স্থান মিলেছে',
+      one: '১টি স্থান মিলেছে',
+      zero: 'কোনো স্থান মেলেনি',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get placesNoMatchBody => 'অন্য নাম বা কোড দিয়ে খুঁজুন।';
+
+  @override
+  String get placesNoMatchClosedBody =>
+      'অন্য নাম বা কোড দিয়ে খুঁজুন, অথবা ‘বন্ধ স্থানও দেখান’ চালু করুন।';
+
+  @override
+  String get placesEmptyTitle => 'প্রথম স্থানগুলো যোগ করুন';
+
+  @override
+  String placesEmptyBody(String organisation) {
+    return '$organisation-এর ভেতরের অঞ্চল, এলাকা ও শাখা যোগ করুন: ‘স্থান যোগ করুন’ দিয়ে একটি একটি করে, অথবা স্প্রেডশিট থেকে একসাথে সব।';
+  }
+
+  @override
+  String get placesNoneTitle => 'এখনও কোনো স্থান নেই';
+
+  @override
+  String get placesBack => 'স্থানে ফিরে যান';
+
+  @override
+  String get placeRootNote => 'পুরো সংস্থা';
+
+  @override
+  String placeInsideCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ভেতরে $countStringটি স্থান',
+      one: 'ভেতরে ১টি স্থান',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String placeCodeShown(String code) {
+    return 'কোড $code';
+  }
+
+  @override
+  String get placeClosed => 'বন্ধ';
+
+  @override
+  String placeOpenInside(String name) {
+    return '$name-এর ভেতরের স্থানগুলো দেখান';
+  }
+
+  @override
+  String placeShutInside(String name) {
+    return '$name-এর ভেতরের স্থানগুলো লুকান';
+  }
+
+  @override
+  String placeActions(String name) {
+    return '$name-এর বিকল্পগুলো';
+  }
+
+  @override
+  String get placeAddInside => 'ভেতরে একটি স্থান যোগ করুন';
+
+  @override
+  String get placeRename => 'নাম বা কোড বদলান';
+
+  @override
+  String get placeCloseAction => 'স্থান বন্ধ করুন';
+
+  @override
+  String get placeReopenAction => 'স্থান আবার চালু করুন';
+
+  @override
+  String get placeDeleteAction => 'স্থান মুছে ফেলুন';
+
+  @override
+  String get placeAddTitle => 'একটি স্থান যোগ করুন';
+
+  @override
+  String get placeParent => 'যার ভেতরে থাকবে';
+
+  @override
+  String get placeParentHelp =>
+      'এই স্থানটি যে স্থানের অংশ। পরে এটি সরানো যাবে না।';
+
+  @override
+  String placeParentFixed(String parent) {
+    return '$parent-এর ভেতরে। কোনো স্থান সরানো যায় না।';
+  }
+
+  @override
+  String get placeName => 'নাম';
+
+  @override
+  String get placeNameHelp =>
+      'যেমন ‘মিরপুর শাখা’। একই স্থানের ভেতরের স্থানগুলোর নাম আলাদা হতে হবে।';
+
+  @override
+  String get placeCode => 'কোড (ঐচ্ছিক)';
+
+  @override
+  String get placeCodeHelp =>
+      'আপনার সংস্থা যে ছোট কোড ব্যবহার করে, যেমন MRP10। দুটি স্থানের কোড এক হতে পারবে না।';
+
+  @override
+  String get placeErrorName => 'স্থানটির একটি নাম দিন।';
+
+  @override
+  String placeErrorNameTaken(String parent) {
+    return '$parent-এর ভেতরে অন্য একটি স্থানের এই নাম আছে। অন্য একটি নাম বেছে নিন।';
+  }
+
+  @override
+  String get placeErrorCodeTaken =>
+      'অন্য একটি স্থানের এই কোড আছে। অন্য একটি কোড বেছে নিন।';
+
+  @override
+  String get placeErrorParentClosed =>
+      'ওপরের স্থানটি বন্ধ। আগে সেটি আবার চালু করুন, অথবা একটি চালু স্থান বেছে নিন।';
+
+  @override
+  String placeAdded(String name) {
+    return '$name যোগ হয়েছে।';
+  }
+
+  @override
+  String placeCloseTitle(String name) {
+    return '$name বন্ধ করবেন?';
+  }
+
+  @override
+  String get placeCloseBody =>
+      'বন্ধ স্থান কোনো ব্যক্তি বা নতুন স্থানের জন্য বাছা যায় না, আর স্থান বাছার সময় এটি লুকানো থাকে। সেখানে যা কিছু রেকর্ড করা হয়েছে সব রাখা থাকবে। যেকোনো সময় আপনি এটি আবার চালু করতে পারবেন।';
+
+  @override
+  String get placeCloseButton => 'স্থান বন্ধ করুন';
+
+  @override
+  String placeClosedDone(String name) {
+    return '$name বন্ধ করা হয়েছে।';
+  }
+
+  @override
+  String placeErrorOpenInside(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'এই স্থানের ভেতরে এখনও $countStringটি চালু স্থান আছে। আগে সেগুলো বন্ধ করুন বা মুছে ফেলুন।',
+      one: 'এই স্থানের ভেতরে এখনও ১টি চালু স্থান আছে। আগে সেটি বন্ধ করুন বা মুছে ফেলুন।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String placeErrorPeople(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'এখানে এখনও $countString জন সক্রিয় ব্যক্তি কাজ করেন। আগে তাঁদের অন্য স্থানে সরান, অথবা নিষ্ক্রিয় করুন।',
+      one: 'এখানে এখনও ১ জন সক্রিয় ব্যক্তি কাজ করেন। আগে তাঁকে অন্য স্থানে সরান, অথবা নিষ্ক্রিয় করুন।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get placeSeePeople => 'এখানে কারা কাজ করেন দেখুন';
+
+  @override
+  String get placeErrorRoot => 'পুরো সংস্থাটি বন্ধ করা বা মুছে ফেলা যায় না।';
+
+  @override
+  String placeReopenTitle(String name) {
+    return '$name আবার চালু করবেন?';
+  }
+
+  @override
+  String get placeReopenBody =>
+      'এটি আবার ব্যক্তি ও নতুন স্থানের জন্য বাছা যাবে।';
+
+  @override
+  String get placeReopenButton => 'আবার চালু করুন';
+
+  @override
+  String placeReopenedDone(String name) {
+    return '$name আবার চালু হয়েছে।';
+  }
+
+  @override
+  String get placeErrorAboveClosed =>
+      'এর ওপরের স্থানটি বন্ধ। আগে সেটি আবার চালু করুন।';
+
+  @override
+  String placeDeleteTitle(String name) {
+    return '$name মুছে ফেলবেন?';
+  }
+
+  @override
+  String get placeDeleteBody =>
+      'শুধু ভুল করে যোগ করা স্থানই মুছে ফেলুন। এটি আর ফেরানো যাবে না। কোনো ব্যক্তি বা রেকর্ড যে স্থান ব্যবহার করে তা মুছে ফেলা যায় না: সেটি বরং বন্ধ করুন।';
+
+  @override
+  String get placeDeleteButton => 'স্থান মুছে ফেলুন';
+
+  @override
+  String placeDeletedDone(String name) {
+    return '$name মুছে ফেলা হয়েছে।';
+  }
+
+  @override
+  String get placeErrorInUse =>
+      'এই স্থানটি ব্যবহার হচ্ছে, তাই মুছে ফেলা যাবে না। বরং এটি বন্ধ করুন: তখন এটি আর বাছার জন্য দেখানো হবে না, আর এর রেকর্ড রাখা থাকবে।';
+
+  @override
+  String get placeCloseInstead => 'বরং বন্ধ করুন';
+
+  @override
+  String get importTitle => 'স্প্রেডশিট থেকে আনুন';
+
+  @override
+  String get importSummary =>
+      'একটি স্প্রেডশিট থেকে একসাথে অনেক স্থান যোগ করুন। যে স্থানগুলো আগে থেকেই আছে সেগুলো রাখা হবে, কখনো দুবার যোগ হবে না।';
+
+  @override
+  String importStep(int number) {
+    final intl.NumberFormat numberNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String numberString = numberNumberFormat.format(number);
+
+    return 'ধাপ $numberString';
+  }
+
+  @override
+  String get importStepFile => 'আপনার স্প্রেডশিট তৈরি করুন';
+
+  @override
+  String get importRuleRows =>
+      'প্রতিটি স্থানের জন্য একটি সারি। নামগুলো আলাদা আলাদা কলামে, ওপরের স্তর থেকে নিচে লিখুন: যেমন অঞ্চল, এলাকা, শাখা।';
+
+  @override
+  String get importRuleHeader => 'প্রথম সারিতে কলামের নাম থাকবে।';
+
+  @override
+  String get importRuleCode =>
+      'কোনো স্থানকে কোড দিতে চাইলে শেষে ‘code’ নামে একটি কলাম যোগ করুন। কোডটি সারির শেষ স্থানের হবে।';
+
+  @override
+  String get importRuleEmpty =>
+      'সারির শেষের দিকের ঘর খালি থাকলে অসুবিধা নেই: সেই সারি ওপরের কোনো স্তরেই শেষ হবে।';
+
+  @override
+  String get importRuleReuse =>
+      'যে স্থানগুলো আগে থেকেই আছে (একই স্তরে একই নাম) সেগুলোই ব্যবহার হবে, তাই একই ফাইল আবার আনলেও সমস্যা নেই।';
+
+  @override
+  String get importRuleBangla => 'বাংলা নাম দিতে পারেন।';
+
+  @override
+  String get importRuleSave =>
+      'ফাইলটি ‘CSV UTF-8’ হিসেবে সংরক্ষণ করুন। এক্সেলে: File › Save As › CSV UTF-8। গুগল শিটসে: File › Download › Comma-separated values (.csv)।';
+
+  @override
+  String get importRuleLimits =>
+      'সর্বোচ্চ ৫,০০০ সারি, আর প্রতি সারিতে সর্বোচ্চ ১০টি স্তর।';
+
+  @override
+  String get importExample => 'উদাহরণ';
+
+  @override
+  String get importExampleRegion => 'অঞ্চল';
+
+  @override
+  String get importExampleArea => 'এলাকা';
+
+  @override
+  String get importExampleBranch => 'শাখা';
+
+  @override
+  String get importExampleRegion1 => 'ঢাকা অঞ্চল';
+
+  @override
+  String get importExampleArea1 => 'মিরপুর এলাকা';
+
+  @override
+  String get importExampleBranch1 => 'মিরপুর-১০ শাখা';
+
+  @override
+  String get importExampleBranch2 => 'পল্লবী শাখা';
+
+  @override
+  String get importExampleRegion2 => 'খুলনা অঞ্চল';
+
+  @override
+  String get importExampleArea2 => 'সোনাডাঙ্গা এলাকা';
+
+  @override
+  String get importStepParent => 'নতুন স্থানগুলো কোথায় যাবে তা বাছুন';
+
+  @override
+  String get importParent => 'নতুন স্থানগুলো যার ভেতরে যাবে';
+
+  @override
+  String get importParentHelp =>
+      'প্রথম কলামের স্থানগুলো সরাসরি এই স্থানের ভেতরে যাবে।';
+
+  @override
+  String get importStepChoose => 'ফাইলটি বাছুন';
+
+  @override
+  String get importChoose => 'CSV ফাইল বাছুন';
+
+  @override
+  String get importChooseAnother => 'অন্য ফাইল বাছুন';
+
+  @override
+  String importFileName(String name) {
+    return 'ফাইল: $name';
+  }
+
+  @override
+  String importRowCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'স্থানের $countStringটি সারি',
+      one: 'স্থানের ১টি সারি',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHeader => 'প্রথম সারিতে কলামের নাম আছে';
+
+  @override
+  String get importHeaderHelp =>
+      'প্রথম সারিটি যদি একটি স্থান হয়, তাহলে এটি বন্ধ করুন।';
+
+  @override
+  String importColumns(String names) {
+    return 'কলামের নাম: $names';
+  }
+
+  @override
+  String importCodeColumn(String name) {
+    return '‘$name’ কলাম থেকে কোড নেওয়া হচ্ছে।';
+  }
+
+  @override
+  String get importErrorTooBig =>
+      'ফাইলটি অনেক বড়। স্থানের তালিকা সর্বোচ্চ ৫ এমবি হতে পারে।';
+
+  @override
+  String get importErrorExcel =>
+      'এটি একটি এক্সেল ফাইল। আগে এটি ‘CSV UTF-8’ হিসেবে সংরক্ষণ করুন, তারপর CSV ফাইলটি বাছুন।';
+
+  @override
+  String get importErrorNotUtf8 =>
+      'ফাইলটি CSV UTF-8 হিসেবে সংরক্ষিত নয়, তাই বাংলা ও আরও কিছু অক্ষর হারিয়ে যেত। ফাইলটি আবার ‘CSV UTF-8’ হিসেবে সংরক্ষণ করে আবার বাছুন।';
+
+  @override
+  String importErrorQuote(int line) {
+    final intl.NumberFormat lineNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String lineString = lineNumberFormat.format(line);
+
+    return '$lineString নম্বর লাইনে একটি ঘর উদ্ধৃতিচিহ্ন (\") দিয়ে শুরু হয়েছে, কিন্তু তা আর শেষ হয়নি। লাইনটি দেখে ফাইলটি আবার সংরক্ষণ করুন, তারপর আবার বাছুন।';
+  }
+
+  @override
+  String get importErrorEmpty => 'এই ফাইলে কোনো স্থান নেই।';
+
+  @override
+  String get importErrorOnlyHeader =>
+      'এই ফাইলে কলামের নাম আছে, কিন্তু তার নিচে কোনো স্থান নেই। প্রথম সারিটি যদি একটি স্থান হয়, তাহলে ‘প্রথম সারিতে কলামের নাম আছে’ বন্ধ করুন।';
+
+  @override
+  String importErrorTooMany(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'এই ফাইলে স্থানের $countStringটি সারি আছে। একটি ফাইলে সর্বোচ্চ ৫,০০০টি থাকতে পারে। ফাইলটি ছোট ছোট ফাইলে ভাগ করে একটির পর একটি আনুন।';
+  }
+
+  @override
+  String get importRowNoName => 'এই সারিতে কোড আছে, কিন্তু স্থানের নাম নেই।';
+
+  @override
+  String importRowGap(String column) {
+    return '$column কলামের ঘরটি খালি, কিন্তু তার পরে একটি নাম আছে। ঘরটি পূরণ করুন, অথবা নামগুলো বাঁ দিকে সরান।';
+  }
+
+  @override
+  String get importRowTooDeep => 'এই সারিতে ১০টির বেশি স্তর আছে।';
+
+  @override
+  String get importRowNameTooLong =>
+      'এই সারির একটি নাম ২০০ অক্ষরের চেয়ে লম্বা।';
+
+  @override
+  String get importRowCodeTooLong => 'এই সারির কোড ৫০ অক্ষরের চেয়ে লম্বা।';
+
+  @override
+  String get importStepCheck => 'কী যোগ হবে তা দেখে নিন';
+
+  @override
+  String get importChecking => 'ফাইলটি যাচাই করা হচ্ছে…';
+
+  @override
+  String importNewCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি নতুন স্থান',
+      one: '১টি নতুন স্থান',
+      zero: 'কোনো নতুন স্থান নেই',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importExistingCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি আগে থেকেই আছে',
+      one: '১টি আগে থেকেই আছে',
+      zero: 'আগে থেকে কোনোটি নেই',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importProblems(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি সমস্যা ঠিক করতে হবে',
+      one: '১টি সমস্যা ঠিক করতে হবে',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importProblemsHelp =>
+      'সব সমস্যা ঠিক না হওয়া পর্যন্ত কিছুই যোগ হবে না। আপনার স্প্রেডশিটে সেগুলো ঠিক করুন, আবার ‘CSV UTF-8’ হিসেবে সংরক্ষণ করুন, তারপর আবার বাছুন।';
+
+  @override
+  String importLine(int line) {
+    final intl.NumberFormat lineNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String lineString = lineNumberFormat.format(line);
+
+    return 'লাইন $lineString';
+  }
+
+  @override
+  String get importNothingNew =>
+      'এই ফাইলের সব স্থান আগে থেকেই আছে, তাই নতুন কিছু যোগ করার নেই।';
+
+  @override
+  String get importPreview => 'স্থানগুলো যেভাবে দেখাবে';
+
+  @override
+  String get importNew => 'নতুন';
+
+  @override
+  String get importAlready => 'আগে থেকেই আছে';
+
+  @override
+  String importAdd(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি স্থান যোগ করুন',
+      one: '১টি স্থান যোগ করুন',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importAdding => 'স্থান যোগ হচ্ছে…';
+
+  @override
+  String importDone(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countStringটি স্থান যোগ হয়েছে।',
+      one: '১টি স্থান যোগ হয়েছে।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importChanged =>
+      'যাচাইয়ের পরে কিছু বদলেছে, তাই কিছুই যোগ হয়নি। নিচের সমস্যাগুলো ঠিক করুন, তারপর ফাইলটি আবার বাছুন।';
+
+  @override
+  String get leaveImportTitle => 'স্থান যোগ না করেই চলে যাবেন?';
+
+  @override
+  String get leaveImportBody => 'আপনার বাছা ফাইলের স্থানগুলো এখনও যোগ হয়নি।';
+
+  @override
+  String get leaveImportLeave => 'চলে যান';
+
+  @override
+  String get personPlaceClosedHelp =>
+      'এই স্থানটি বন্ধ। এই ব্যক্তি অন্য কোথাও গেলে একটি চালু স্থান বাছুন।';
+
+  @override
+  String importServerClosed(String name) {
+    return '‘$name’ বন্ধ। আগে এটি আবার চালু করুন, অথবা এই সারিটি মুছে দিন।';
+  }
+
+  @override
+  String importServerCodeOther(String name, String code) {
+    return '‘$name’-এর কোড আগে থেকেই $code। একই কোড দিন, অথবা ঘরটি খালি রাখুন।';
+  }
+
+  @override
+  String importServerCodeTwice(String code) {
+    return 'এই ফাইলে $code কোডটি একাধিকবার ব্যবহার হয়েছে। প্রতিটি স্থানের কোড আলাদা হতে হবে।';
+  }
+
+  @override
+  String importServerCodeTaken(String code) {
+    return 'অন্য একটি স্থানের কোড আগে থেকেই $code। অন্য একটি কোড বেছে নিন।';
+  }
+
+  @override
+  String get importProblemNoName => 'এই সারিতে কোনো স্থানের নাম নেই।';
+
+  @override
+  String importProblemTooDeep(int limit) {
+    final intl.NumberFormat limitNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String limitString = limitNumberFormat.format(limit);
+
+    return 'এই সারিতে $limitStringটির বেশি স্তর আছে।';
+  }
 }

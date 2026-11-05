@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
 import 'package:obhijatra_manager/src/state/navigation.dart';
+import 'package:obhijatra_manager/src/state/places.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
 
 /// Asks before leaving a screen with unsaved changes. Returns whether to
@@ -47,6 +48,7 @@ Future<void> goToSection(
   if (!await confirmLeave(context, ref) || !context.mounted) return;
   ref.read(settingsPageProvider.notifier).open(SettingsPage.overview);
   ref.read(peopleViewProvider.notifier).open(const PeopleView.list());
+  ref.read(placesPageProvider.notifier).open(PlacesPage.tree);
   ref.read(sectionProvider.notifier).go(section);
 }
 

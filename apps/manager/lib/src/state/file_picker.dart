@@ -43,3 +43,34 @@ class SystemFormFilePicker implements FormFilePicker {
 final formFilePickerProvider = Provider<FormFilePicker>(
   (ref) => const SystemFormFilePicker(),
 );
+
+/// Asks the person for a spreadsheet saved as CSV. Tests replace it.
+// ignore: one_member_abstracts
+abstract interface class CsvFilePicker {
+  /// Opens the system file chooser; null when the person cancels.
+  Future<PickedFile?> pickCsvFile();
+}
+
+/// The real chooser (web, Windows and macOS).
+class SystemCsvFilePicker implements CsvFilePicker {
+  /// Creates the chooser.
+  const SystemCsvFilePicker();
+
+  @override
+  Future<PickedFile?> pickCsvFile() async {
+    const group = XTypeGroup(
+      label: 'CSV',
+      extensions: <String>['csv'],
+      mimeTypes: <String>['text/csv'],
+      uniformTypeIdentifiers: <String>['public.comma-separated-values-text'],
+    );
+    final file = await openFile(acceptedTypeGroups: <XTypeGroup>[group]);
+    if (file == null) return null;
+    return PickedFile(name: file.name, bytes: await file.readAsBytes());
+  }
+}
+
+/// The file chooser used by the spreadsheet import of places.
+final csvFilePickerProvider = Provider<CsvFilePicker>(
+  (ref) => const SystemCsvFilePicker(),
+);

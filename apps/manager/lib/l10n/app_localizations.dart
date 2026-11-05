@@ -2647,6 +2647,786 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reload'**
   String get actionReload;
+
+  /// Menu item: the organisation tree of places (organisation admins only).
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get navPlaces;
+
+  /// Heading of the Places screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get placesTitle;
+
+  /// Line under the Places heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation from the top down: head office, regions, areas and branches. Each person works at one place.'**
+  String get placesSummary;
+
+  /// Primary button: add a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Add place'**
+  String get placesAdd;
+
+  /// Button: add many places from a CSV file.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from a spreadsheet'**
+  String get placesImport;
+
+  /// Hint inside the search box on the Places screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Name or code'**
+  String get placesSearchHint;
+
+  /// Switch: also show places that are closed.
+  ///
+  /// In en, this message translates to:
+  /// **'Show closed places'**
+  String get placesShowClosed;
+
+  /// Help under the Show closed places switch while it is off.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 closed place is hidden.} other{{count} closed places are hidden.}}'**
+  String placesClosedHidden(int count);
+
+  /// How many places the search finds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No place matches} =1{1 place matches} other{{count} places match}}'**
+  String placesMatches(int count);
+
+  /// Text when the search finds no place.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another name or code.'**
+  String get placesNoMatchBody;
+
+  /// Text when the search finds no open place but closed places are hidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another name or code, or turn on ‘Show closed places’.'**
+  String get placesNoMatchClosedBody;
+
+  /// Title when the organisation has no places inside it yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first places'**
+  String get placesEmptyTitle;
+
+  /// Text when the organisation has no places inside it yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the regions, areas and branches inside {organisation}: one at a time with ‘Add place’, or all at once from a spreadsheet.'**
+  String placesEmptyBody(String organisation);
+
+  /// Title when the server has no organisation set up.
+  ///
+  /// In en, this message translates to:
+  /// **'No places yet'**
+  String get placesNoneTitle;
+
+  /// Link back from the import to the tree.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Places'**
+  String get placesBack;
+
+  /// Line under the organisation at the top of the tree.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole organisation'**
+  String get placeRootNote;
+
+  /// How many places are directly inside a place.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 place inside} other{{count} places inside}}'**
+  String placeInsideCount(int count);
+
+  /// A place code shown in the tree.
+  ///
+  /// In en, this message translates to:
+  /// **'Code {code}'**
+  String placeCodeShown(String code);
+
+  /// Badge: the place is closed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get placeClosed;
+
+  /// Button tooltip: open a place in the tree.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the places inside {name}'**
+  String placeOpenInside(String name);
+
+  /// Button tooltip: shut a place in the tree.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the places inside {name}'**
+  String placeShutInside(String name);
+
+  /// Tooltip of the menu of actions for one place.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {name}'**
+  String placeActions(String name);
+
+  /// Menu item: add a place inside this one.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a place inside'**
+  String get placeAddInside;
+
+  /// Menu item and dialog title: change a place name or code.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename or change code'**
+  String get placeRename;
+
+  /// Menu item: close a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Close place'**
+  String get placeCloseAction;
+
+  /// Menu item: reopen a closed place.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen place'**
+  String get placeReopenAction;
+
+  /// Menu item: delete a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete place'**
+  String get placeDeleteAction;
+
+  /// Dialog title: add a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a place'**
+  String get placeAddTitle;
+
+  /// Field label: the place a new place belongs to.
+  ///
+  /// In en, this message translates to:
+  /// **'Goes inside'**
+  String get placeParent;
+
+  /// Help under the Goes inside field.
+  ///
+  /// In en, this message translates to:
+  /// **'The place this one belongs to. It can’t be moved later.'**
+  String get placeParentHelp;
+
+  /// Note in the rename dialog: where the place is.
+  ///
+  /// In en, this message translates to:
+  /// **'Inside {parent}. A place can’t be moved.'**
+  String placeParentFixed(String parent);
+
+  /// Field label: the name of a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get placeName;
+
+  /// Help under the place name field.
+  ///
+  /// In en, this message translates to:
+  /// **'For example ‘Mirpur branch’. Places inside the same place need different names.'**
+  String get placeNameHelp;
+
+  /// Field label: the short code of a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Code (optional)'**
+  String get placeCode;
+
+  /// Help under the place code field.
+  ///
+  /// In en, this message translates to:
+  /// **'A short code your organisation uses, for example MRP10. No two places can have the same code.'**
+  String get placeCodeHelp;
+
+  /// Problem: the name is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the place a name.'**
+  String get placeErrorName;
+
+  /// Problem: a neighbouring place has the same name.
+  ///
+  /// In en, this message translates to:
+  /// **'Another place inside {parent} already has this name. Choose a different name.'**
+  String placeErrorNameTaken(String parent);
+
+  /// Problem: another place has the same code.
+  ///
+  /// In en, this message translates to:
+  /// **'Another place already has this code. Choose a different code.'**
+  String get placeErrorCodeTaken;
+
+  /// Problem: the place chosen to hold new places is closed.
+  ///
+  /// In en, this message translates to:
+  /// **'The place above is closed. Reopen it first, or choose an open place.'**
+  String get placeErrorParentClosed;
+
+  /// Message after adding a place.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is added.'**
+  String placeAdded(String name);
+
+  /// Dialog title: close a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Close {name}?'**
+  String placeCloseTitle(String name);
+
+  /// Dialog text: what closing a place does.
+  ///
+  /// In en, this message translates to:
+  /// **'A closed place can’t be chosen for people or for new places, and it is hidden where you choose a place. Everything recorded there is kept. You can reopen it at any time.'**
+  String get placeCloseBody;
+
+  /// Dialog button: close the place.
+  ///
+  /// In en, this message translates to:
+  /// **'Close place'**
+  String get placeCloseButton;
+
+  /// Message after closing a place.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is closed.'**
+  String placeClosedDone(String name);
+
+  /// Problem: a place cannot close while open places are inside it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 open place is still inside it. Close or delete that place first.} other{{count} open places are still inside it. Close or delete them first.}}'**
+  String placeErrorOpenInside(int count);
+
+  /// Problem: a place cannot close while active people work there.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 active person still works here. Move them to another place, or deactivate them, first.} other{{count} active people still work here. Move them to other places, or deactivate them, first.}}'**
+  String placeErrorPeople(int count);
+
+  /// Button: open People, showing the active people at this place.
+  ///
+  /// In en, this message translates to:
+  /// **'See who works here'**
+  String get placeSeePeople;
+
+  /// Problem: the place at the top cannot be closed or deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'The organisation itself can’t be closed or deleted.'**
+  String get placeErrorRoot;
+
+  /// Dialog title: reopen a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen {name}?'**
+  String placeReopenTitle(String name);
+
+  /// Dialog text: what reopening a place does.
+  ///
+  /// In en, this message translates to:
+  /// **'It can be chosen again for people and for new places.'**
+  String get placeReopenBody;
+
+  /// Dialog button: reopen the place.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen place'**
+  String get placeReopenButton;
+
+  /// Message after reopening a place.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is open again.'**
+  String placeReopenedDone(String name);
+
+  /// Problem: a place cannot reopen inside a closed place.
+  ///
+  /// In en, this message translates to:
+  /// **'The place above it is closed. Reopen that place first.'**
+  String get placeErrorAboveClosed;
+
+  /// Dialog title: delete a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String placeDeleteTitle(String name);
+
+  /// Dialog text: when to delete a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete a place only if it was added by mistake. This can’t be undone. A place that anyone or any record uses can’t be deleted: close it instead.'**
+  String get placeDeleteBody;
+
+  /// Dialog button: delete the place.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete place'**
+  String get placeDeleteButton;
+
+  /// Message after deleting a place.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is deleted.'**
+  String placeDeletedDone(String name);
+
+  /// Problem: a place in use cannot be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This place is in use, so it can’t be deleted. Close it instead: it will no longer be offered, and its records are kept.'**
+  String get placeErrorInUse;
+
+  /// Button: close the place that cannot be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Close it instead'**
+  String get placeCloseInstead;
+
+  /// Heading of the spreadsheet import page.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from a spreadsheet'**
+  String get importTitle;
+
+  /// Line under the import heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Add many places at once from a spreadsheet. Places that are already there are kept, never doubled.'**
+  String get importSummary;
+
+  /// Spoken label of a step number.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {number}'**
+  String importStep(int number);
+
+  /// Import step heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Get your spreadsheet ready'**
+  String get importStepFile;
+
+  /// Import rule.
+  ///
+  /// In en, this message translates to:
+  /// **'One row for each place. Put the names in separate columns, from the top level down: for example Region, Area, Branch.'**
+  String get importRuleRows;
+
+  /// Import rule.
+  ///
+  /// In en, this message translates to:
+  /// **'The first row holds the column names.'**
+  String get importRuleHeader;
+
+  /// Import rule. Keep the column name code in English: the app looks for it.
+  ///
+  /// In en, this message translates to:
+  /// **'To give a place a code, add a last column named ‘code’. The code goes on the last place in the row.'**
+  String get importRuleCode;
+
+  /// Import rule.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty cells at the end of a row are fine: that row stops at a higher level.'**
+  String get importRuleEmpty;
+
+  /// Import rule.
+  ///
+  /// In en, this message translates to:
+  /// **'Places that are already there (the same name at the same level) are reused, so you can import the same file again safely.'**
+  String get importRuleReuse;
+
+  /// Import rule.
+  ///
+  /// In en, this message translates to:
+  /// **'Bangla names are fine.'**
+  String get importRuleBangla;
+
+  /// Import rule. Menu names stay in English, as the programs show them.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the file as ‘CSV UTF-8’. In Excel: File › Save As › CSV UTF-8. In Google Sheets: File › Download › Comma-separated values (.csv).'**
+  String get importRuleSave;
+
+  /// Import rule: the limits.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 5,000 rows, with up to 10 levels in a row.'**
+  String get importRuleLimits;
+
+  /// Caption of the example table.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get importExample;
+
+  /// Example column name.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get importExampleRegion;
+
+  /// Example column name.
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get importExampleArea;
+
+  /// Example column name.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get importExampleBranch;
+
+  /// Example place name.
+  ///
+  /// In en, this message translates to:
+  /// **'Dhaka region'**
+  String get importExampleRegion1;
+
+  /// Example place name.
+  ///
+  /// In en, this message translates to:
+  /// **'Mirpur area'**
+  String get importExampleArea1;
+
+  /// Example place name.
+  ///
+  /// In en, this message translates to:
+  /// **'Mirpur-10 branch'**
+  String get importExampleBranch1;
+
+  /// Example place name.
+  ///
+  /// In en, this message translates to:
+  /// **'Pallabi branch'**
+  String get importExampleBranch2;
+
+  /// Example place name.
+  ///
+  /// In en, this message translates to:
+  /// **'Khulna region'**
+  String get importExampleRegion2;
+
+  /// Example place name.
+  ///
+  /// In en, this message translates to:
+  /// **'Sonadanga area'**
+  String get importExampleArea2;
+
+  /// Import step heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where the new places go'**
+  String get importStepParent;
+
+  /// Field label: the place the imported places go inside.
+  ///
+  /// In en, this message translates to:
+  /// **'New places go inside'**
+  String get importParent;
+
+  /// Help under the New places go inside field.
+  ///
+  /// In en, this message translates to:
+  /// **'The places in the first column go directly inside this place.'**
+  String get importParentHelp;
+
+  /// Import step heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the file'**
+  String get importStepChoose;
+
+  /// Button: choose the spreadsheet file.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a CSV file'**
+  String get importChoose;
+
+  /// Button: choose a different file.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another file'**
+  String get importChooseAnother;
+
+  /// The chosen file.
+  ///
+  /// In en, this message translates to:
+  /// **'File: {name}'**
+  String importFileName(String name);
+
+  /// How many rows of places the file has.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 row of places} other{{count} rows of places}}'**
+  String importRowCount(int count);
+
+  /// Switch: read the first row as column names.
+  ///
+  /// In en, this message translates to:
+  /// **'The first row has column names'**
+  String get importHeader;
+
+  /// Help under the first row switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this off if the first row is a place.'**
+  String get importHeaderHelp;
+
+  /// The first row, read as column names.
+  ///
+  /// In en, this message translates to:
+  /// **'Column names: {names}'**
+  String importColumns(String names);
+
+  /// Which column holds the codes.
+  ///
+  /// In en, this message translates to:
+  /// **'Codes are read from the column ‘{name}’.'**
+  String importCodeColumn(String name);
+
+  /// File problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is too big. A list of places can be up to 5 MB.'**
+  String get importErrorTooBig;
+
+  /// File problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an Excel file. Save it as ‘CSV UTF-8’ first, then choose the CSV file.'**
+  String get importErrorExcel;
+
+  /// File problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is not saved as CSV UTF-8, so Bangla and some other letters would be lost. Save it again as ‘CSV UTF-8’, then choose it again.'**
+  String get importErrorNotUtf8;
+
+  /// File problem.
+  ///
+  /// In en, this message translates to:
+  /// **'On line {line}, a cell starts with a quotation mark (\") that is never closed. Check that line, save the file again, then choose it again.'**
+  String importErrorQuote(int line);
+
+  /// File problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This file has no places in it.'**
+  String get importErrorEmpty;
+
+  /// File problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This file has column names but no places under them. If the first row is a place, turn off ‘The first row has column names’.'**
+  String get importErrorOnlyHeader;
+
+  /// File problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This file has {count} rows of places. A file can hold up to 5,000. Split it into smaller files and import them one after another.'**
+  String importErrorTooMany(int count);
+
+  /// Row problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This row has a code but no place name.'**
+  String get importRowNoName;
+
+  /// Row problem. The column is a spreadsheet letter such as B.
+  ///
+  /// In en, this message translates to:
+  /// **'The cell in column {column} is empty, but there is a name after it. Fill it in, or move the names to the left.'**
+  String importRowGap(String column);
+
+  /// Row problem.
+  ///
+  /// In en, this message translates to:
+  /// **'This row has more than 10 levels.'**
+  String get importRowTooDeep;
+
+  /// Row problem.
+  ///
+  /// In en, this message translates to:
+  /// **'A name in this row is longer than 200 characters.'**
+  String get importRowNameTooLong;
+
+  /// Row problem.
+  ///
+  /// In en, this message translates to:
+  /// **'The code in this row is longer than 50 characters.'**
+  String get importRowCodeTooLong;
+
+  /// Import step heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Check what will be added'**
+  String get importStepCheck;
+
+  /// While the server checks the file.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the file…'**
+  String get importChecking;
+
+  /// How many places the import adds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No new places} =1{1 new place} other{{count} new places}}'**
+  String importNewCount(int count);
+
+  /// How many places in the file are already there.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{none already there} =1{1 already there} other{{count} already there}}'**
+  String importExistingCount(int count);
+
+  /// Heading of the list of problems in the file.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 problem to fix} other{{count} problems to fix}}'**
+  String importProblems(int count);
+
+  /// Help above the list of problems.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is added until every problem is fixed. Fix them in your spreadsheet, save it as ‘CSV UTF-8’ again, then choose it again.'**
+  String get importProblemsHelp;
+
+  /// The line of the file a problem is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {line}'**
+  String importLine(int line);
+
+  /// When the file adds no place.
+  ///
+  /// In en, this message translates to:
+  /// **'Every place in this file is already there, so there is nothing to add.'**
+  String get importNothingNew;
+
+  /// Heading of the preview tree.
+  ///
+  /// In en, this message translates to:
+  /// **'How the places will look'**
+  String get importPreview;
+
+  /// Badge in the preview: the import adds this place.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get importNew;
+
+  /// Note in the preview: this place is already there.
+  ///
+  /// In en, this message translates to:
+  /// **'Already there'**
+  String get importAlready;
+
+  /// Button: run the import.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Add 1 place} other{Add {count} places}}'**
+  String importAdd(int count);
+
+  /// Button label while the import runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding places…'**
+  String get importAdding;
+
+  /// Message after the import.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 place is added.} other{{count} places are added.}}'**
+  String importDone(int count);
+
+  /// When the real import finds problems the check did not.
+  ///
+  /// In en, this message translates to:
+  /// **'Something changed since the check, so nothing was added. Fix the problems below, then choose the file again.'**
+  String get importChanged;
+
+  /// Dialog title: leaving the import before adding.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave without adding the places?'**
+  String get leaveImportTitle;
+
+  /// Dialog text: leaving the import before adding.
+  ///
+  /// In en, this message translates to:
+  /// **'The places in the file you chose have not been added yet.'**
+  String get leaveImportBody;
+
+  /// Dialog button: leave the import.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leaveImportLeave;
+
+  /// Help under a person’s place when that place is closed.
+  ///
+  /// In en, this message translates to:
+  /// **'This place is closed. Choose an open place if this person moves.'**
+  String get personPlaceClosedHelp;
+
+  /// Row problem from the server: the row names a closed place.
+  ///
+  /// In en, this message translates to:
+  /// **'‘{name}’ is closed. Reopen it first, or remove this row.'**
+  String importServerClosed(String name);
+
+  /// Row problem from the server: the place already has another code.
+  ///
+  /// In en, this message translates to:
+  /// **'‘{name}’ already has the code {code}. Use the same code, or leave the cell empty.'**
+  String importServerCodeOther(String name, String code);
+
+  /// Row problem from the server: a code repeats in the file.
+  ///
+  /// In en, this message translates to:
+  /// **'The code {code} is used more than once in this file. Each place needs its own code.'**
+  String importServerCodeTwice(String code);
+
+  /// Row problem from the server: another place has the code.
+  ///
+  /// In en, this message translates to:
+  /// **'Another place already has the code {code}. Choose a different code.'**
+  String importServerCodeTaken(String code);
+
+  /// Row problem from the server: the row has no place name.
+  ///
+  /// In en, this message translates to:
+  /// **'This row has no place name.'**
+  String get importProblemNoName;
+
+  /// Row problem from the server: the row has too many levels.
+  ///
+  /// In en, this message translates to:
+  /// **'This row has more than {limit} levels.'**
+  String importProblemTooDeep(int limit);
 }
 
 class _AppLocalizationsDelegate

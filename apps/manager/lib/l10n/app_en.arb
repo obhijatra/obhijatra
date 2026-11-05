@@ -2005,5 +2005,734 @@
   "actionReload": "Reload",
   "@actionReload": {
     "description": "Button: load the record again from the server."
+  },
+  "navPlaces": "Places",
+  "@navPlaces": {
+    "description": "Menu item: the organisation tree of places (organisation admins only)."
+  },
+  "placesTitle": "Places",
+  "@placesTitle": {
+    "description": "Heading of the Places screen."
+  },
+  "placesSummary": "Your organisation from the top down: head office, regions, areas and branches. Each person works at one place.",
+  "@placesSummary": {
+    "description": "Line under the Places heading."
+  },
+  "placesAdd": "Add place",
+  "@placesAdd": {
+    "description": "Primary button: add a place."
+  },
+  "placesImport": "Import from a spreadsheet",
+  "@placesImport": {
+    "description": "Button: add many places from a CSV file."
+  },
+  "placesSearchHint": "Name or code",
+  "@placesSearchHint": {
+    "description": "Hint inside the search box on the Places screen."
+  },
+  "placesShowClosed": "Show closed places",
+  "@placesShowClosed": {
+    "description": "Switch: also show places that are closed."
+  },
+  "placesClosedHidden": "{count, plural, =1{1 closed place is hidden.} other{{count} closed places are hidden.}}",
+  "@placesClosedHidden": {
+    "description": "Help under the Show closed places switch while it is off.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "placesMatches": "{count, plural, =0{No place matches} =1{1 place matches} other{{count} places match}}",
+  "@placesMatches": {
+    "description": "How many places the search finds.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "placesNoMatchBody": "Try another name or code.",
+  "@placesNoMatchBody": {
+    "description": "Text when the search finds no place."
+  },
+  "placesNoMatchClosedBody": "Try another name or code, or turn on ‘Show closed places’.",
+  "@placesNoMatchClosedBody": {
+    "description": "Text when the search finds no open place but closed places are hidden."
+  },
+  "placesEmptyTitle": "Add your first places",
+  "@placesEmptyTitle": {
+    "description": "Title when the organisation has no places inside it yet."
+  },
+  "placesEmptyBody": "Add the regions, areas and branches inside {organisation}: one at a time with ‘Add place’, or all at once from a spreadsheet.",
+  "@placesEmptyBody": {
+    "description": "Text when the organisation has no places inside it yet.",
+    "placeholders": {
+      "organisation": {
+        "type": "String"
+      }
+    }
+  },
+  "placesNoneTitle": "No places yet",
+  "@placesNoneTitle": {
+    "description": "Title when the server has no organisation set up."
+  },
+  "placesBack": "Back to Places",
+  "@placesBack": {
+    "description": "Link back from the import to the tree."
+  },
+  "placeRootNote": "The whole organisation",
+  "@placeRootNote": {
+    "description": "Line under the organisation at the top of the tree."
+  },
+  "placeInsideCount": "{count, plural, =1{1 place inside} other{{count} places inside}}",
+  "@placeInsideCount": {
+    "description": "How many places are directly inside a place.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "placeCodeShown": "Code {code}",
+  "@placeCodeShown": {
+    "description": "A place code shown in the tree.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "placeClosed": "Closed",
+  "@placeClosed": {
+    "description": "Badge: the place is closed."
+  },
+  "placeOpenInside": "Show the places inside {name}",
+  "@placeOpenInside": {
+    "description": "Button tooltip: open a place in the tree.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeShutInside": "Hide the places inside {name}",
+  "@placeShutInside": {
+    "description": "Button tooltip: shut a place in the tree.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeActions": "Actions for {name}",
+  "@placeActions": {
+    "description": "Tooltip of the menu of actions for one place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeAddInside": "Add a place inside",
+  "@placeAddInside": {
+    "description": "Menu item: add a place inside this one."
+  },
+  "placeRename": "Rename or change code",
+  "@placeRename": {
+    "description": "Menu item and dialog title: change a place name or code."
+  },
+  "placeCloseAction": "Close place",
+  "@placeCloseAction": {
+    "description": "Menu item: close a place."
+  },
+  "placeReopenAction": "Reopen place",
+  "@placeReopenAction": {
+    "description": "Menu item: reopen a closed place."
+  },
+  "placeDeleteAction": "Delete place",
+  "@placeDeleteAction": {
+    "description": "Menu item: delete a place."
+  },
+  "placeAddTitle": "Add a place",
+  "@placeAddTitle": {
+    "description": "Dialog title: add a place."
+  },
+  "placeParent": "Goes inside",
+  "@placeParent": {
+    "description": "Field label: the place a new place belongs to."
+  },
+  "placeParentHelp": "The place this one belongs to. It can’t be moved later.",
+  "@placeParentHelp": {
+    "description": "Help under the Goes inside field."
+  },
+  "placeParentFixed": "Inside {parent}. A place can’t be moved.",
+  "@placeParentFixed": {
+    "description": "Note in the rename dialog: where the place is.",
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "placeName": "Name",
+  "@placeName": {
+    "description": "Field label: the name of a place."
+  },
+  "placeNameHelp": "For example ‘Mirpur branch’. Places inside the same place need different names.",
+  "@placeNameHelp": {
+    "description": "Help under the place name field."
+  },
+  "placeCode": "Code (optional)",
+  "@placeCode": {
+    "description": "Field label: the short code of a place."
+  },
+  "placeCodeHelp": "A short code your organisation uses, for example MRP10. No two places can have the same code.",
+  "@placeCodeHelp": {
+    "description": "Help under the place code field."
+  },
+  "placeErrorName": "Give the place a name.",
+  "@placeErrorName": {
+    "description": "Problem: the name is empty."
+  },
+  "placeErrorNameTaken": "Another place inside {parent} already has this name. Choose a different name.",
+  "@placeErrorNameTaken": {
+    "description": "Problem: a neighbouring place has the same name.",
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "placeErrorCodeTaken": "Another place already has this code. Choose a different code.",
+  "@placeErrorCodeTaken": {
+    "description": "Problem: another place has the same code."
+  },
+  "placeErrorParentClosed": "The place above is closed. Reopen it first, or choose an open place.",
+  "@placeErrorParentClosed": {
+    "description": "Problem: the place chosen to hold new places is closed."
+  },
+  "placeAdded": "{name} is added.",
+  "@placeAdded": {
+    "description": "Message after adding a place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeCloseTitle": "Close {name}?",
+  "@placeCloseTitle": {
+    "description": "Dialog title: close a place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeCloseBody": "A closed place can’t be chosen for people or for new places, and it is hidden where you choose a place. Everything recorded there is kept. You can reopen it at any time.",
+  "@placeCloseBody": {
+    "description": "Dialog text: what closing a place does."
+  },
+  "placeCloseButton": "Close place",
+  "@placeCloseButton": {
+    "description": "Dialog button: close the place."
+  },
+  "placeClosedDone": "{name} is closed.",
+  "@placeClosedDone": {
+    "description": "Message after closing a place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeErrorOpenInside": "{count, plural, =1{1 open place is still inside it. Close or delete that place first.} other{{count} open places are still inside it. Close or delete them first.}}",
+  "@placeErrorOpenInside": {
+    "description": "Problem: a place cannot close while open places are inside it.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "placeErrorPeople": "{count, plural, =1{1 active person still works here. Move them to another place, or deactivate them, first.} other{{count} active people still work here. Move them to other places, or deactivate them, first.}}",
+  "@placeErrorPeople": {
+    "description": "Problem: a place cannot close while active people work there.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "placeSeePeople": "See who works here",
+  "@placeSeePeople": {
+    "description": "Button: open People, showing the active people at this place."
+  },
+  "placeErrorRoot": "The organisation itself can’t be closed or deleted.",
+  "@placeErrorRoot": {
+    "description": "Problem: the place at the top cannot be closed or deleted."
+  },
+  "placeReopenTitle": "Reopen {name}?",
+  "@placeReopenTitle": {
+    "description": "Dialog title: reopen a place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeReopenBody": "It can be chosen again for people and for new places.",
+  "@placeReopenBody": {
+    "description": "Dialog text: what reopening a place does."
+  },
+  "placeReopenButton": "Reopen place",
+  "@placeReopenButton": {
+    "description": "Dialog button: reopen the place."
+  },
+  "placeReopenedDone": "{name} is open again.",
+  "@placeReopenedDone": {
+    "description": "Message after reopening a place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeErrorAboveClosed": "The place above it is closed. Reopen that place first.",
+  "@placeErrorAboveClosed": {
+    "description": "Problem: a place cannot reopen inside a closed place."
+  },
+  "placeDeleteTitle": "Delete {name}?",
+  "@placeDeleteTitle": {
+    "description": "Dialog title: delete a place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeDeleteBody": "Delete a place only if it was added by mistake. This can’t be undone. A place that anyone or any record uses can’t be deleted: close it instead.",
+  "@placeDeleteBody": {
+    "description": "Dialog text: when to delete a place."
+  },
+  "placeDeleteButton": "Delete place",
+  "@placeDeleteButton": {
+    "description": "Dialog button: delete the place."
+  },
+  "placeDeletedDone": "{name} is deleted.",
+  "@placeDeletedDone": {
+    "description": "Message after deleting a place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "placeErrorInUse": "This place is in use, so it can’t be deleted. Close it instead: it will no longer be offered, and its records are kept.",
+  "@placeErrorInUse": {
+    "description": "Problem: a place in use cannot be deleted."
+  },
+  "placeCloseInstead": "Close it instead",
+  "@placeCloseInstead": {
+    "description": "Button: close the place that cannot be deleted."
+  },
+  "importTitle": "Import from a spreadsheet",
+  "@importTitle": {
+    "description": "Heading of the spreadsheet import page."
+  },
+  "importSummary": "Add many places at once from a spreadsheet. Places that are already there are kept, never doubled.",
+  "@importSummary": {
+    "description": "Line under the import heading."
+  },
+  "importStep": "Step {number}",
+  "@importStep": {
+    "description": "Spoken label of a step number.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importStepFile": "Get your spreadsheet ready",
+  "@importStepFile": {
+    "description": "Import step heading."
+  },
+  "importRuleRows": "One row for each place. Put the names in separate columns, from the top level down: for example Region, Area, Branch.",
+  "@importRuleRows": {
+    "description": "Import rule."
+  },
+  "importRuleHeader": "The first row holds the column names.",
+  "@importRuleHeader": {
+    "description": "Import rule."
+  },
+  "importRuleCode": "To give a place a code, add a last column named ‘code’. The code goes on the last place in the row.",
+  "@importRuleCode": {
+    "description": "Import rule. Keep the column name code in English: the app looks for it."
+  },
+  "importRuleEmpty": "Empty cells at the end of a row are fine: that row stops at a higher level.",
+  "@importRuleEmpty": {
+    "description": "Import rule."
+  },
+  "importRuleReuse": "Places that are already there (the same name at the same level) are reused, so you can import the same file again safely.",
+  "@importRuleReuse": {
+    "description": "Import rule."
+  },
+  "importRuleBangla": "Bangla names are fine.",
+  "@importRuleBangla": {
+    "description": "Import rule."
+  },
+  "importRuleSave": "Save the file as ‘CSV UTF-8’. In Excel: File › Save As › CSV UTF-8. In Google Sheets: File › Download › Comma-separated values (.csv).",
+  "@importRuleSave": {
+    "description": "Import rule. Menu names stay in English, as the programs show them."
+  },
+  "importRuleLimits": "Up to 5,000 rows, with up to 10 levels in a row.",
+  "@importRuleLimits": {
+    "description": "Import rule: the limits."
+  },
+  "importExample": "Example",
+  "@importExample": {
+    "description": "Caption of the example table."
+  },
+  "importExampleRegion": "Region",
+  "@importExampleRegion": {
+    "description": "Example column name."
+  },
+  "importExampleArea": "Area",
+  "@importExampleArea": {
+    "description": "Example column name."
+  },
+  "importExampleBranch": "Branch",
+  "@importExampleBranch": {
+    "description": "Example column name."
+  },
+  "importExampleRegion1": "Dhaka region",
+  "@importExampleRegion1": {
+    "description": "Example place name."
+  },
+  "importExampleArea1": "Mirpur area",
+  "@importExampleArea1": {
+    "description": "Example place name."
+  },
+  "importExampleBranch1": "Mirpur-10 branch",
+  "@importExampleBranch1": {
+    "description": "Example place name."
+  },
+  "importExampleBranch2": "Pallabi branch",
+  "@importExampleBranch2": {
+    "description": "Example place name."
+  },
+  "importExampleRegion2": "Khulna region",
+  "@importExampleRegion2": {
+    "description": "Example place name."
+  },
+  "importExampleArea2": "Sonadanga area",
+  "@importExampleArea2": {
+    "description": "Example place name."
+  },
+  "importStepParent": "Choose where the new places go",
+  "@importStepParent": {
+    "description": "Import step heading."
+  },
+  "importParent": "New places go inside",
+  "@importParent": {
+    "description": "Field label: the place the imported places go inside."
+  },
+  "importParentHelp": "The places in the first column go directly inside this place.",
+  "@importParentHelp": {
+    "description": "Help under the New places go inside field."
+  },
+  "importStepChoose": "Choose the file",
+  "@importStepChoose": {
+    "description": "Import step heading."
+  },
+  "importChoose": "Choose a CSV file",
+  "@importChoose": {
+    "description": "Button: choose the spreadsheet file."
+  },
+  "importChooseAnother": "Choose another file",
+  "@importChooseAnother": {
+    "description": "Button: choose a different file."
+  },
+  "importFileName": "File: {name}",
+  "@importFileName": {
+    "description": "The chosen file.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importRowCount": "{count, plural, =1{1 row of places} other{{count} rows of places}}",
+  "@importRowCount": {
+    "description": "How many rows of places the file has.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importHeader": "The first row has column names",
+  "@importHeader": {
+    "description": "Switch: read the first row as column names."
+  },
+  "importHeaderHelp": "Turn this off if the first row is a place.",
+  "@importHeaderHelp": {
+    "description": "Help under the first row switch."
+  },
+  "importColumns": "Column names: {names}",
+  "@importColumns": {
+    "description": "The first row, read as column names.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "importCodeColumn": "Codes are read from the column ‘{name}’.",
+  "@importCodeColumn": {
+    "description": "Which column holds the codes.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importErrorTooBig": "This file is too big. A list of places can be up to 5 MB.",
+  "@importErrorTooBig": {
+    "description": "File problem."
+  },
+  "importErrorExcel": "This is an Excel file. Save it as ‘CSV UTF-8’ first, then choose the CSV file.",
+  "@importErrorExcel": {
+    "description": "File problem."
+  },
+  "importErrorNotUtf8": "This file is not saved as CSV UTF-8, so Bangla and some other letters would be lost. Save it again as ‘CSV UTF-8’, then choose it again.",
+  "@importErrorNotUtf8": {
+    "description": "File problem."
+  },
+  "importErrorQuote": "On line {line}, a cell starts with a quotation mark (\") that is never closed. Check that line, save the file again, then choose it again.",
+  "@importErrorQuote": {
+    "description": "File problem.",
+    "placeholders": {
+      "line": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importErrorEmpty": "This file has no places in it.",
+  "@importErrorEmpty": {
+    "description": "File problem."
+  },
+  "importErrorOnlyHeader": "This file has column names but no places under them. If the first row is a place, turn off ‘The first row has column names’.",
+  "@importErrorOnlyHeader": {
+    "description": "File problem."
+  },
+  "importErrorTooMany": "This file has {count} rows of places. A file can hold up to 5,000. Split it into smaller files and import them one after another.",
+  "@importErrorTooMany": {
+    "description": "File problem.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importRowNoName": "This row has a code but no place name.",
+  "@importRowNoName": {
+    "description": "Row problem."
+  },
+  "importRowGap": "The cell in column {column} is empty, but there is a name after it. Fill it in, or move the names to the left.",
+  "@importRowGap": {
+    "description": "Row problem. The column is a spreadsheet letter such as B.",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "importRowTooDeep": "This row has more than 10 levels.",
+  "@importRowTooDeep": {
+    "description": "Row problem."
+  },
+  "importRowNameTooLong": "A name in this row is longer than 200 characters.",
+  "@importRowNameTooLong": {
+    "description": "Row problem."
+  },
+  "importRowCodeTooLong": "The code in this row is longer than 50 characters.",
+  "@importRowCodeTooLong": {
+    "description": "Row problem."
+  },
+  "importStepCheck": "Check what will be added",
+  "@importStepCheck": {
+    "description": "Import step heading."
+  },
+  "importChecking": "Checking the file…",
+  "@importChecking": {
+    "description": "While the server checks the file."
+  },
+  "importNewCount": "{count, plural, =0{No new places} =1{1 new place} other{{count} new places}}",
+  "@importNewCount": {
+    "description": "How many places the import adds.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importExistingCount": "{count, plural, =0{none already there} =1{1 already there} other{{count} already there}}",
+  "@importExistingCount": {
+    "description": "How many places in the file are already there.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importProblems": "{count, plural, =1{1 problem to fix} other{{count} problems to fix}}",
+  "@importProblems": {
+    "description": "Heading of the list of problems in the file.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importProblemsHelp": "Nothing is added until every problem is fixed. Fix them in your spreadsheet, save it as ‘CSV UTF-8’ again, then choose it again.",
+  "@importProblemsHelp": {
+    "description": "Help above the list of problems."
+  },
+  "importLine": "Line {line}",
+  "@importLine": {
+    "description": "The line of the file a problem is on.",
+    "placeholders": {
+      "line": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importNothingNew": "Every place in this file is already there, so there is nothing to add.",
+  "@importNothingNew": {
+    "description": "When the file adds no place."
+  },
+  "importPreview": "How the places will look",
+  "@importPreview": {
+    "description": "Heading of the preview tree."
+  },
+  "importNew": "New",
+  "@importNew": {
+    "description": "Badge in the preview: the import adds this place."
+  },
+  "importAlready": "Already there",
+  "@importAlready": {
+    "description": "Note in the preview: this place is already there."
+  },
+  "importAdd": "{count, plural, =1{Add 1 place} other{Add {count} places}}",
+  "@importAdd": {
+    "description": "Button: run the import.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importAdding": "Adding places…",
+  "@importAdding": {
+    "description": "Button label while the import runs."
+  },
+  "importDone": "{count, plural, =1{1 place is added.} other{{count} places are added.}}",
+  "@importDone": {
+    "description": "Message after the import.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "importChanged": "Something changed since the check, so nothing was added. Fix the problems below, then choose the file again.",
+  "@importChanged": {
+    "description": "When the real import finds problems the check did not."
+  },
+  "leaveImportTitle": "Leave without adding the places?",
+  "@leaveImportTitle": {
+    "description": "Dialog title: leaving the import before adding."
+  },
+  "leaveImportBody": "The places in the file you chose have not been added yet.",
+  "@leaveImportBody": {
+    "description": "Dialog text: leaving the import before adding."
+  },
+  "leaveImportLeave": "Leave",
+  "@leaveImportLeave": {
+    "description": "Dialog button: leave the import."
+  },
+  "personPlaceClosedHelp": "This place is closed. Choose an open place if this person moves.",
+  "@personPlaceClosedHelp": {
+    "description": "Help under a person’s place when that place is closed."
+  },
+  "importServerClosed": "‘{name}’ is closed. Reopen it first, or remove this row.",
+  "@importServerClosed": {
+    "description": "Row problem from the server: the row names a closed place.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importServerCodeOther": "‘{name}’ already has the code {code}. Use the same code, or leave the cell empty.",
+  "@importServerCodeOther": {
+    "description": "Row problem from the server: the place already has another code.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "importServerCodeTwice": "The code {code} is used more than once in this file. Each place needs its own code.",
+  "@importServerCodeTwice": {
+    "description": "Row problem from the server: a code repeats in the file.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "importServerCodeTaken": "Another place already has the code {code}. Choose a different code.",
+  "@importServerCodeTaken": {
+    "description": "Row problem from the server: another place has the code.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "importProblemNoName": "This row has no place name.",
+  "@importProblemNoName": {
+    "description": "Row problem from the server: the row has no place name."
+  },
+  "importProblemTooDeep": "This row has more than {limit} levels.",
+  "@importProblemTooDeep": {
+    "description": "Row problem from the server: the row has too many levels.",
+    "placeholders": {
+      "limit": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   }
 }

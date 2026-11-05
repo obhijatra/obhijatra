@@ -9,6 +9,7 @@ import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/phone_number.dart';
+import 'package:obhijatra_manager/src/data/places.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 import 'package:pocketbase/pocketbase.dart';
 
@@ -875,20 +876,148 @@ class PocketBaseApi implements ManagerApi {
         .update(lock.id, body: <String, dynamic>{'unlocked': true});
   });
 
+  // ------------------------------------------------------------- places
+
+  static const String _locations = 'locations';
+
+  /// The fields a place needs, so thousands of places stay a small answer.
+  static const String _placeFields = 'id,name,code,parent,path,closed';
+
+  static Place _placeFrom(RecordModel record) => Place(
+    id: record.id,
+    name: record.getStringValue('name'),
+    code: record.getStringValue('code'),
+    parentId: record.getStringValue('parent'),
+    path: record.getStringValue('path'),
+    closed: record.getBoolValue('closed'),
+  );
+
   @override
   Future<List<Place>> listPlaces() => _guard(() async {
-    final records = await _pb.collection('locations').getFullList();
-    return <Place>[
-      for (final record in records)
-        Place(
-          id: record.id,
-          name: record.getStringValue('name'),
-          code: record.getStringValue('code'),
-          parentId: record.getStringValue('parent'),
-          path: record.getStringValue('path'),
-        ),
-    ];
+    // getFullList asks for one page after another until none is left.
+    final records = await _pb
+        .collection(_locations)
+        .getFullList(batch: 500, fields: _placeFields);
+    return records.map(_placeFrom).toList();
   });
+
+  /// Runs a change to a place; refused fields become
+  /// [ProblemKind.detailsInvalid] with the server's codes and messages.
+  Future<T> _placeChange<T>(Future<T> Function() call) async {
+    try {
+      return await call().timeout(timeout);
+    } on ClientException catch (e) {
+      throw _fieldsProblem(e);
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  static AppProblem _fieldsProblem(ClientException e) {
+    final fields = e.statusCode == 400
+        ? fieldProblems(e)
+        : const <String, String>{};
+    if (fields.isEmpty) return problemFrom(e);
+    return AppProblem(
+      ProblemKind.detailsInvalid,
+      statusCode: 400,
+      fields: fields,
+      codes: fieldCodes(e),
+    );
+  }
+
+  @override
+  Future<Place> createPlace({
+    required String parentId,
+    required String name,
+    required String code,
+  }) => _placeChange(() async {
+    final record = await _pb
+        .collection(_locations)
+        .create(
+          body: <String, dynamic>{
+            'name': name.trim(),
+            'code': code.trim(),
+            'parent': parentId,
+          },
+          fields: _placeFields,
+        );
+    return _placeFrom(record);
+  });
+
+  @override
+  Future<Place> updatePlace(
+    Place place, {
+    required String name,
+    required String code,
+  }) => _placeChange(() async {
+    final body = <String, dynamic>{
+      if (name.trim() != place.name) 'name': name.trim(),
+      if (code.trim() != place.code) 'code': code.trim(),
+    };
+    if (body.isEmpty) return place;
+    final record = await _pb
+        .collection(_locations)
+        .update(place.id, body: body, fields: _placeFields);
+    return _placeFrom(record);
+  });
+
+  @override
+  Future<Place> setPlaceClosed(Place place, {required bool closed}) =>
+      _placeChange(() async {
+        final record = await _pb
+            .collection(_locations)
+            .update(
+              place.id,
+              body: <String, dynamic>{'closed': closed},
+              fields: _placeFields,
+            );
+        return _placeFrom(record);
+      });
+
+  @override
+  Future<void> deletePlace(Place place) =>
+      _placeChange(() => _pb.collection(_locations).delete(place.id));
+
+  static const String _importPath = '/api/obhijatra/v1/places/import';
+
+  @override
+  Future<PlaceImportResult> importPlaces({
+    required String parentId,
+    required List<PlaceImportRow> rows,
+    required bool dryRun,
+  }) async {
+    try {
+      final answer = await _pb
+          .send<dynamic>(
+            _importPath,
+            method: 'POST',
+            body: <String, dynamic>{
+              'parent': parentId,
+              'rows': <Map<String, dynamic>>[
+                for (final row in rows) row.toJson(),
+              ],
+              'dry_run': dryRun,
+            },
+          )
+          // Thousands of places are saved in one go, so this may take a
+          // while.
+          .timeout(timeout * 10);
+      if (answer is! Map<String, dynamic>) {
+        throw const AppProblem(ProblemKind.unknown);
+      }
+      return PlaceImportResult.fromJson(answer);
+    } on ClientException catch (e) {
+      // A real import with problems saves nothing and answers 400 with
+      // the same body as a check.
+      if (e.statusCode == 400 && e.response['problems'] is List) {
+        return PlaceImportResult.fromJson(e.response);
+      }
+      throw _fieldsProblem(e);
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
 
   @override
   Future<int> countActiveOrgAdmins() => _guard(() async {

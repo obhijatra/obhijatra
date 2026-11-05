@@ -12,6 +12,7 @@ import 'package:obhijatra_manager/src/ui/about_screen.dart';
 import 'package:obhijatra_manager/src/ui/forms_screen.dart';
 import 'package:obhijatra_manager/src/ui/leave_guard.dart';
 import 'package:obhijatra_manager/src/ui/people_screen.dart';
+import 'package:obhijatra_manager/src/ui/places_screen.dart';
 import 'package:obhijatra_manager/src/ui/settings_screen.dart';
 import 'package:obhijatra_manager/src/ui/submissions_screen.dart';
 import 'package:obhijatra_manager/widgets/brand_mark.dart';
@@ -52,9 +53,9 @@ class ManagerShell extends ConsumerWidget {
       sessionProvider.select((user) => user?.canManagePeople ?? false),
     );
     final chosen = ref.watch(sectionProvider);
-    // People is only ever shown to an active organisation admin, even if it
-    // was the place open when someone else signed in.
-    final section = chosen == Section.people && !canManagePeople
+    // People and Places are only ever shown to an active organisation
+    // admin, even if one was open when someone else signed in.
+    final section = _adminOnly.contains(chosen) && !canManagePeople
         ? Section.forms
         : chosen;
     final destinations = _destinationsFor(canManagePeople: canManagePeople);
@@ -71,6 +72,7 @@ class ManagerShell extends ConsumerWidget {
             Section.forms => const FormsScreen(),
             Section.submissions => const SubmissionsScreen(),
             Section.people => const PeopleScreen(),
+            Section.places => const PlacesScreen(),
             Section.settings => const SettingsScreen(),
             Section.about => const AboutScreen(),
           };
@@ -120,23 +122,29 @@ const List<_Destination> _destinations = <_Destination>[
   _Destination(Section.forms, Icons.description_outlined, Icons.description),
   _Destination(Section.submissions, Icons.inbox_outlined, Icons.inbox),
   _Destination(Section.people, Icons.people_outline, Icons.people),
+  _Destination(Section.places, Icons.account_tree_outlined, Icons.account_tree),
   _Destination(Section.settings, Icons.settings_outlined, Icons.settings),
   _Destination(Section.about, Icons.info_outline, Icons.info),
 ];
 
-/// The places in the menu: People only for an active organisation admin.
-List<_Destination> _destinationsFor({
-  required bool canManagePeople,
-}) => <_Destination>[
-  for (final destination in _destinations)
-    if (destination.section != Section.people || canManagePeople) destination,
-];
+/// The sections only an active organisation admin may open.
+const Set<Section> _adminOnly = <Section>{Section.people, Section.places};
+
+/// The places in the menu: People and Places only for an active
+/// organisation admin.
+List<_Destination> _destinationsFor({required bool canManagePeople}) =>
+    <_Destination>[
+      for (final destination in _destinations)
+        if (!_adminOnly.contains(destination.section) || canManagePeople)
+          destination,
+    ];
 
 String _sectionLabel(AppLocalizations l10n, Section section) =>
     switch (section) {
       Section.forms => l10n.navForms,
       Section.submissions => l10n.navSubmissions,
       Section.people => l10n.navPeople,
+      Section.places => l10n.navPlaces,
       Section.settings => l10n.navSettings,
       Section.about => l10n.navAbout,
     };

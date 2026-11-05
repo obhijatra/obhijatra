@@ -81,6 +81,7 @@ class PickerField extends StatelessWidget {
     this.helper,
     this.error,
     this.placeholder,
+    this.marker,
     super.key,
   });
 
@@ -89,6 +90,9 @@ class PickerField extends StatelessWidget {
 
   /// The chosen value, or empty.
   final String value;
+
+  /// A word shown as a badge after the value, for example "Closed".
+  final String? marker;
 
   /// What to show when nothing is chosen.
   final String? placeholder;
@@ -128,13 +132,22 @@ class PickerField extends StatelessWidget {
               enabled: onTap != null,
               suffixIcon: const Icon(Icons.arrow_drop_down),
             ),
-            child: Text(
-              shown,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: text.bodyLarge!.copyWith(
-                color: empty ? palette.textMuted : palette.text,
-              ),
+            child: Wrap(
+              spacing: Spacing.space2,
+              runSpacing: Spacing.space1,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(
+                  shown,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodyLarge!.copyWith(
+                    color: empty ? palette.textMuted : palette.text,
+                  ),
+                ),
+                if (marker case final String word)
+                  ObBadge(label: word, icon: Icons.block),
+              ],
             ),
           ),
         ),

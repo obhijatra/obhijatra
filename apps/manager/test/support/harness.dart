@@ -21,6 +21,14 @@ class FakePicker implements FormFilePicker {
   Future<PickedFile?> pickFormFile() async => next;
 }
 
+/// A spreadsheet chooser that returns what a test says.
+class FakeCsvPicker implements CsvFilePicker {
+  PickedFile? next;
+
+  @override
+  Future<PickedFile?> pickCsvFile() async => next;
+}
+
 PickedFile pickedText(String name, String text) =>
     PickedFile(name: name, bytes: Uint8List.fromList(utf8.encode(text)));
 
@@ -31,6 +39,7 @@ Future<void> pumpManager(
   String lang = 'en',
   Size size = const Size(1280, 900),
   FakePicker? picker,
+  FakeCsvPicker? csvPicker,
   List<Override> overrides = const <Override>[],
   bool settle = true,
 }) async {
@@ -44,6 +53,8 @@ Future<void> pumpManager(
         apiProvider.overrideWithValue(api),
         initialLocaleProvider.overrideWithValue(Locale(lang)),
         if (picker != null) formFilePickerProvider.overrideWithValue(picker),
+        if (csvPicker != null)
+          csvFilePickerProvider.overrideWithValue(csvPicker),
         ...overrides,
       ],
     ),

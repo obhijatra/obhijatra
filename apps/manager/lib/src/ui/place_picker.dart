@@ -5,6 +5,7 @@ import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 import 'package:obhijatra_manager/src/state/people.dart';
 import 'package:obhijatra_manager/widgets/loading_block.dart';
+import 'package:obhijatra_manager/widgets/ob_badge.dart';
 import 'package:obhijatra_manager/widgets/problem_view.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
 
@@ -23,23 +24,34 @@ class PlaceChoice {
 }
 
 /// Asks for a place in the organisation's tree. [selectedId] is ticked;
-/// [offerAll] adds "All places" first. Returns null when the person closes
-/// the dialog.
+/// [offerAll] adds "All places" first. Closed places cannot be chosen for
+/// anything new, so they are left out unless [includeClosed] (for finding
+/// what is already there), when they are marked "Closed". Returns null
+/// when the person closes the dialog.
 Future<PlaceChoice?> showPlacePicker(
   BuildContext context, {
   String? selectedId,
   bool offerAll = false,
+  bool includeClosed = false,
 }) => showDialog<PlaceChoice>(
   context: context,
-  builder: (context) =>
-      _PlacePickerDialog(selectedId: selectedId, offerAll: offerAll),
+  builder: (context) => _PlacePickerDialog(
+    selectedId: selectedId,
+    offerAll: offerAll,
+    includeClosed: includeClosed,
+  ),
 );
 
 class _PlacePickerDialog extends ConsumerStatefulWidget {
-  const _PlacePickerDialog({required this.selectedId, required this.offerAll});
+  const _PlacePickerDialog({
+    required this.selectedId,
+    required this.offerAll,
+    required this.includeClosed,
+  });
 
   final String? selectedId;
   final bool offerAll;
+  final bool includeClosed;
 
   @override
   ConsumerState<_PlacePickerDialog> createState() => _PlacePickerDialogState();
@@ -125,9 +137,10 @@ class _PlacePickerDialogState extends ConsumerState<_PlacePickerDialog> {
     final searching = _query.isNotEmpty;
     final shown = <Place>[
       for (final place in directory.ordered)
-        if (!searching ||
-            place.displayName.toLowerCase().contains(_query) ||
-            place.code.toLowerCase().contains(_query))
+        if ((widget.includeClosed || !place.closed) &&
+            (!searching ||
+                place.displayName.toLowerCase().contains(_query) ||
+                place.code.toLowerCase().contains(_query)))
           place,
     ];
     final rows = <Widget>[
@@ -148,6 +161,7 @@ class _PlacePickerDialogState extends ConsumerState<_PlacePickerDialog> {
               : null,
           depth: searching ? 0 : directory.depthOf(place),
           selected: place.id == widget.selectedId,
+          closed: place.closed,
           onTap: () => Navigator.of(context).pop(PlaceChoice(place)),
         ),
     ];
@@ -170,18 +184,21 @@ class _PlaceRow extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.subtitle,
+    this.closed = false,
   });
 
   final String title;
   final String? subtitle;
   final int depth;
   final bool selected;
+  final bool closed;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final text = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
     final hint = subtitle;
     return Semantics(
       button: true,
@@ -233,8 +250,14 @@ class _PlaceRow extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (selected)
+                  if (closed) ...<Widget>[
+                    const SizedBox(width: Spacing.space2),
+                    ObBadge(label: l10n.placeClosed, icon: Icons.block),
+                  ],
+                  if (selected) ...<Widget>[
+                    const SizedBox(width: Spacing.space2),
                     Icon(Icons.check, size: Sizes.icon, color: palette.action),
+                  ],
                 ],
               ),
             ),

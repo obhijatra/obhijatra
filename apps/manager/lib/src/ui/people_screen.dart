@@ -279,6 +279,8 @@ class _Filters extends ConsumerWidget {
         context,
         selectedId: current?.id,
         offerAll: true,
+        // Deactivated people may still be at a closed place.
+        includeClosed: true,
       );
       if (choice == null) return;
       notifier.setPlace(choice.place?.path);

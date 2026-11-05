@@ -1620,4 +1620,639 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionReload => 'Reload';
+
+  @override
+  String get navPlaces => 'Places';
+
+  @override
+  String get placesTitle => 'Places';
+
+  @override
+  String get placesSummary =>
+      'Your organisation from the top down: head office, regions, areas and branches. Each person works at one place.';
+
+  @override
+  String get placesAdd => 'Add place';
+
+  @override
+  String get placesImport => 'Import from a spreadsheet';
+
+  @override
+  String get placesSearchHint => 'Name or code';
+
+  @override
+  String get placesShowClosed => 'Show closed places';
+
+  @override
+  String placesClosedHidden(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString closed places are hidden.',
+      one: '1 closed place is hidden.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String placesMatches(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString places match',
+      one: '1 place matches',
+      zero: 'No place matches',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get placesNoMatchBody => 'Try another name or code.';
+
+  @override
+  String get placesNoMatchClosedBody =>
+      'Try another name or code, or turn on ‘Show closed places’.';
+
+  @override
+  String get placesEmptyTitle => 'Add your first places';
+
+  @override
+  String placesEmptyBody(String organisation) {
+    return 'Add the regions, areas and branches inside $organisation: one at a time with ‘Add place’, or all at once from a spreadsheet.';
+  }
+
+  @override
+  String get placesNoneTitle => 'No places yet';
+
+  @override
+  String get placesBack => 'Back to Places';
+
+  @override
+  String get placeRootNote => 'The whole organisation';
+
+  @override
+  String placeInsideCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString places inside',
+      one: '1 place inside',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String placeCodeShown(String code) {
+    return 'Code $code';
+  }
+
+  @override
+  String get placeClosed => 'Closed';
+
+  @override
+  String placeOpenInside(String name) {
+    return 'Show the places inside $name';
+  }
+
+  @override
+  String placeShutInside(String name) {
+    return 'Hide the places inside $name';
+  }
+
+  @override
+  String placeActions(String name) {
+    return 'Actions for $name';
+  }
+
+  @override
+  String get placeAddInside => 'Add a place inside';
+
+  @override
+  String get placeRename => 'Rename or change code';
+
+  @override
+  String get placeCloseAction => 'Close place';
+
+  @override
+  String get placeReopenAction => 'Reopen place';
+
+  @override
+  String get placeDeleteAction => 'Delete place';
+
+  @override
+  String get placeAddTitle => 'Add a place';
+
+  @override
+  String get placeParent => 'Goes inside';
+
+  @override
+  String get placeParentHelp =>
+      'The place this one belongs to. It can’t be moved later.';
+
+  @override
+  String placeParentFixed(String parent) {
+    return 'Inside $parent. A place can’t be moved.';
+  }
+
+  @override
+  String get placeName => 'Name';
+
+  @override
+  String get placeNameHelp =>
+      'For example ‘Mirpur branch’. Places inside the same place need different names.';
+
+  @override
+  String get placeCode => 'Code (optional)';
+
+  @override
+  String get placeCodeHelp =>
+      'A short code your organisation uses, for example MRP10. No two places can have the same code.';
+
+  @override
+  String get placeErrorName => 'Give the place a name.';
+
+  @override
+  String placeErrorNameTaken(String parent) {
+    return 'Another place inside $parent already has this name. Choose a different name.';
+  }
+
+  @override
+  String get placeErrorCodeTaken =>
+      'Another place already has this code. Choose a different code.';
+
+  @override
+  String get placeErrorParentClosed =>
+      'The place above is closed. Reopen it first, or choose an open place.';
+
+  @override
+  String placeAdded(String name) {
+    return '$name is added.';
+  }
+
+  @override
+  String placeCloseTitle(String name) {
+    return 'Close $name?';
+  }
+
+  @override
+  String get placeCloseBody =>
+      'A closed place can’t be chosen for people or for new places, and it is hidden where you choose a place. Everything recorded there is kept. You can reopen it at any time.';
+
+  @override
+  String get placeCloseButton => 'Close place';
+
+  @override
+  String placeClosedDone(String name) {
+    return '$name is closed.';
+  }
+
+  @override
+  String placeErrorOpenInside(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$countString open places are still inside it. Close or delete them first.',
+      one: '1 open place is still inside it. Close or delete that place first.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String placeErrorPeople(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$countString active people still work here. Move them to other places, or deactivate them, first.',
+      one: '1 active person still works here. Move them to another place, or deactivate them, first.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get placeSeePeople => 'See who works here';
+
+  @override
+  String get placeErrorRoot =>
+      'The organisation itself can’t be closed or deleted.';
+
+  @override
+  String placeReopenTitle(String name) {
+    return 'Reopen $name?';
+  }
+
+  @override
+  String get placeReopenBody =>
+      'It can be chosen again for people and for new places.';
+
+  @override
+  String get placeReopenButton => 'Reopen place';
+
+  @override
+  String placeReopenedDone(String name) {
+    return '$name is open again.';
+  }
+
+  @override
+  String get placeErrorAboveClosed =>
+      'The place above it is closed. Reopen that place first.';
+
+  @override
+  String placeDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get placeDeleteBody =>
+      'Delete a place only if it was added by mistake. This can’t be undone. A place that anyone or any record uses can’t be deleted: close it instead.';
+
+  @override
+  String get placeDeleteButton => 'Delete place';
+
+  @override
+  String placeDeletedDone(String name) {
+    return '$name is deleted.';
+  }
+
+  @override
+  String get placeErrorInUse =>
+      'This place is in use, so it can’t be deleted. Close it instead: it will no longer be offered, and its records are kept.';
+
+  @override
+  String get placeCloseInstead => 'Close it instead';
+
+  @override
+  String get importTitle => 'Import from a spreadsheet';
+
+  @override
+  String get importSummary =>
+      'Add many places at once from a spreadsheet. Places that are already there are kept, never doubled.';
+
+  @override
+  String importStep(int number) {
+    final intl.NumberFormat numberNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String numberString = numberNumberFormat.format(number);
+
+    return 'Step $numberString';
+  }
+
+  @override
+  String get importStepFile => 'Get your spreadsheet ready';
+
+  @override
+  String get importRuleRows =>
+      'One row for each place. Put the names in separate columns, from the top level down: for example Region, Area, Branch.';
+
+  @override
+  String get importRuleHeader => 'The first row holds the column names.';
+
+  @override
+  String get importRuleCode =>
+      'To give a place a code, add a last column named ‘code’. The code goes on the last place in the row.';
+
+  @override
+  String get importRuleEmpty =>
+      'Empty cells at the end of a row are fine: that row stops at a higher level.';
+
+  @override
+  String get importRuleReuse =>
+      'Places that are already there (the same name at the same level) are reused, so you can import the same file again safely.';
+
+  @override
+  String get importRuleBangla => 'Bangla names are fine.';
+
+  @override
+  String get importRuleSave =>
+      'Save the file as ‘CSV UTF-8’. In Excel: File › Save As › CSV UTF-8. In Google Sheets: File › Download › Comma-separated values (.csv).';
+
+  @override
+  String get importRuleLimits =>
+      'Up to 5,000 rows, with up to 10 levels in a row.';
+
+  @override
+  String get importExample => 'Example';
+
+  @override
+  String get importExampleRegion => 'Region';
+
+  @override
+  String get importExampleArea => 'Area';
+
+  @override
+  String get importExampleBranch => 'Branch';
+
+  @override
+  String get importExampleRegion1 => 'Dhaka region';
+
+  @override
+  String get importExampleArea1 => 'Mirpur area';
+
+  @override
+  String get importExampleBranch1 => 'Mirpur-10 branch';
+
+  @override
+  String get importExampleBranch2 => 'Pallabi branch';
+
+  @override
+  String get importExampleRegion2 => 'Khulna region';
+
+  @override
+  String get importExampleArea2 => 'Sonadanga area';
+
+  @override
+  String get importStepParent => 'Choose where the new places go';
+
+  @override
+  String get importParent => 'New places go inside';
+
+  @override
+  String get importParentHelp =>
+      'The places in the first column go directly inside this place.';
+
+  @override
+  String get importStepChoose => 'Choose the file';
+
+  @override
+  String get importChoose => 'Choose a CSV file';
+
+  @override
+  String get importChooseAnother => 'Choose another file';
+
+  @override
+  String importFileName(String name) {
+    return 'File: $name';
+  }
+
+  @override
+  String importRowCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString rows of places',
+      one: '1 row of places',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHeader => 'The first row has column names';
+
+  @override
+  String get importHeaderHelp => 'Turn this off if the first row is a place.';
+
+  @override
+  String importColumns(String names) {
+    return 'Column names: $names';
+  }
+
+  @override
+  String importCodeColumn(String name) {
+    return 'Codes are read from the column ‘$name’.';
+  }
+
+  @override
+  String get importErrorTooBig =>
+      'This file is too big. A list of places can be up to 5 MB.';
+
+  @override
+  String get importErrorExcel =>
+      'This is an Excel file. Save it as ‘CSV UTF-8’ first, then choose the CSV file.';
+
+  @override
+  String get importErrorNotUtf8 =>
+      'This file is not saved as CSV UTF-8, so Bangla and some other letters would be lost. Save it again as ‘CSV UTF-8’, then choose it again.';
+
+  @override
+  String importErrorQuote(int line) {
+    final intl.NumberFormat lineNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String lineString = lineNumberFormat.format(line);
+
+    return 'On line $lineString, a cell starts with a quotation mark (\") that is never closed. Check that line, save the file again, then choose it again.';
+  }
+
+  @override
+  String get importErrorEmpty => 'This file has no places in it.';
+
+  @override
+  String get importErrorOnlyHeader =>
+      'This file has column names but no places under them. If the first row is a place, turn off ‘The first row has column names’.';
+
+  @override
+  String importErrorTooMany(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'This file has $countString rows of places. A file can hold up to 5,000. Split it into smaller files and import them one after another.';
+  }
+
+  @override
+  String get importRowNoName => 'This row has a code but no place name.';
+
+  @override
+  String importRowGap(String column) {
+    return 'The cell in column $column is empty, but there is a name after it. Fill it in, or move the names to the left.';
+  }
+
+  @override
+  String get importRowTooDeep => 'This row has more than 10 levels.';
+
+  @override
+  String get importRowNameTooLong =>
+      'A name in this row is longer than 200 characters.';
+
+  @override
+  String get importRowCodeTooLong =>
+      'The code in this row is longer than 50 characters.';
+
+  @override
+  String get importStepCheck => 'Check what will be added';
+
+  @override
+  String get importChecking => 'Checking the file…';
+
+  @override
+  String importNewCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString new places',
+      one: '1 new place',
+      zero: 'No new places',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importExistingCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString already there',
+      one: '1 already there',
+      zero: 'none already there',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importProblems(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString problems to fix',
+      one: '1 problem to fix',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importProblemsHelp =>
+      'Nothing is added until every problem is fixed. Fix them in your spreadsheet, save it as ‘CSV UTF-8’ again, then choose it again.';
+
+  @override
+  String importLine(int line) {
+    final intl.NumberFormat lineNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String lineString = lineNumberFormat.format(line);
+
+    return 'Line $lineString';
+  }
+
+  @override
+  String get importNothingNew =>
+      'Every place in this file is already there, so there is nothing to add.';
+
+  @override
+  String get importPreview => 'How the places will look';
+
+  @override
+  String get importNew => 'New';
+
+  @override
+  String get importAlready => 'Already there';
+
+  @override
+  String importAdd(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Add $countString places',
+      one: 'Add 1 place',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importAdding => 'Adding places…';
+
+  @override
+  String importDone(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString places are added.',
+      one: '1 place is added.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importChanged =>
+      'Something changed since the check, so nothing was added. Fix the problems below, then choose the file again.';
+
+  @override
+  String get leaveImportTitle => 'Leave without adding the places?';
+
+  @override
+  String get leaveImportBody =>
+      'The places in the file you chose have not been added yet.';
+
+  @override
+  String get leaveImportLeave => 'Leave';
+
+  @override
+  String get personPlaceClosedHelp =>
+      'This place is closed. Choose an open place if this person moves.';
+
+  @override
+  String importServerClosed(String name) {
+    return '‘$name’ is closed. Reopen it first, or remove this row.';
+  }
+
+  @override
+  String importServerCodeOther(String name, String code) {
+    return '‘$name’ already has the code $code. Use the same code, or leave the cell empty.';
+  }
+
+  @override
+  String importServerCodeTwice(String code) {
+    return 'The code $code is used more than once in this file. Each place needs its own code.';
+  }
+
+  @override
+  String importServerCodeTaken(String code) {
+    return 'Another place already has the code $code. Choose a different code.';
+  }
+
+  @override
+  String get importProblemNoName => 'This row has no place name.';
+
+  @override
+  String importProblemTooDeep(int limit) {
+    final intl.NumberFormat limitNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String limitString = limitNumberFormat.format(limit);
+
+    return 'This row has more than $limitString levels.';
+  }
 }

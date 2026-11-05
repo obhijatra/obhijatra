@@ -15,6 +15,10 @@ enum Section {
   /// Office and field staff (organisation admins only).
   people,
 
+  /// The organisation tree: head office, regions, areas, branches
+  /// (organisation admins only).
+  places,
+
   /// Language and sign out.
   settings,
 
