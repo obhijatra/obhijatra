@@ -1243,6 +1243,690 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Made by Aninda Studio'**
   String get aboutMadeBy;
+
+  /// Small word between email sign-in and the other ways to sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get signInOr;
+
+  /// Button that opens Google's sign-in page in the browser. Plain text only: no Google logo.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get signInGoogle;
+
+  /// Button and heading: sign in with a code sent by SMS.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with an SMS code'**
+  String get signInSms;
+
+  /// Note beside the SMS sign-in option.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS codes are not available to organisation admins.'**
+  String get signInSmsAdminNote;
+
+  /// Link back from the SMS steps to the main sign-in screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Other ways to sign in'**
+  String get signInOtherWays;
+
+  /// Text on the SMS number step.
+  ///
+  /// In en, this message translates to:
+  /// **'We will send a 6-digit code by SMS to the mobile number on your account.'**
+  String get smsNumberIntro;
+
+  /// Label of the mobile number field.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get smsNumberLabel;
+
+  /// Help under the mobile number field.
+  ///
+  /// In en, this message translates to:
+  /// **'For example 01712345678. For a number outside Bangladesh, start with + and the country code.'**
+  String get smsNumberHelp;
+
+  /// Error under the mobile number field.
+  ///
+  /// In en, this message translates to:
+  /// **'This does not look like a mobile number. Type it like 01712345678, or start with + and the country code.'**
+  String get smsNumberInvalid;
+
+  /// Button: send the sign-in code by SMS.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get smsSendCode;
+
+  /// Button text while something is being sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get actionSending;
+
+  /// Heading of the SMS code step.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code'**
+  String get smsCodeTitle;
+
+  /// Text on the code step. It must not say whether the number has an account.
+  ///
+  /// In en, this message translates to:
+  /// **'If {phone} can sign in with an SMS code, a 6-digit code is on its way.'**
+  String smsCodeSent(String phone);
+
+  /// How long the SMS code works.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{The code works for 1 minute.} other{The code works for {minutes} minutes.}}'**
+  String smsCodeLifetime(int minutes);
+
+  /// Label of the code field.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get smsCodeLabel;
+
+  /// Error under the code field when fewer than 6 digits were typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter all 6 digits of the code.'**
+  String get smsCodeIncomplete;
+
+  /// Error under the code field.
+  ///
+  /// In en, this message translates to:
+  /// **'That code is wrong or has expired. Check the SMS and try again, or send a new code.'**
+  String get smsCodeWrong;
+
+  /// Error under the code field after the third wrong try.
+  ///
+  /// In en, this message translates to:
+  /// **'That code was tried 3 times, so it no longer works. Send a new code.'**
+  String get smsCodeUsedUp;
+
+  /// Error under the code field when the code is too old.
+  ///
+  /// In en, this message translates to:
+  /// **'This code has expired. Send a new code.'**
+  String get smsCodeExpired;
+
+  /// Button text while the code is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get smsCodeChecking;
+
+  /// Disabled button with a countdown, for example 0:42.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new code in {time}'**
+  String smsResendIn(String time);
+
+  /// Button: send another code.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new code'**
+  String get smsResend;
+
+  /// Note after a new code was asked for.
+  ///
+  /// In en, this message translates to:
+  /// **'A new code is on its way.'**
+  String get smsNewCodeSent;
+
+  /// Button: go back and type another number.
+  ///
+  /// In en, this message translates to:
+  /// **'Change number'**
+  String get smsChangeNumber;
+
+  /// Heading while the person signs in on Google's page.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Google…'**
+  String get googleWaitingTitle;
+
+  /// Text while waiting for Google.
+  ///
+  /// In en, this message translates to:
+  /// **'Google’s sign-in page opens in your web browser. Choose your Google account there, then come back to this window.'**
+  String get googleWaitingBody;
+
+  /// Help above the button that opens Google's page again.
+  ///
+  /// In en, this message translates to:
+  /// **'If Google’s page did not open, use this button.'**
+  String get googleOpenHelp;
+
+  /// Button that opens Google's sign-in page (for when the browser blocked it).
+  ///
+  /// In en, this message translates to:
+  /// **'Open Google sign-in'**
+  String get googleOpen;
+
+  /// Google sign-in refused: no account with that email.
+  ///
+  /// In en, this message translates to:
+  /// **'No Obhijatra account here uses this Google email address. Ask your organisation admin to add it, or use another way to sign in.'**
+  String get problemGoogleNoAccount;
+
+  /// Google sign-in refused: email not confirmed by an admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation admin must confirm your email address before you can sign in with Google.'**
+  String get problemGoogleUnconfirmed;
+
+  /// Google sign-in refused: account switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'This account cannot sign in. Ask your organisation admin.'**
+  String get problemGoogleNotAllowed;
+
+  /// Google sign-in refused: Google gave no confirmed email.
+  ///
+  /// In en, this message translates to:
+  /// **'Google did not share a confirmed email address for this Google account. Use another Google account, or another way to sign in.'**
+  String get problemGoogleNoEmail;
+
+  /// Google sign-in is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in is not switched on for this server. Use another way to sign in.'**
+  String get problemGoogleUnavailable;
+
+  /// Google sign-in failed for another reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in did not finish. Try again, or use another way to sign in.'**
+  String get problemGoogleFailed;
+
+  /// SMS sign-in is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in by SMS code is switched off on this server. Use another way to sign in.'**
+  String get problemSmsOff;
+
+  /// The server refused the mobile number.
+  ///
+  /// In en, this message translates to:
+  /// **'This does not look like a mobile number. Type it like 01712345678, or start with + and the country code.'**
+  String get problemPhoneInvalid;
+
+  /// The SMS code was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'That code is wrong or has expired. Check the SMS and try again, or send a new code.'**
+  String get problemCodeWrong;
+
+  /// Too many SMS codes asked for.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many codes were asked for. Wait 15 minutes, or use another way to sign in.'**
+  String get problemTooManyCodes;
+
+  /// Too many code checks.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries from this connection. Wait 15 minutes, then ask for a new code.'**
+  String get problemTooManyTries;
+
+  /// Too many test SMS.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many test messages. Wait 15 minutes and try again.'**
+  String get problemTooManyTests;
+
+  /// The server refused some sign-in settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Some settings need attention. Look for the messages under the fields.'**
+  String get problemSettingsInvalid;
+
+  /// Label in the account details.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get accountPhone;
+
+  /// Heading of the sign-in methods settings (organisation admins).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in methods'**
+  String get signInMethodsTitle;
+
+  /// Text about the sign-in methods.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone can sign in with an email address and password. You can also let people sign in with Google or with an SMS code.'**
+  String get signInMethodsSummary;
+
+  /// Button that opens the sign-in methods settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up sign-in methods'**
+  String get signInMethodsOpen;
+
+  /// Link back to the main settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Settings'**
+  String get settingsBack;
+
+  /// State beside a switch.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get methodOn;
+
+  /// State beside a switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get methodOff;
+
+  /// Card heading and switch: Google sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Google'**
+  String get googleTitle;
+
+  /// Text in the Google card.
+  ///
+  /// In en, this message translates to:
+  /// **'People click “Continue with Google” and choose their Google account. It works only for people whose account here has the same email address, confirmed by an admin.'**
+  String get googleDescription;
+
+  /// Label of the read-only address to register with Google.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirect address for Google'**
+  String get googleRedirectLabel;
+
+  /// Help under the redirect address.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this address to your Google client under Authorised redirect URIs.'**
+  String get googleRedirectHelp;
+
+  /// Warning when the server's address will not work with Google.
+  ///
+  /// In en, this message translates to:
+  /// **'Google needs an https:// address with a domain name, such as https://data.example.org. Ask whoever runs your server to give it one. SMS codes work without it.'**
+  String get googleRedirectWarning;
+
+  /// Button: copy to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get actionCopy;
+
+  /// Message after copying.
+  ///
+  /// In en, this message translates to:
+  /// **'Redirect address copied.'**
+  String get copiedRedirect;
+
+  /// Field label: the Google client ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Client ID'**
+  String get googleClientId;
+
+  /// Help under the client ID.
+  ///
+  /// In en, this message translates to:
+  /// **'From your Google Cloud project. It ends with .apps.googleusercontent.com.'**
+  String get googleClientIdHelp;
+
+  /// Field label: the Google client secret.
+  ///
+  /// In en, this message translates to:
+  /// **'Client secret'**
+  String get googleClientSecret;
+
+  /// Help under the client secret when none is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Google shows it once, when you create the client. Keep it private.'**
+  String get googleClientSecretHelp;
+
+  /// Help under a secret field when a secret is already saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. Leave empty to keep it.'**
+  String get secretSavedKeep;
+
+  /// Button that shows a hidden secret.
+  ///
+  /// In en, this message translates to:
+  /// **'Show secret'**
+  String get secretShow;
+
+  /// Button that hides a secret.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide secret'**
+  String get secretHide;
+
+  /// Link to the written set-up guide.
+  ///
+  /// In en, this message translates to:
+  /// **'How to set this up'**
+  String get setupGuide;
+
+  /// Card heading and switch: SMS-code sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS codes'**
+  String get smsTitle;
+
+  /// Text in the SMS card.
+  ///
+  /// In en, this message translates to:
+  /// **'People type their mobile number and receive a 6-digit code by SMS. Your organisation pays your SMS provider for each message. SMS codes are not available to organisation admins.'**
+  String get smsDescription;
+
+  /// Sub-heading in the SMS card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your SMS provider'**
+  String get smsProviderTitle;
+
+  /// Help under the SMS provider sub-heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill these in from your SMS provider’s guide for sending one message.'**
+  String get smsProviderHelp;
+
+  /// Label: GET or POST.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get smsMethod;
+
+  /// Field label: the provider's web address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get smsAddress;
+
+  /// Help under the address.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider’s web address for sending a message. It starts with https://'**
+  String get smsAddressHelp;
+
+  /// Label: JSON or form.
+  ///
+  /// In en, this message translates to:
+  /// **'Body format'**
+  String get smsBodyFormat;
+
+  /// Body format choice.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON'**
+  String get smsFormatJson;
+
+  /// Body format choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Form'**
+  String get smsFormatForm;
+
+  /// Field label: the message body template.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get smsBody;
+
+  /// Help under the body.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the example from your provider’s guide, then put placeholders where the values go.'**
+  String get smsBodyHelp;
+
+  /// Heading of the placeholder buttons.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholders'**
+  String get smsPlaceholders;
+
+  /// Help about the placeholder buttons.
+  ///
+  /// In en, this message translates to:
+  /// **'Click one to put it where the cursor is in the Address, the Body or a header value. The server fills it in for each message.'**
+  String get smsPlaceholdersHelp;
+
+  /// What the phone placeholder becomes.
+  ///
+  /// In en, this message translates to:
+  /// **'the number with a plus sign, for example +8801712345678'**
+  String get smsPlaceholderPhone;
+
+  /// What the digits placeholder becomes.
+  ///
+  /// In en, this message translates to:
+  /// **'the number without a plus sign, for example 8801712345678'**
+  String get smsPlaceholderDigits;
+
+  /// What the message placeholder becomes.
+  ///
+  /// In en, this message translates to:
+  /// **'the text of the SMS'**
+  String get smsPlaceholderMessage;
+
+  /// What the secret placeholder becomes.
+  ///
+  /// In en, this message translates to:
+  /// **'your secret key, kept hidden'**
+  String get smsPlaceholderSecret;
+
+  /// Tooltip of a placeholder button.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert {placeholder}'**
+  String smsInsertPlaceholder(String placeholder);
+
+  /// Heading of the extra headers.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra headers'**
+  String get smsHeaders;
+
+  /// Help about extra headers.
+  ///
+  /// In en, this message translates to:
+  /// **'Only if your provider’s guide asks for them, for example Authorization.'**
+  String get smsHeadersHelp;
+
+  /// Field label: header name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get smsHeaderName;
+
+  /// Field label: header value.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get smsHeaderValue;
+
+  /// Button: add a header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a header'**
+  String get smsHeaderAdd;
+
+  /// Tooltip: remove a header row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this header'**
+  String get smsHeaderRemove;
+
+  /// Note when the header limit is reached.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {count} headers.'**
+  String smsHeadersMax(int count);
+
+  /// Field label: the provider's API key.
+  ///
+  /// In en, this message translates to:
+  /// **'Secret key'**
+  String get smsSecret;
+
+  /// Help under the secret key when none is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Your provider’s API key or token. Type it here, and put {placeholder} where the guide shows the key.'**
+  String smsSecretHelp(String placeholder);
+
+  /// Field label: text the provider replies on success.
+  ///
+  /// In en, this message translates to:
+  /// **'Success text'**
+  String get smsSuccessText;
+
+  /// Help under the success text.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. What the provider replies when it accepts a message, for example SUCCESS. Leave empty if you are not sure.'**
+  String get smsSuccessTextHelp;
+
+  /// Sub-heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Send test SMS'**
+  String get smsTestTitle;
+
+  /// Help about the test SMS.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends a test message with the settings above, even before you save them.'**
+  String get smsTestHelp;
+
+  /// Field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number for the test'**
+  String get smsTestNumber;
+
+  /// Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Send test SMS'**
+  String get smsTestButton;
+
+  /// Heading of the test result.
+  ///
+  /// In en, this message translates to:
+  /// **'Test result'**
+  String get smsResultTest;
+
+  /// Heading of the last send status.
+  ///
+  /// In en, this message translates to:
+  /// **'Last message sent by the server'**
+  String get smsResultLast;
+
+  /// Result: sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent. The provider accepted the message.'**
+  String get smsResultSent;
+
+  /// Result: not sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent.'**
+  String get smsResultNotSent;
+
+  /// The provider's HTTP status number.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider status: {status}'**
+  String smsResultStatus(String status);
+
+  /// Result when the provider could not be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider did not answer.'**
+  String get smsResultNoAnswer;
+
+  /// Label above the provider's reply text.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider reply'**
+  String get smsResultReply;
+
+  /// When the message was sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Time: {time}'**
+  String smsResultAt(String time);
+
+  /// Shown when there is no last send.
+  ///
+  /// In en, this message translates to:
+  /// **'No message has been sent since the server last started.'**
+  String get smsResultNone;
+
+  /// Button: save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get actionSave;
+
+  /// Button text while saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get actionSaving;
+
+  /// Message after saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in methods saved.'**
+  String get signInMethodsSaved;
+
+  /// Note beside the Save button.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes.'**
+  String get unsavedChanges;
+
+  /// Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave without saving?'**
+  String get leaveTitle;
+
+  /// Dialog text.
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes to the sign-in methods will be lost.'**
+  String get leaveBody;
+
+  /// Dialog button: stay on the page.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay'**
+  String get leaveStay;
+
+  /// Dialog button: leave and lose changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave without saving'**
+  String get leaveDiscard;
 }
 
 class _AppLocalizationsDelegate

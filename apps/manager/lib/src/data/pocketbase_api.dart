@@ -47,6 +47,7 @@ class PocketBaseApi implements ManagerApi {
     id: record.id,
     name: record.getStringValue('name'),
     email: record.getStringValue('email'),
+    phone: record.getStringValue('phone'),
     role: record.getStringValue('role'),
   );
 
@@ -80,6 +81,284 @@ class PocketBaseApi implements ManagerApi {
 
   @override
   void signOut() => _pb.authStore.clear();
+
+  // ------------------------------------------------------------- sign-in
+
+  static const String _signIn = '/api/obhijatra/v1/signin';
+  static const String _google = 'google';
+
+  Future<Map<String, dynamic>> _sendJson(
+    String path, {
+    String method = 'GET',
+    Map<String, dynamic> body = const <String, dynamic>{},
+  }) async {
+    final answer = await _pb
+        .send<dynamic>(path, method: method, body: body)
+        .timeout(timeout);
+    if (answer is Map<String, dynamic>) return answer;
+    throw const AppProblem(ProblemKind.unknown);
+  }
+
+  @override
+  Future<SignInMethods> signInMethods() async {
+    try {
+      return SignInMethods.fromJson(await _sendJson('$_signIn/methods'));
+    } on ClientException catch (e) {
+      // A server from before these sign-in methods has no such route.
+      if (e.statusCode == 404) return SignInMethods.passwordOnly;
+      throw problemFrom(e);
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  @override
+  Future<PhoneCodeRequest> requestPhoneCode(String phone) async {
+    try {
+      final answer = await _sendJson(
+        '$_signIn/phone/code',
+        method: 'POST',
+        body: <String, dynamic>{'collection': _staff, 'phone': phone},
+      );
+      return PhoneCodeRequest(
+        codeId: answer['code_id'] as String? ?? '',
+        phone: phone,
+        expiresIn: Duration(
+          seconds: (answer['expires_in'] as num?)?.toInt() ?? 300,
+        ),
+        resendAfter: Duration(
+          seconds: (answer['resend_after'] as num?)?.toInt() ?? 60,
+        ),
+      );
+    } on ClientException catch (e) {
+      throw switch (e.statusCode) {
+        400 when fieldProblems(e).containsKey('phone') => const AppProblem(
+          ProblemKind.phoneInvalid,
+          statusCode: 400,
+        ),
+        403 => const AppProblem(ProblemKind.smsOff, statusCode: 403),
+        429 => const AppProblem(ProblemKind.tooManyCodes, statusCode: 429),
+        _ => problemFrom(e),
+      };
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  @override
+  Future<StaffUser> signInWithPhoneCode(String codeId, String code) async {
+    try {
+      final answer = await _sendJson(
+        '$_signIn/phone/verify',
+        method: 'POST',
+        body: <String, dynamic>{'code_id': codeId, 'code': code},
+      );
+      final token = answer['token'];
+      final record = answer['record'];
+      if (token is! String || record is! Map<String, dynamic>) {
+        throw const AppProblem(ProblemKind.unknown);
+      }
+      final model = RecordModel.fromJson(record);
+      _pb.authStore.save(token, model);
+      return _staffFrom(model);
+    } on ClientException catch (e) {
+      throw switch (e.statusCode) {
+        400 ||
+        401 => AppProblem(ProblemKind.codeWrong, statusCode: e.statusCode),
+        403 => const AppProblem(ProblemKind.smsOff, statusCode: 403),
+        429 => const AppProblem(ProblemKind.tooManyTries, statusCode: 429),
+        _ => problemFrom(e),
+      };
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  @override
+  Future<StaffUser?> signInWithGoogle({
+    required FutureOr<void> Function(Uri url) openUrl,
+    required Future<void> cancelled,
+  }) async {
+    // PocketBase's own flow (RecordService.authWithOAuth2), written out so
+    // that waiting can be cancelled and the live connection closed.
+    final staff = _pb.collection(_staff);
+    AuthMethodProvider? offered;
+    try {
+      final methods = await staff.listAuthMethods().timeout(timeout);
+      if (methods.oauth2.enabled) {
+        offered = methods.oauth2.providers
+            .where((p) => p.name == _google)
+            .firstOrNull;
+      }
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+    if (offered == null) {
+      throw const AppProblem(ProblemKind.googleUnavailable);
+    }
+    final provider = offered;
+
+    final redirect = _pb.buildURL('/api/oauth2-redirect').toString();
+    final realtime = RealtimeService(_pb);
+    final result = Completer<StaffUser?>();
+    var stopped = false;
+
+    void finish({StaffUser? user, AppProblem? problem}) {
+      if (result.isCompleted) return;
+      if (problem != null) {
+        result.completeError(problem);
+      } else {
+        result.complete(user);
+      }
+    }
+
+    try {
+      await realtime
+          .subscribe('@oauth2', (message) async {
+            try {
+              final event = message.jsonData();
+              final code = event['code'] as String? ?? '';
+              final state = event['state'] as String? ?? '';
+              final error = event['error'] as String? ?? '';
+              if (error == 'access_denied') {
+                finish(); // The person turned Google down.
+                return;
+              }
+              if (state.isEmpty ||
+                  state != realtime.clientId ||
+                  error.isNotEmpty ||
+                  code.isEmpty) {
+                finish(problem: const AppProblem(ProblemKind.googleFailed));
+                return;
+              }
+              final auth = await staff
+                  .authWithOAuth2Code(
+                    provider.name,
+                    code,
+                    provider.codeVerifier,
+                    redirect,
+                  )
+                  .timeout(timeout);
+              if (stopped) {
+                // Cancelled while Google was finishing: do not stay signed in.
+                _pb.authStore.clear();
+                finish();
+                return;
+              }
+              finish(user: _staffFrom(auth.record));
+            } on ClientException catch (e) {
+              finish(problem: _googleProblem(e));
+            } on Object catch (error) {
+              finish(problem: problemFrom(error));
+            }
+          })
+          .timeout(timeout);
+    } on Object catch (error) {
+      unawaited(realtime.unsubscribe());
+      throw problemFrom(error);
+    }
+    // A lost connection means the browser's answer can no longer arrive.
+    realtime.onDisconnect = (_) =>
+        finish(problem: const AppProblem(ProblemKind.offline));
+
+    final page = Uri.parse(provider.authURL + redirect);
+    final url = page.replace(
+      queryParameters: <String, String>{
+        ...page.queryParameters,
+        'state': realtime.clientId,
+      },
+    );
+    unawaited(
+      cancelled.then((_) {
+        stopped = true;
+        finish();
+      }),
+    );
+    try {
+      await openUrl(url);
+    } on Object {
+      // The screen offers the address as a button as well.
+    }
+    try {
+      return await result.future;
+    } finally {
+      stopped = true;
+      realtime.onDisconnect = null;
+      unawaited(realtime.unsubscribe());
+    }
+  }
+
+  /// Google refusals arrive as 400 with a reason code in
+  /// `data.reason.code` (server schema version 5); each becomes its own
+  /// plain, translated message. Anything else is "did not finish".
+  static AppProblem _googleProblem(ClientException e) {
+    if (e.statusCode != 400) return problemFrom(e);
+    final data = e.response['data'];
+    final reason = data is Map ? data['reason'] : null;
+    final code = reason is Map ? reason['code'] : null;
+    final kind = switch (code) {
+      'google_no_account' => ProblemKind.googleNoAccount,
+      'google_email_unconfirmed' => ProblemKind.googleUnconfirmed,
+      'google_no_email' => ProblemKind.googleNoEmail,
+      'account_not_allowed' => ProblemKind.googleNotAllowed,
+      _ => ProblemKind.googleFailed,
+    };
+    return AppProblem(kind, statusCode: 400);
+  }
+
+  @override
+  Future<SignInSettings> loadSignInSettings() => _guard(
+    () async => SignInSettings.fromJson(await _sendJson('$_signIn/settings')),
+  );
+
+  @override
+  Future<SignInSettings> saveSignInSettings(SignInSettingsUpdate update) async {
+    try {
+      return SignInSettings.fromJson(
+        await _sendJson(
+          '$_signIn/settings',
+          method: 'PUT',
+          body: update.toJson(),
+        ),
+      );
+    } on ClientException catch (e) {
+      throw _settingsProblem(e);
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  @override
+  Future<SmsSendResult> sendTestSms(String phone, SmsProviderDraft sms) async {
+    try {
+      return SmsSendResult.fromJson(
+        await _sendJson(
+          '$_signIn/test-sms',
+          method: 'POST',
+          body: <String, dynamic>{'phone': phone, 'sms': sms.toJson()},
+        ),
+      );
+    } on ClientException catch (e) {
+      if (e.statusCode == 429) {
+        throw const AppProblem(ProblemKind.tooManyTests, statusCode: 429);
+      }
+      throw _settingsProblem(e);
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  static AppProblem _settingsProblem(ClientException e) {
+    final fields = e.statusCode == 400
+        ? fieldProblems(e)
+        : const <String, String>{};
+    if (fields.isEmpty) return problemFrom(e);
+    return AppProblem(
+      ProblemKind.settingsInvalid,
+      statusCode: 400,
+      fields: fields,
+    );
+  }
 
   @override
   Future<String> organisationName() => _guard(() async {

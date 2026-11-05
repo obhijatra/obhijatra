@@ -9,8 +9,12 @@ class PageScaffold extends StatelessWidget {
     required this.child,
     this.subtitle,
     this.trailing,
+    this.leading,
     super.key,
   });
+
+  /// Something above the heading (for example a link back).
+  final Widget? leading;
 
   /// The page heading.
   final String title;
@@ -38,6 +42,10 @@ class PageScaffold extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          if (leading != null) ...<Widget>[
+            leading!,
+            const SizedBox(height: Spacing.space2),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[

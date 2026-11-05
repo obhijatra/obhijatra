@@ -951,5 +951,509 @@
   "aboutMadeBy": "Made by Aninda Studio",
   "@aboutMadeBy": {
     "description": "Credit line, plain text."
+  },
+  "signInOr": "or",
+  "@signInOr": {
+    "description": "Small word between email sign-in and the other ways to sign in."
+  },
+  "signInGoogle": "Continue with Google",
+  "@signInGoogle": {
+    "description": "Button that opens Google's sign-in page in the browser. Plain text only: no Google logo."
+  },
+  "signInSms": "Sign in with an SMS code",
+  "@signInSms": {
+    "description": "Button and heading: sign in with a code sent by SMS."
+  },
+  "signInSmsAdminNote": "SMS codes are not available to organisation admins.",
+  "@signInSmsAdminNote": {
+    "description": "Note beside the SMS sign-in option."
+  },
+  "signInOtherWays": "Other ways to sign in",
+  "@signInOtherWays": {
+    "description": "Link back from the SMS steps to the main sign-in screen."
+  },
+  "smsNumberIntro": "We will send a 6-digit code by SMS to the mobile number on your account.",
+  "@smsNumberIntro": {
+    "description": "Text on the SMS number step."
+  },
+  "smsNumberLabel": "Mobile number",
+  "@smsNumberLabel": {
+    "description": "Label of the mobile number field."
+  },
+  "smsNumberHelp": "For example 01712345678. For a number outside Bangladesh, start with + and the country code.",
+  "@smsNumberHelp": {
+    "description": "Help under the mobile number field."
+  },
+  "smsNumberInvalid": "This does not look like a mobile number. Type it like 01712345678, or start with + and the country code.",
+  "@smsNumberInvalid": {
+    "description": "Error under the mobile number field."
+  },
+  "smsSendCode": "Send code",
+  "@smsSendCode": {
+    "description": "Button: send the sign-in code by SMS."
+  },
+  "actionSending": "Sending…",
+  "@actionSending": {
+    "description": "Button text while something is being sent."
+  },
+  "smsCodeTitle": "Enter the code",
+  "@smsCodeTitle": {
+    "description": "Heading of the SMS code step."
+  },
+  "smsCodeSent": "If {phone} can sign in with an SMS code, a 6-digit code is on its way.",
+  "@smsCodeSent": {
+    "description": "Text on the code step. It must not say whether the number has an account.",
+    "placeholders": {
+      "phone": {
+        "type": "String",
+        "example": "+880 1712-345678"
+      }
+    }
+  },
+  "smsCodeLifetime": "{minutes, plural, =1{The code works for 1 minute.} other{The code works for {minutes} minutes.}}",
+  "@smsCodeLifetime": {
+    "description": "How long the SMS code works.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "smsCodeLabel": "6-digit code",
+  "@smsCodeLabel": {
+    "description": "Label of the code field."
+  },
+  "smsCodeIncomplete": "Enter all 6 digits of the code.",
+  "@smsCodeIncomplete": {
+    "description": "Error under the code field when fewer than 6 digits were typed."
+  },
+  "smsCodeWrong": "That code is wrong or has expired. Check the SMS and try again, or send a new code.",
+  "@smsCodeWrong": {
+    "description": "Error under the code field."
+  },
+  "smsCodeUsedUp": "That code was tried 3 times, so it no longer works. Send a new code.",
+  "@smsCodeUsedUp": {
+    "description": "Error under the code field after the third wrong try."
+  },
+  "smsCodeExpired": "This code has expired. Send a new code.",
+  "@smsCodeExpired": {
+    "description": "Error under the code field when the code is too old."
+  },
+  "smsCodeChecking": "Checking…",
+  "@smsCodeChecking": {
+    "description": "Button text while the code is checked."
+  },
+  "smsResendIn": "Send a new code in {time}",
+  "@smsResendIn": {
+    "description": "Disabled button with a countdown, for example 0:42.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "0:42"
+      }
+    }
+  },
+  "smsResend": "Send a new code",
+  "@smsResend": {
+    "description": "Button: send another code."
+  },
+  "smsNewCodeSent": "A new code is on its way.",
+  "@smsNewCodeSent": {
+    "description": "Note after a new code was asked for."
+  },
+  "smsChangeNumber": "Change number",
+  "@smsChangeNumber": {
+    "description": "Button: go back and type another number."
+  },
+  "googleWaitingTitle": "Waiting for Google…",
+  "@googleWaitingTitle": {
+    "description": "Heading while the person signs in on Google's page."
+  },
+  "googleWaitingBody": "Google’s sign-in page opens in your web browser. Choose your Google account there, then come back to this window.",
+  "@googleWaitingBody": {
+    "description": "Text while waiting for Google."
+  },
+  "googleOpenHelp": "If Google’s page did not open, use this button.",
+  "@googleOpenHelp": {
+    "description": "Help above the button that opens Google's page again."
+  },
+  "googleOpen": "Open Google sign-in",
+  "@googleOpen": {
+    "description": "Button that opens Google's sign-in page (for when the browser blocked it)."
+  },
+  "problemGoogleNoAccount": "No Obhijatra account here uses this Google email address. Ask your organisation admin to add it, or use another way to sign in.",
+  "@problemGoogleNoAccount": {
+    "description": "Google sign-in refused: no account with that email."
+  },
+  "problemGoogleUnconfirmed": "Your organisation admin must confirm your email address before you can sign in with Google.",
+  "@problemGoogleUnconfirmed": {
+    "description": "Google sign-in refused: email not confirmed by an admin."
+  },
+  "problemGoogleNotAllowed": "This account cannot sign in. Ask your organisation admin.",
+  "@problemGoogleNotAllowed": {
+    "description": "Google sign-in refused: account switched off."
+  },
+  "problemGoogleNoEmail": "Google did not share a confirmed email address for this Google account. Use another Google account, or another way to sign in.",
+  "@problemGoogleNoEmail": {
+    "description": "Google sign-in refused: Google gave no confirmed email."
+  },
+  "problemGoogleUnavailable": "Google sign-in is not switched on for this server. Use another way to sign in.",
+  "@problemGoogleUnavailable": {
+    "description": "Google sign-in is off."
+  },
+  "problemGoogleFailed": "Google sign-in did not finish. Try again, or use another way to sign in.",
+  "@problemGoogleFailed": {
+    "description": "Google sign-in failed for another reason."
+  },
+  "problemSmsOff": "Sign-in by SMS code is switched off on this server. Use another way to sign in.",
+  "@problemSmsOff": {
+    "description": "SMS sign-in is off."
+  },
+  "problemPhoneInvalid": "This does not look like a mobile number. Type it like 01712345678, or start with + and the country code.",
+  "@problemPhoneInvalid": {
+    "description": "The server refused the mobile number."
+  },
+  "problemCodeWrong": "That code is wrong or has expired. Check the SMS and try again, or send a new code.",
+  "@problemCodeWrong": {
+    "description": "The SMS code was refused."
+  },
+  "problemTooManyCodes": "Too many codes were asked for. Wait 15 minutes, or use another way to sign in.",
+  "@problemTooManyCodes": {
+    "description": "Too many SMS codes asked for."
+  },
+  "problemTooManyTries": "Too many tries from this connection. Wait 15 minutes, then ask for a new code.",
+  "@problemTooManyTries": {
+    "description": "Too many code checks."
+  },
+  "problemTooManyTests": "Too many test messages. Wait 15 minutes and try again.",
+  "@problemTooManyTests": {
+    "description": "Too many test SMS."
+  },
+  "problemSettingsInvalid": "Some settings need attention. Look for the messages under the fields.",
+  "@problemSettingsInvalid": {
+    "description": "The server refused some sign-in settings."
+  },
+  "accountPhone": "Mobile number",
+  "@accountPhone": {
+    "description": "Label in the account details."
+  },
+  "signInMethodsTitle": "Sign-in methods",
+  "@signInMethodsTitle": {
+    "description": "Heading of the sign-in methods settings (organisation admins)."
+  },
+  "signInMethodsSummary": "Everyone can sign in with an email address and password. You can also let people sign in with Google or with an SMS code.",
+  "@signInMethodsSummary": {
+    "description": "Text about the sign-in methods."
+  },
+  "signInMethodsOpen": "Set up sign-in methods",
+  "@signInMethodsOpen": {
+    "description": "Button that opens the sign-in methods settings."
+  },
+  "settingsBack": "Back to Settings",
+  "@settingsBack": {
+    "description": "Link back to the main settings page."
+  },
+  "methodOn": "On",
+  "@methodOn": {
+    "description": "State beside a switch."
+  },
+  "methodOff": "Off",
+  "@methodOff": {
+    "description": "State beside a switch."
+  },
+  "googleTitle": "Google",
+  "@googleTitle": {
+    "description": "Card heading and switch: Google sign-in."
+  },
+  "googleDescription": "People click “Continue with Google” and choose their Google account. It works only for people whose account here has the same email address, confirmed by an admin.",
+  "@googleDescription": {
+    "description": "Text in the Google card."
+  },
+  "googleRedirectLabel": "Redirect address for Google",
+  "@googleRedirectLabel": {
+    "description": "Label of the read-only address to register with Google."
+  },
+  "googleRedirectHelp": "Add this address to your Google client under Authorised redirect URIs.",
+  "@googleRedirectHelp": {
+    "description": "Help under the redirect address."
+  },
+  "googleRedirectWarning": "Google needs an https:// address with a domain name, such as https://data.example.org. Ask whoever runs your server to give it one. SMS codes work without it.",
+  "@googleRedirectWarning": {
+    "description": "Warning when the server's address will not work with Google."
+  },
+  "actionCopy": "Copy",
+  "@actionCopy": {
+    "description": "Button: copy to the clipboard."
+  },
+  "copiedRedirect": "Redirect address copied.",
+  "@copiedRedirect": {
+    "description": "Message after copying."
+  },
+  "googleClientId": "Client ID",
+  "@googleClientId": {
+    "description": "Field label: the Google client ID."
+  },
+  "googleClientIdHelp": "From your Google Cloud project. It ends with .apps.googleusercontent.com.",
+  "@googleClientIdHelp": {
+    "description": "Help under the client ID."
+  },
+  "googleClientSecret": "Client secret",
+  "@googleClientSecret": {
+    "description": "Field label: the Google client secret."
+  },
+  "googleClientSecretHelp": "Google shows it once, when you create the client. Keep it private.",
+  "@googleClientSecretHelp": {
+    "description": "Help under the client secret when none is saved."
+  },
+  "secretSavedKeep": "Saved. Leave empty to keep it.",
+  "@secretSavedKeep": {
+    "description": "Help under a secret field when a secret is already saved."
+  },
+  "secretShow": "Show secret",
+  "@secretShow": {
+    "description": "Button that shows a hidden secret."
+  },
+  "secretHide": "Hide secret",
+  "@secretHide": {
+    "description": "Button that hides a secret."
+  },
+  "setupGuide": "How to set this up",
+  "@setupGuide": {
+    "description": "Link to the written set-up guide."
+  },
+  "smsTitle": "SMS codes",
+  "@smsTitle": {
+    "description": "Card heading and switch: SMS-code sign-in."
+  },
+  "smsDescription": "People type their mobile number and receive a 6-digit code by SMS. Your organisation pays your SMS provider for each message. SMS codes are not available to organisation admins.",
+  "@smsDescription": {
+    "description": "Text in the SMS card."
+  },
+  "smsProviderTitle": "Your SMS provider",
+  "@smsProviderTitle": {
+    "description": "Sub-heading in the SMS card."
+  },
+  "smsProviderHelp": "Fill these in from your SMS provider’s guide for sending one message.",
+  "@smsProviderHelp": {
+    "description": "Help under the SMS provider sub-heading."
+  },
+  "smsMethod": "Method",
+  "@smsMethod": {
+    "description": "Label: GET or POST."
+  },
+  "smsAddress": "Address",
+  "@smsAddress": {
+    "description": "Field label: the provider's web address."
+  },
+  "smsAddressHelp": "The provider’s web address for sending a message. It starts with https://",
+  "@smsAddressHelp": {
+    "description": "Help under the address."
+  },
+  "smsBodyFormat": "Body format",
+  "@smsBodyFormat": {
+    "description": "Label: JSON or form."
+  },
+  "smsFormatJson": "JSON",
+  "@smsFormatJson": {
+    "description": "Body format choice."
+  },
+  "smsFormatForm": "Form",
+  "@smsFormatForm": {
+    "description": "Body format choice."
+  },
+  "smsBody": "Body",
+  "@smsBody": {
+    "description": "Field label: the message body template."
+  },
+  "smsBodyHelp": "Copy the example from your provider’s guide, then put placeholders where the values go.",
+  "@smsBodyHelp": {
+    "description": "Help under the body."
+  },
+  "smsPlaceholders": "Placeholders",
+  "@smsPlaceholders": {
+    "description": "Heading of the placeholder buttons."
+  },
+  "smsPlaceholdersHelp": "Click one to put it where the cursor is in the Address, the Body or a header value. The server fills it in for each message.",
+  "@smsPlaceholdersHelp": {
+    "description": "Help about the placeholder buttons."
+  },
+  "smsPlaceholderPhone": "the number with a plus sign, for example +8801712345678",
+  "@smsPlaceholderPhone": {
+    "description": "What the phone placeholder becomes."
+  },
+  "smsPlaceholderDigits": "the number without a plus sign, for example 8801712345678",
+  "@smsPlaceholderDigits": {
+    "description": "What the digits placeholder becomes."
+  },
+  "smsPlaceholderMessage": "the text of the SMS",
+  "@smsPlaceholderMessage": {
+    "description": "What the message placeholder becomes."
+  },
+  "smsPlaceholderSecret": "your secret key, kept hidden",
+  "@smsPlaceholderSecret": {
+    "description": "What the secret placeholder becomes."
+  },
+  "smsInsertPlaceholder": "Insert {placeholder}",
+  "@smsInsertPlaceholder": {
+    "description": "Tooltip of a placeholder button.",
+    "placeholders": {
+      "placeholder": {
+        "type": "String",
+        "example": "{phone}"
+      }
+    }
+  },
+  "smsHeaders": "Extra headers",
+  "@smsHeaders": {
+    "description": "Heading of the extra headers."
+  },
+  "smsHeadersHelp": "Only if your provider’s guide asks for them, for example Authorization.",
+  "@smsHeadersHelp": {
+    "description": "Help about extra headers."
+  },
+  "smsHeaderName": "Name",
+  "@smsHeaderName": {
+    "description": "Field label: header name."
+  },
+  "smsHeaderValue": "Value",
+  "@smsHeaderValue": {
+    "description": "Field label: header value."
+  },
+  "smsHeaderAdd": "Add a header",
+  "@smsHeaderAdd": {
+    "description": "Button: add a header row."
+  },
+  "smsHeaderRemove": "Remove this header",
+  "@smsHeaderRemove": {
+    "description": "Tooltip: remove a header row."
+  },
+  "smsHeadersMax": "You can add up to {count} headers.",
+  "@smsHeadersMax": {
+    "description": "Note when the header limit is reached.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "smsSecret": "Secret key",
+  "@smsSecret": {
+    "description": "Field label: the provider's API key."
+  },
+  "smsSecretHelp": "Your provider’s API key or token. Type it here, and put {placeholder} where the guide shows the key.",
+  "@smsSecretHelp": {
+    "description": "Help under the secret key when none is saved.",
+    "placeholders": {
+      "placeholder": {
+        "type": "String",
+        "example": "{secret}"
+      }
+    }
+  },
+  "smsSuccessText": "Success text",
+  "@smsSuccessText": {
+    "description": "Field label: text the provider replies on success."
+  },
+  "smsSuccessTextHelp": "Optional. What the provider replies when it accepts a message, for example SUCCESS. Leave empty if you are not sure.",
+  "@smsSuccessTextHelp": {
+    "description": "Help under the success text."
+  },
+  "smsTestTitle": "Send test SMS",
+  "@smsTestTitle": {
+    "description": "Sub-heading."
+  },
+  "smsTestHelp": "Sends a test message with the settings above, even before you save them.",
+  "@smsTestHelp": {
+    "description": "Help about the test SMS."
+  },
+  "smsTestNumber": "Mobile number for the test",
+  "@smsTestNumber": {
+    "description": "Field label."
+  },
+  "smsTestButton": "Send test SMS",
+  "@smsTestButton": {
+    "description": "Button."
+  },
+  "smsResultTest": "Test result",
+  "@smsResultTest": {
+    "description": "Heading of the test result."
+  },
+  "smsResultLast": "Last message sent by the server",
+  "@smsResultLast": {
+    "description": "Heading of the last send status."
+  },
+  "smsResultSent": "Sent. The provider accepted the message.",
+  "@smsResultSent": {
+    "description": "Result: sent."
+  },
+  "smsResultNotSent": "Not sent.",
+  "@smsResultNotSent": {
+    "description": "Result: not sent."
+  },
+  "smsResultStatus": "Provider status: {status}",
+  "@smsResultStatus": {
+    "description": "The provider's HTTP status number.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "200"
+      }
+    }
+  },
+  "smsResultNoAnswer": "The provider did not answer.",
+  "@smsResultNoAnswer": {
+    "description": "Result when the provider could not be reached."
+  },
+  "smsResultReply": "Provider reply",
+  "@smsResultReply": {
+    "description": "Label above the provider's reply text."
+  },
+  "smsResultAt": "Time: {time}",
+  "@smsResultAt": {
+    "description": "When the message was sent.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "Today, 14:32"
+      }
+    }
+  },
+  "smsResultNone": "No message has been sent since the server last started.",
+  "@smsResultNone": {
+    "description": "Shown when there is no last send."
+  },
+  "actionSave": "Save",
+  "@actionSave": {
+    "description": "Button: save."
+  },
+  "actionSaving": "Saving…",
+  "@actionSaving": {
+    "description": "Button text while saving."
+  },
+  "signInMethodsSaved": "Sign-in methods saved.",
+  "@signInMethodsSaved": {
+    "description": "Message after saving."
+  },
+  "unsavedChanges": "You have unsaved changes.",
+  "@unsavedChanges": {
+    "description": "Note beside the Save button."
+  },
+  "leaveTitle": "Leave without saving?",
+  "@leaveTitle": {
+    "description": "Dialog title."
+  },
+  "leaveBody": "Your changes to the sign-in methods will be lost.",
+  "@leaveBody": {
+    "description": "Dialog text."
+  },
+  "leaveStay": "Stay",
+  "@leaveStay": {
+    "description": "Dialog button: stay on the page."
+  },
+  "leaveDiscard": "Leave without saving",
+  "@leaveDiscard": {
+    "description": "Dialog button: leave and lose changes."
   }
 }

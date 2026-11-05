@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:obhijatra_manager/src/state/navigation.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:obhijatra_manager/src/ui/about_screen.dart';
 import 'package:obhijatra_manager/src/ui/forms_screen.dart';
+import 'package:obhijatra_manager/src/ui/leave_guard.dart';
 import 'package:obhijatra_manager/src/ui/settings_screen.dart';
 import 'package:obhijatra_manager/src/ui/submissions_screen.dart';
 import 'package:obhijatra_manager/widgets/brand_mark.dart';
@@ -191,9 +194,15 @@ class _UserMenu extends ConsumerWidget {
         position: PopupMenuPosition.under,
         onSelected: (value) {
           if (value == 'settings') {
-            ref.read(sectionProvider.notifier).go(Section.settings);
+            unawaited(goToSection(context, ref, Section.settings));
           } else {
-            ref.read(sessionProvider.notifier).signOut();
+            unawaited(
+              signOutGuarded(
+                context,
+                ref,
+                () => ref.read(sessionProvider.notifier).signOut(),
+              ),
+            );
           }
         },
         itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -329,9 +338,9 @@ class _SideNav extends ConsumerWidget {
                     label: _sectionLabel(l10n, destination.section),
                     selected: destination.section == section,
                     extended: extended,
-                    onTap: () => ref
-                        .read(sectionProvider.notifier)
-                        .go(destination.section),
+                    onTap: () => unawaited(
+                      goToSection(context, ref, destination.section),
+                    ),
                   ),
                 ),
             ],
@@ -455,9 +464,8 @@ class _BottomNav extends ConsumerWidget {
                   label: _sectionLabel(l10n, destination.section),
                   selected: destination.section == section,
                   extended: false,
-                  onTap: () => ref
-                      .read(sectionProvider.notifier)
-                      .go(destination.section),
+                  onTap: () =>
+                      unawaited(goToSection(context, ref, destination.section)),
                 ),
               ),
           ],

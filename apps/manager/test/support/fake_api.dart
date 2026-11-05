@@ -51,6 +51,77 @@ class FakeManagerApi implements ManagerApi {
   int signOuts = 0;
   AppProblem? signInFailure;
 
+  // ---------------------------------------------------------- sign-in
+
+  /// What [signInMethods] answers.
+  SignInMethods methods = SignInMethods.passwordOnly;
+
+  /// Numbers codes were asked for, in order.
+  final List<String> codeRequests = <String>[];
+
+  /// Set to make [requestPhoneCode] fail.
+  AppProblem? codeRequestFailure;
+
+  /// The code that works; any other is wrong.
+  String validCode = '123456';
+
+  /// Codes tried, in order.
+  final List<(String, String)> codeChecks = <(String, String)>[];
+
+  /// Set to make [signInWithPhoneCode] fail whatever the code.
+  AppProblem? codeCheckFailure;
+
+  /// Who signs in with a right SMS code.
+  StaffUser phoneUser = const StaffUser(
+    id: 'u2',
+    name: 'Nasrin Sultana',
+    email: '',
+    phone: '+8801712345678',
+    role: 'supervisor',
+  );
+
+  /// The page [signInWithGoogle] passes to `openUrl`.
+  Uri googlePage = Uri.parse('https://accounts.example.com/signin?state=s1');
+
+  /// What the browser step ends with; complete it from a test.
+  Completer<StaffUser?> googleResult = Completer<StaffUser?>();
+
+  /// Set to make [signInWithGoogle] fail at once (before any page opens).
+  AppProblem? googleFailure;
+
+  /// Whether a Google sign-in is waiting for the browser.
+  bool googleWaiting = false;
+
+  /// What [loadSignInSettings] answers.
+  SignInSettings settings = const SignInSettings(
+    google: GoogleSignInSettings(
+      redirectUrl: 'https://data.example.org/api/oauth2-redirect',
+    ),
+  );
+
+  /// Set to make [loadSignInSettings] fail.
+  AppProblem? settingsLoadFailure;
+
+  /// Set to make the next [saveSignInSettings] fail; it is then cleared.
+  AppProblem? saveFailure;
+
+  /// Every update saved, in order.
+  final List<SignInSettingsUpdate> saves = <SignInSettingsUpdate>[];
+
+  /// What [sendTestSms] answers.
+  SmsSendResult testResult = SmsSendResult(
+    at: DateTime(2026, 11, 5, 14, 32),
+    ok: true,
+    status: 200,
+    reply: '{"status":"SUCCESS"}',
+  );
+
+  /// Set to make [sendTestSms] fail.
+  AppProblem? testFailure;
+
+  /// Every test SMS asked for, in order.
+  final List<(String, SmsProviderDraft)> tests = <(String, SmsProviderDraft)>[];
+
   Future<void> _enter() async {
     final g = gate;
     if (g != null) await g.future;
@@ -80,6 +151,107 @@ class FakeManagerApi implements ManagerApi {
   void signOut() {
     signOuts++;
     user = null;
+  }
+
+  @override
+  Future<SignInMethods> signInMethods() async => methods;
+
+  @override
+  Future<PhoneCodeRequest> requestPhoneCode(String phone) async {
+    final failure = codeRequestFailure;
+    if (failure != null) throw failure;
+    codeRequests.add(phone);
+    return PhoneCodeRequest(
+      codeId: 'code${codeRequests.length}',
+      phone: phone,
+      expiresIn: const Duration(minutes: 5),
+      resendAfter: const Duration(seconds: 60),
+    );
+  }
+
+  @override
+  Future<StaffUser> signInWithPhoneCode(String codeId, String code) async {
+    codeChecks.add((codeId, code));
+    final failure = codeCheckFailure;
+    if (failure != null) throw failure;
+    if (code != validCode) {
+      throw const AppProblem(ProblemKind.codeWrong, statusCode: 400);
+    }
+    return user = phoneUser;
+  }
+
+  @override
+  Future<StaffUser?> signInWithGoogle({
+    required FutureOr<void> Function(Uri url) openUrl,
+    required Future<void> cancelled,
+  }) async {
+    final failure = googleFailure;
+    if (failure != null) throw failure;
+    googleWaiting = true;
+    await openUrl(googlePage);
+    try {
+      final signedIn = await Future.any<StaffUser?>(<Future<StaffUser?>>[
+        googleResult.future,
+        cancelled.then((_) => null),
+      ]);
+      if (signedIn != null) user = signedIn;
+      return signedIn;
+    } finally {
+      googleWaiting = false;
+    }
+  }
+
+  @override
+  Future<SignInSettings> loadSignInSettings() async {
+    await _enter();
+    final failure = settingsLoadFailure;
+    if (failure != null) throw failure;
+    return settings;
+  }
+
+  @override
+  Future<SignInSettings> saveSignInSettings(SignInSettingsUpdate update) async {
+    await _enter();
+    final failure = saveFailure;
+    if (failure != null) {
+      saveFailure = null;
+      throw failure;
+    }
+    saves.add(update);
+    final sms = update.sms;
+    return settings = SignInSettings(
+      google: GoogleSignInSettings(
+        enabled: update.googleEnabled,
+        clientId: update.googleClientId,
+        clientSecretSet:
+            update.googleClientSecret.isNotEmpty ||
+            (settings.google.clientSecretSet &&
+                update.googleClientId.isNotEmpty),
+        redirectUrl: settings.google.redirectUrl,
+      ),
+      phone: PhoneSignInSettings(
+        enabled: update.phoneEnabled,
+        sms: SmsProviderSettings(
+          method: sms.method,
+          url: sms.url,
+          bodyFormat: sms.bodyFormat,
+          body: sms.method == SmsMethod.post ? sms.body : '',
+          headers: sms.headers,
+          secretSet: sms.secret.isNotEmpty || settings.phone.sms.secretSet,
+          successText: sms.successText,
+        ),
+        lastSend: settings.phone.lastSend,
+      ),
+    );
+  }
+
+  @override
+  Future<SmsSendResult> sendTestSms(String phone, SmsProviderDraft sms) async {
+    await _enter();
+    final failure = testFailure;
+    if (failure != null) throw failure;
+    tests.add((phone, sms));
+    return testResult;
   }
 
   @override

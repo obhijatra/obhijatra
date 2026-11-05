@@ -48,6 +48,45 @@ enum ProblemKind {
   /// The form definition needed to show answers safely is not available.
   formUnavailable,
 
+  /// Google sign-in: no account here uses that Google email address.
+  googleNoAccount,
+
+  /// Google sign-in: an admin has not confirmed the account's email address.
+  googleUnconfirmed,
+
+  /// Google sign-in: the account may not sign in (switched off).
+  googleNotAllowed,
+
+  /// Google sign-in: Google shared no confirmed email address.
+  googleNoEmail,
+
+  /// Google sign-in is not switched on for this server.
+  googleUnavailable,
+
+  /// Google sign-in did not finish (the browser step failed or was lost).
+  googleFailed,
+
+  /// SMS-code sign-in is switched off on this server.
+  smsOff,
+
+  /// The mobile number is not in a usable form.
+  phoneInvalid,
+
+  /// The SMS code is wrong, expired or already used.
+  codeWrong,
+
+  /// Too many codes were asked for this number.
+  tooManyCodes,
+
+  /// Too many code checks from this connection.
+  tooManyTries,
+
+  /// Too many test messages from this admin.
+  tooManyTests,
+
+  /// Some submitted settings were refused; see [AppProblem.fields].
+  settingsInvalid,
+
   /// Anything else.
   unknown,
 }
@@ -71,13 +110,21 @@ enum ProblemAction {
 @immutable
 class AppProblem implements Exception {
   /// Creates a problem.
-  const AppProblem(this.kind, {this.statusCode});
+  const AppProblem(
+    this.kind, {
+    this.statusCode,
+    this.fields = const <String, String>{},
+  });
 
   /// What went wrong.
   final ProblemKind kind;
 
   /// The HTTP status, for diagnostics only.
   final int? statusCode;
+
+  /// Problems with single submitted fields, by the server's dotted field
+  /// name (for example `phone.sms.url`), in the server's plain words.
+  final Map<String, String> fields;
 
   /// The single action offered for this problem.
   ProblemAction get action => switch (kind) {
@@ -87,6 +134,7 @@ class AppProblem implements Exception {
     ProblemKind.serverError ||
     ProblemKind.signInFailed ||
     ProblemKind.formUnavailable ||
+    ProblemKind.googleFailed ||
     ProblemKind.unknown => ProblemAction.tryAgain,
     ProblemKind.signInRequired => ProblemAction.signInAgain,
     ProblemKind.unreadableFile => ProblemAction.chooseFile,
@@ -95,7 +143,19 @@ class AppProblem implements Exception {
     ProblemKind.tooLarge ||
     ProblemKind.rejected ||
     ProblemKind.versionExists ||
-    ProblemKind.commentNotSaved => ProblemAction.close,
+    ProblemKind.commentNotSaved ||
+    ProblemKind.googleNoAccount ||
+    ProblemKind.googleUnconfirmed ||
+    ProblemKind.googleNotAllowed ||
+    ProblemKind.googleNoEmail ||
+    ProblemKind.googleUnavailable ||
+    ProblemKind.smsOff ||
+    ProblemKind.phoneInvalid ||
+    ProblemKind.codeWrong ||
+    ProblemKind.tooManyCodes ||
+    ProblemKind.tooManyTries ||
+    ProblemKind.tooManyTests ||
+    ProblemKind.settingsInvalid => ProblemAction.close,
   };
 
   @override
@@ -131,6 +191,27 @@ AppProblem problemFrom(Object error) {
   }
   return const AppProblem(ProblemKind.unknown);
 }
+
+/// The server's per-field problems in a 400 answer, by dotted field name.
+Map<String, String> fieldProblems(ClientException error) {
+  final data = error.response['data'];
+  if (data is! Map<String, dynamic>) return const <String, String>{};
+  return <String, String>{
+    for (final entry in data.entries)
+      if (entry.value is Map<String, dynamic>)
+        entry.key: switch ((entry.value as Map<String, dynamic>)['message']) {
+          final String message => message,
+          _ => '',
+        },
+  };
+}
+
+/// The server's own sentence in an error answer, or an empty string.
+String serverMessage(ClientException error) =>
+    switch (error.response['message']) {
+      final String message => message,
+      _ => '',
+    };
 
 bool _isNotUnique(ClientException error) {
   final data = error.response['data'];

@@ -55,8 +55,14 @@ class ServerUrlNotifier extends Notifier<String> {
 
   /// Uses [url] from now on and remembers it (desktop only).
   void set(String url) {
-    state = url;
+    if (url != state) state = url;
     unawaited(Preferences.saveServer(url));
+  }
+
+  /// Uses [url] without remembering it, so the sign-in screen can ask a
+  /// newly typed server which ways to sign in it offers (desktop only).
+  void preview(String url) {
+    if (url != state) state = url;
   }
 }
 
@@ -123,6 +129,33 @@ class SessionNotifier extends Notifier<StaffUser?> {
     state = user;
   }
 
+  /// Signs in with the code from an SMS. Throws an [AppProblem] when the
+  /// server says no.
+  Future<void> signInWithPhoneCode(String codeId, String code) async {
+    final user = await tracked(
+      ref,
+      () => ref.read(apiProvider).signInWithPhoneCode(codeId, code),
+    );
+    state = user;
+  }
+
+  /// Signs in with Google in the web browser. Returns false when the
+  /// person cancelled or turned Google down.
+  Future<bool> signInWithGoogle({
+    required FutureOr<void> Function(Uri url) openUrl,
+    required Future<void> cancelled,
+  }) async {
+    final user = await tracked(
+      ref,
+      () => ref
+          .read(apiProvider)
+          .signInWithGoogle(openUrl: openUrl, cancelled: cancelled),
+    );
+    if (user == null) return false;
+    state = user;
+    return true;
+  }
+
   /// Ends the session and forgets everything loaded for it.
   void signOut() {
     ref.read(apiProvider).signOut();
@@ -136,6 +169,21 @@ final sessionProvider = NotifierProvider<SessionNotifier, StaffUser?>(
 );
 
 String? _userId(Ref ref) => ref.watch(sessionProvider.select((u) => u?.id));
+
+/// The ways to sign in the server offers. If the server cannot be asked,
+/// email and password are shown on their own; they report any problem
+/// themselves.
+final signInMethodsProvider = FutureProvider.autoDispose<SignInMethods>((
+  ref,
+) async {
+  final api = ref.watch(apiProvider);
+  if (api.serverUrl.trim().isEmpty) return SignInMethods.passwordOnly;
+  try {
+    return await api.signInMethods();
+  } on Object {
+    return SignInMethods.passwordOnly;
+  }
+});
 
 /// The organisation's name for the top bar.
 final organisationNameProvider = FutureProvider<String>((ref) {

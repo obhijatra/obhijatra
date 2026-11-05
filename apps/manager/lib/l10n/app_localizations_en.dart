@@ -785,4 +785,414 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutMadeBy => 'Made by Aninda Studio';
+
+  @override
+  String get signInOr => 'or';
+
+  @override
+  String get signInGoogle => 'Continue with Google';
+
+  @override
+  String get signInSms => 'Sign in with an SMS code';
+
+  @override
+  String get signInSmsAdminNote =>
+      'SMS codes are not available to organisation admins.';
+
+  @override
+  String get signInOtherWays => 'Other ways to sign in';
+
+  @override
+  String get smsNumberIntro =>
+      'We will send a 6-digit code by SMS to the mobile number on your account.';
+
+  @override
+  String get smsNumberLabel => 'Mobile number';
+
+  @override
+  String get smsNumberHelp =>
+      'For example 01712345678. For a number outside Bangladesh, start with + and the country code.';
+
+  @override
+  String get smsNumberInvalid =>
+      'This does not look like a mobile number. Type it like 01712345678, or start with + and the country code.';
+
+  @override
+  String get smsSendCode => 'Send code';
+
+  @override
+  String get actionSending => 'Sending…';
+
+  @override
+  String get smsCodeTitle => 'Enter the code';
+
+  @override
+  String smsCodeSent(String phone) {
+    return 'If $phone can sign in with an SMS code, a 6-digit code is on its way.';
+  }
+
+  @override
+  String smsCodeLifetime(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'The code works for $minutesString minutes.',
+      one: 'The code works for 1 minute.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsCodeLabel => '6-digit code';
+
+  @override
+  String get smsCodeIncomplete => 'Enter all 6 digits of the code.';
+
+  @override
+  String get smsCodeWrong =>
+      'That code is wrong or has expired. Check the SMS and try again, or send a new code.';
+
+  @override
+  String get smsCodeUsedUp =>
+      'That code was tried 3 times, so it no longer works. Send a new code.';
+
+  @override
+  String get smsCodeExpired => 'This code has expired. Send a new code.';
+
+  @override
+  String get smsCodeChecking => 'Checking…';
+
+  @override
+  String smsResendIn(String time) {
+    return 'Send a new code in $time';
+  }
+
+  @override
+  String get smsResend => 'Send a new code';
+
+  @override
+  String get smsNewCodeSent => 'A new code is on its way.';
+
+  @override
+  String get smsChangeNumber => 'Change number';
+
+  @override
+  String get googleWaitingTitle => 'Waiting for Google…';
+
+  @override
+  String get googleWaitingBody =>
+      'Google’s sign-in page opens in your web browser. Choose your Google account there, then come back to this window.';
+
+  @override
+  String get googleOpenHelp =>
+      'If Google’s page did not open, use this button.';
+
+  @override
+  String get googleOpen => 'Open Google sign-in';
+
+  @override
+  String get problemGoogleNoAccount =>
+      'No Obhijatra account here uses this Google email address. Ask your organisation admin to add it, or use another way to sign in.';
+
+  @override
+  String get problemGoogleUnconfirmed =>
+      'Your organisation admin must confirm your email address before you can sign in with Google.';
+
+  @override
+  String get problemGoogleNotAllowed =>
+      'This account cannot sign in. Ask your organisation admin.';
+
+  @override
+  String get problemGoogleNoEmail =>
+      'Google did not share a confirmed email address for this Google account. Use another Google account, or another way to sign in.';
+
+  @override
+  String get problemGoogleUnavailable =>
+      'Google sign-in is not switched on for this server. Use another way to sign in.';
+
+  @override
+  String get problemGoogleFailed =>
+      'Google sign-in did not finish. Try again, or use another way to sign in.';
+
+  @override
+  String get problemSmsOff =>
+      'Sign-in by SMS code is switched off on this server. Use another way to sign in.';
+
+  @override
+  String get problemPhoneInvalid =>
+      'This does not look like a mobile number. Type it like 01712345678, or start with + and the country code.';
+
+  @override
+  String get problemCodeWrong =>
+      'That code is wrong or has expired. Check the SMS and try again, or send a new code.';
+
+  @override
+  String get problemTooManyCodes =>
+      'Too many codes were asked for. Wait 15 minutes, or use another way to sign in.';
+
+  @override
+  String get problemTooManyTries =>
+      'Too many tries from this connection. Wait 15 minutes, then ask for a new code.';
+
+  @override
+  String get problemTooManyTests =>
+      'Too many test messages. Wait 15 minutes and try again.';
+
+  @override
+  String get problemSettingsInvalid =>
+      'Some settings need attention. Look for the messages under the fields.';
+
+  @override
+  String get accountPhone => 'Mobile number';
+
+  @override
+  String get signInMethodsTitle => 'Sign-in methods';
+
+  @override
+  String get signInMethodsSummary =>
+      'Everyone can sign in with an email address and password. You can also let people sign in with Google or with an SMS code.';
+
+  @override
+  String get signInMethodsOpen => 'Set up sign-in methods';
+
+  @override
+  String get settingsBack => 'Back to Settings';
+
+  @override
+  String get methodOn => 'On';
+
+  @override
+  String get methodOff => 'Off';
+
+  @override
+  String get googleTitle => 'Google';
+
+  @override
+  String get googleDescription =>
+      'People click “Continue with Google” and choose their Google account. It works only for people whose account here has the same email address, confirmed by an admin.';
+
+  @override
+  String get googleRedirectLabel => 'Redirect address for Google';
+
+  @override
+  String get googleRedirectHelp =>
+      'Add this address to your Google client under Authorised redirect URIs.';
+
+  @override
+  String get googleRedirectWarning =>
+      'Google needs an https:// address with a domain name, such as https://data.example.org. Ask whoever runs your server to give it one. SMS codes work without it.';
+
+  @override
+  String get actionCopy => 'Copy';
+
+  @override
+  String get copiedRedirect => 'Redirect address copied.';
+
+  @override
+  String get googleClientId => 'Client ID';
+
+  @override
+  String get googleClientIdHelp =>
+      'From your Google Cloud project. It ends with .apps.googleusercontent.com.';
+
+  @override
+  String get googleClientSecret => 'Client secret';
+
+  @override
+  String get googleClientSecretHelp =>
+      'Google shows it once, when you create the client. Keep it private.';
+
+  @override
+  String get secretSavedKeep => 'Saved. Leave empty to keep it.';
+
+  @override
+  String get secretShow => 'Show secret';
+
+  @override
+  String get secretHide => 'Hide secret';
+
+  @override
+  String get setupGuide => 'How to set this up';
+
+  @override
+  String get smsTitle => 'SMS codes';
+
+  @override
+  String get smsDescription =>
+      'People type their mobile number and receive a 6-digit code by SMS. Your organisation pays your SMS provider for each message. SMS codes are not available to organisation admins.';
+
+  @override
+  String get smsProviderTitle => 'Your SMS provider';
+
+  @override
+  String get smsProviderHelp =>
+      'Fill these in from your SMS provider’s guide for sending one message.';
+
+  @override
+  String get smsMethod => 'Method';
+
+  @override
+  String get smsAddress => 'Address';
+
+  @override
+  String get smsAddressHelp =>
+      'The provider’s web address for sending a message. It starts with https://';
+
+  @override
+  String get smsBodyFormat => 'Body format';
+
+  @override
+  String get smsFormatJson => 'JSON';
+
+  @override
+  String get smsFormatForm => 'Form';
+
+  @override
+  String get smsBody => 'Body';
+
+  @override
+  String get smsBodyHelp =>
+      'Copy the example from your provider’s guide, then put placeholders where the values go.';
+
+  @override
+  String get smsPlaceholders => 'Placeholders';
+
+  @override
+  String get smsPlaceholdersHelp =>
+      'Click one to put it where the cursor is in the Address, the Body or a header value. The server fills it in for each message.';
+
+  @override
+  String get smsPlaceholderPhone =>
+      'the number with a plus sign, for example +8801712345678';
+
+  @override
+  String get smsPlaceholderDigits =>
+      'the number without a plus sign, for example 8801712345678';
+
+  @override
+  String get smsPlaceholderMessage => 'the text of the SMS';
+
+  @override
+  String get smsPlaceholderSecret => 'your secret key, kept hidden';
+
+  @override
+  String smsInsertPlaceholder(String placeholder) {
+    return 'Insert $placeholder';
+  }
+
+  @override
+  String get smsHeaders => 'Extra headers';
+
+  @override
+  String get smsHeadersHelp =>
+      'Only if your provider’s guide asks for them, for example Authorization.';
+
+  @override
+  String get smsHeaderName => 'Name';
+
+  @override
+  String get smsHeaderValue => 'Value';
+
+  @override
+  String get smsHeaderAdd => 'Add a header';
+
+  @override
+  String get smsHeaderRemove => 'Remove this header';
+
+  @override
+  String smsHeadersMax(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'You can add up to $countString headers.';
+  }
+
+  @override
+  String get smsSecret => 'Secret key';
+
+  @override
+  String smsSecretHelp(String placeholder) {
+    return 'Your provider’s API key or token. Type it here, and put $placeholder where the guide shows the key.';
+  }
+
+  @override
+  String get smsSuccessText => 'Success text';
+
+  @override
+  String get smsSuccessTextHelp =>
+      'Optional. What the provider replies when it accepts a message, for example SUCCESS. Leave empty if you are not sure.';
+
+  @override
+  String get smsTestTitle => 'Send test SMS';
+
+  @override
+  String get smsTestHelp =>
+      'Sends a test message with the settings above, even before you save them.';
+
+  @override
+  String get smsTestNumber => 'Mobile number for the test';
+
+  @override
+  String get smsTestButton => 'Send test SMS';
+
+  @override
+  String get smsResultTest => 'Test result';
+
+  @override
+  String get smsResultLast => 'Last message sent by the server';
+
+  @override
+  String get smsResultSent => 'Sent. The provider accepted the message.';
+
+  @override
+  String get smsResultNotSent => 'Not sent.';
+
+  @override
+  String smsResultStatus(String status) {
+    return 'Provider status: $status';
+  }
+
+  @override
+  String get smsResultNoAnswer => 'The provider did not answer.';
+
+  @override
+  String get smsResultReply => 'Provider reply';
+
+  @override
+  String smsResultAt(String time) {
+    return 'Time: $time';
+  }
+
+  @override
+  String get smsResultNone =>
+      'No message has been sent since the server last started.';
+
+  @override
+  String get actionSave => 'Save';
+
+  @override
+  String get actionSaving => 'Saving…';
+
+  @override
+  String get signInMethodsSaved => 'Sign-in methods saved.';
+
+  @override
+  String get unsavedChanges => 'You have unsaved changes.';
+
+  @override
+  String get leaveTitle => 'Leave without saving?';
+
+  @override
+  String get leaveBody => 'Your changes to the sign-in methods will be lost.';
+
+  @override
+  String get leaveStay => 'Stay';
+
+  @override
+  String get leaveDiscard => 'Leave without saving';
 }

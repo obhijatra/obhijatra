@@ -786,4 +786,413 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get aboutMadeBy => 'অনিন্দ স্টুডিও-র তৈরি';
+
+  @override
+  String get signInOr => 'অথবা';
+
+  @override
+  String get signInGoogle => 'গুগল দিয়ে চালিয়ে যান';
+
+  @override
+  String get signInSms => 'এসএমএস কোড দিয়ে সাইন ইন করুন';
+
+  @override
+  String get signInSmsAdminNote =>
+      'সংস্থার অ্যাডমিনরা এসএমএস কোড ব্যবহার করতে পারেন না।';
+
+  @override
+  String get signInOtherWays => 'সাইন ইনের অন্য উপায়';
+
+  @override
+  String get smsNumberIntro =>
+      'আপনার অ্যাকাউন্টে থাকা মোবাইল নম্বরে আমরা এসএমএস-এ ৬ অঙ্কের একটি কোড পাঠাব।';
+
+  @override
+  String get smsNumberLabel => 'মোবাইল নম্বর';
+
+  @override
+  String get smsNumberHelp =>
+      'যেমন 01712345678। বাংলাদেশের বাইরের নম্বর হলে + ও দেশের কোড দিয়ে শুরু করুন।';
+
+  @override
+  String get smsNumberInvalid =>
+      'এটি মোবাইল নম্বরের মতো দেখাচ্ছে না। 01712345678-এর মতো করে লিখুন, অথবা + ও দেশের কোড দিয়ে শুরু করুন।';
+
+  @override
+  String get smsSendCode => 'কোড পাঠান';
+
+  @override
+  String get actionSending => 'পাঠানো হচ্ছে…';
+
+  @override
+  String get smsCodeTitle => 'কোডটি লিখুন';
+
+  @override
+  String smsCodeSent(String phone) {
+    return '$phone নম্বরটি দিয়ে এসএমএস কোডে সাইন ইন করা গেলে, ৬ অঙ্কের একটি কোড আসছে।';
+  }
+
+  @override
+  String smsCodeLifetime(int minutes) {
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'কোডটি $minutesString মিনিট কাজ করবে।',
+      one: 'কোডটি ১ মিনিট কাজ করবে।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get smsCodeLabel => '৬ অঙ্কের কোড';
+
+  @override
+  String get smsCodeIncomplete => 'কোডের ৬টি অঙ্কই লিখুন।';
+
+  @override
+  String get smsCodeWrong =>
+      'কোডটি ভুল অথবা এর মেয়াদ শেষ। এসএমএস দেখে আবার চেষ্টা করুন, অথবা নতুন কোড পাঠান।';
+
+  @override
+  String get smsCodeUsedUp =>
+      'এই কোডটি ৩ বার চেষ্টা করা হয়েছে, তাই এটি আর কাজ করবে না। নতুন কোড পাঠান।';
+
+  @override
+  String get smsCodeExpired => 'এই কোডের মেয়াদ শেষ। নতুন কোড পাঠান।';
+
+  @override
+  String get smsCodeChecking => 'যাচাই করা হচ্ছে…';
+
+  @override
+  String smsResendIn(String time) {
+    return '$time পরে নতুন কোড পাঠাতে পারবেন';
+  }
+
+  @override
+  String get smsResend => 'নতুন কোড পাঠান';
+
+  @override
+  String get smsNewCodeSent => 'নতুন একটি কোড আসছে।';
+
+  @override
+  String get smsChangeNumber => 'নম্বর বদলান';
+
+  @override
+  String get googleWaitingTitle => 'গুগলের জন্য অপেক্ষা করা হচ্ছে…';
+
+  @override
+  String get googleWaitingBody =>
+      'গুগলের সাইন-ইন পাতা আপনার ওয়েব ব্রাউজারে খুলবে। সেখানে আপনার গুগল অ্যাকাউন্ট বাছুন, তারপর এই উইন্ডোতে ফিরে আসুন।';
+
+  @override
+  String get googleOpenHelp => 'গুগলের পাতা না খুললে এই বোতামটি ব্যবহার করুন।';
+
+  @override
+  String get googleOpen => 'গুগল সাইন-ইন খুলুন';
+
+  @override
+  String get problemGoogleNoAccount =>
+      'এই গুগল ইমেইল ঠিকানা দিয়ে এখানে কোনো অভিযাত্রা অ্যাকাউন্ট নেই। আপনার সংস্থার অ্যাডমিনকে এটি যোগ করতে বলুন, অথবা অন্যভাবে সাইন ইন করুন।';
+
+  @override
+  String get problemGoogleUnconfirmed =>
+      'গুগল দিয়ে সাইন ইন করার আগে আপনার সংস্থার অ্যাডমিনকে আপনার ইমেইল ঠিকানা নিশ্চিত করতে হবে।';
+
+  @override
+  String get problemGoogleNotAllowed =>
+      'এই অ্যাকাউন্ট দিয়ে সাইন ইন করা যাবে না। আপনার সংস্থার অ্যাডমিনকে জিজ্ঞেস করুন।';
+
+  @override
+  String get problemGoogleNoEmail =>
+      'গুগল এই অ্যাকাউন্টের কোনো নিশ্চিত ইমেইল ঠিকানা জানায়নি। অন্য গুগল অ্যাকাউন্ট ব্যবহার করুন, অথবা অন্যভাবে সাইন ইন করুন।';
+
+  @override
+  String get problemGoogleUnavailable =>
+      'এই সার্ভারে গুগল দিয়ে সাইন ইন চালু নেই। অন্যভাবে সাইন ইন করুন।';
+
+  @override
+  String get problemGoogleFailed =>
+      'গুগল দিয়ে সাইন ইন শেষ হয়নি। আবার চেষ্টা করুন, অথবা অন্যভাবে সাইন ইন করুন।';
+
+  @override
+  String get problemSmsOff =>
+      'এই সার্ভারে এসএমএস কোড দিয়ে সাইন ইন বন্ধ আছে। অন্যভাবে সাইন ইন করুন।';
+
+  @override
+  String get problemPhoneInvalid =>
+      'এটি মোবাইল নম্বরের মতো দেখাচ্ছে না। 01712345678-এর মতো করে লিখুন, অথবা + ও দেশের কোড দিয়ে শুরু করুন।';
+
+  @override
+  String get problemCodeWrong =>
+      'কোডটি ভুল অথবা এর মেয়াদ শেষ। এসএমএস দেখে আবার চেষ্টা করুন, অথবা নতুন কোড পাঠান।';
+
+  @override
+  String get problemTooManyCodes =>
+      'অনেকবার কোড চাওয়া হয়েছে। ১৫ মিনিট অপেক্ষা করুন, অথবা অন্যভাবে সাইন ইন করুন।';
+
+  @override
+  String get problemTooManyTries =>
+      'এই সংযোগ থেকে অনেকবার চেষ্টা করা হয়েছে। ১৫ মিনিট অপেক্ষা করে নতুন কোড চান।';
+
+  @override
+  String get problemTooManyTests =>
+      'অনেকগুলো পরীক্ষামূলক এসএমএস পাঠানো হয়েছে। ১৫ মিনিট অপেক্ষা করে আবার চেষ্টা করুন।';
+
+  @override
+  String get problemSettingsInvalid =>
+      'কিছু সেটিং ঠিক করা দরকার। ঘরগুলোর নিচের বার্তা দেখুন।';
+
+  @override
+  String get accountPhone => 'মোবাইল নম্বর';
+
+  @override
+  String get signInMethodsTitle => 'সাইন ইনের উপায়';
+
+  @override
+  String get signInMethodsSummary =>
+      'সবাই ইমেইল ঠিকানা ও পাসওয়ার্ড দিয়ে সাইন ইন করতে পারেন। চাইলে গুগল বা এসএমএস কোড দিয়েও সাইন ইনের সুযোগ দিতে পারেন।';
+
+  @override
+  String get signInMethodsOpen => 'সাইন ইনের উপায় ঠিক করুন';
+
+  @override
+  String get settingsBack => 'সেটিংসে ফিরে যান';
+
+  @override
+  String get methodOn => 'চালু';
+
+  @override
+  String get methodOff => 'বন্ধ';
+
+  @override
+  String get googleTitle => 'গুগল';
+
+  @override
+  String get googleDescription =>
+      'লোকজন “গুগল দিয়ে চালিয়ে যান”-এ ক্লিক করে তাঁদের গুগল অ্যাকাউন্ট বাছেন। এটি শুধু তাঁদের জন্য কাজ করে, যাঁদের এখানকার অ্যাকাউন্টে একই ইমেইল ঠিকানা আছে এবং কোনো অ্যাডমিন তা নিশ্চিত করেছেন।';
+
+  @override
+  String get googleRedirectLabel => 'গুগলের জন্য রিডাইরেক্ট ঠিকানা';
+
+  @override
+  String get googleRedirectHelp =>
+      'আপনার গুগল ক্লায়েন্টে Authorised redirect URIs-এর ঘরে এই ঠিকানাটি যোগ করুন।';
+
+  @override
+  String get googleRedirectWarning =>
+      'গুগলের জন্য ডোমেইন নামসহ https:// ঠিকানা লাগে, যেমন https://data.example.org। আপনার সার্ভার যিনি চালান, তাঁকে এমন একটি ঠিকানা দিতে বলুন। এসএমএস কোড এটি ছাড়াই কাজ করে।';
+
+  @override
+  String get actionCopy => 'কপি করুন';
+
+  @override
+  String get copiedRedirect => 'রিডাইরেক্ট ঠিকানা কপি হয়েছে।';
+
+  @override
+  String get googleClientId => 'ক্লায়েন্ট আইডি';
+
+  @override
+  String get googleClientIdHelp =>
+      'আপনার গুগল ক্লাউড প্রজেক্ট থেকে। এর শেষে থাকে .apps.googleusercontent.com।';
+
+  @override
+  String get googleClientSecret => 'ক্লায়েন্ট সিক্রেট';
+
+  @override
+  String get googleClientSecretHelp =>
+      'ক্লায়েন্ট তৈরি করার সময় গুগল এটি একবারই দেখায়। এটি গোপন রাখুন।';
+
+  @override
+  String get secretSavedKeep => 'সংরক্ষিত আছে। আগেরটি রাখতে ফাঁকা রাখুন।';
+
+  @override
+  String get secretShow => 'সিক্রেট দেখান';
+
+  @override
+  String get secretHide => 'সিক্রেট লুকান';
+
+  @override
+  String get setupGuide => 'কীভাবে চালু করবেন';
+
+  @override
+  String get smsTitle => 'এসএমএস কোড';
+
+  @override
+  String get smsDescription =>
+      'লোকজন তাঁদের মোবাইল নম্বর লেখেন এবং এসএমএস-এ ৬ অঙ্কের একটি কোড পান। প্রতিটি বার্তার জন্য আপনার সংস্থা এসএমএস সেবাদাতাকে টাকা দেয়। সংস্থার অ্যাডমিনরা এসএমএস কোড ব্যবহার করতে পারেন না।';
+
+  @override
+  String get smsProviderTitle => 'আপনার এসএমএস সেবাদাতা';
+
+  @override
+  String get smsProviderHelp =>
+      'একটি বার্তা পাঠানোর জন্য আপনার এসএমএস সেবাদাতার নির্দেশিকা দেখে এগুলো পূরণ করুন।';
+
+  @override
+  String get smsMethod => 'পদ্ধতি';
+
+  @override
+  String get smsAddress => 'ঠিকানা';
+
+  @override
+  String get smsAddressHelp =>
+      'বার্তা পাঠানোর জন্য সেবাদাতার ওয়েব ঠিকানা। এটি https:// দিয়ে শুরু হয়।';
+
+  @override
+  String get smsBodyFormat => 'বডির ধরন';
+
+  @override
+  String get smsFormatJson => 'JSON';
+
+  @override
+  String get smsFormatForm => 'ফর্ম';
+
+  @override
+  String get smsBody => 'বডি';
+
+  @override
+  String get smsBodyHelp =>
+      'সেবাদাতার নির্দেশিকা থেকে উদাহরণটি কপি করুন, তারপর যেখানে যেখানে মান বসবে সেখানে প্লেসহোল্ডার দিন।';
+
+  @override
+  String get smsPlaceholders => 'প্লেসহোল্ডার';
+
+  @override
+  String get smsPlaceholdersHelp =>
+      'ঠিকানা, বডি বা হেডারের মানে কার্সর যেখানে আছে সেখানে বসাতে একটিতে ক্লিক করুন। প্রতিটি বার্তার সময় সার্ভার এর জায়গায় আসল মান বসিয়ে দেয়।';
+
+  @override
+  String get smsPlaceholderPhone => 'প্লাস চিহ্নসহ নম্বর, যেমন +8801712345678';
+
+  @override
+  String get smsPlaceholderDigits =>
+      'প্লাস চিহ্ন ছাড়া নম্বর, যেমন 8801712345678';
+
+  @override
+  String get smsPlaceholderMessage => 'এসএমএস-এর লেখা';
+
+  @override
+  String get smsPlaceholderSecret => 'আপনার সিক্রেট কী, যা লুকানো থাকে';
+
+  @override
+  String smsInsertPlaceholder(String placeholder) {
+    return '$placeholder বসান';
+  }
+
+  @override
+  String get smsHeaders => 'বাড়তি হেডার';
+
+  @override
+  String get smsHeadersHelp =>
+      'শুধু সেবাদাতার নির্দেশিকায় চাওয়া থাকলে, যেমন Authorization।';
+
+  @override
+  String get smsHeaderName => 'নাম';
+
+  @override
+  String get smsHeaderValue => 'মান';
+
+  @override
+  String get smsHeaderAdd => 'হেডার যোগ করুন';
+
+  @override
+  String get smsHeaderRemove => 'এই হেডারটি সরান';
+
+  @override
+  String smsHeadersMax(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'সর্বোচ্চ $countStringটি হেডার যোগ করা যায়।';
+  }
+
+  @override
+  String get smsSecret => 'সিক্রেট কী';
+
+  @override
+  String smsSecretHelp(String placeholder) {
+    return 'আপনার সেবাদাতার এপিআই কী বা টোকেন। এটি এখানে লিখুন, আর নির্দেশিকায় যেখানে কী আছে সেখানে $placeholder দিন।';
+  }
+
+  @override
+  String get smsSuccessText => 'সফলতার লেখা';
+
+  @override
+  String get smsSuccessTextHelp =>
+      'ঐচ্ছিক। বার্তা গ্রহণ করলে সেবাদাতা যা উত্তর দেয়, যেমন SUCCESS। নিশ্চিত না হলে ফাঁকা রাখুন।';
+
+  @override
+  String get smsTestTitle => 'পরীক্ষামূলক এসএমএস পাঠান';
+
+  @override
+  String get smsTestHelp =>
+      'ওপরের সেটিংস দিয়ে একটি পরীক্ষামূলক বার্তা পাঠায়, সংরক্ষণের আগেও।';
+
+  @override
+  String get smsTestNumber => 'পরীক্ষার জন্য মোবাইল নম্বর';
+
+  @override
+  String get smsTestButton => 'পরীক্ষামূলক এসএমএস পাঠান';
+
+  @override
+  String get smsResultTest => 'পরীক্ষার ফল';
+
+  @override
+  String get smsResultLast => 'সার্ভারের পাঠানো শেষ বার্তা';
+
+  @override
+  String get smsResultSent => 'পাঠানো হয়েছে। সেবাদাতা বার্তাটি গ্রহণ করেছে।';
+
+  @override
+  String get smsResultNotSent => 'পাঠানো হয়নি।';
+
+  @override
+  String smsResultStatus(String status) {
+    return 'সেবাদাতার স্ট্যাটাস: $status';
+  }
+
+  @override
+  String get smsResultNoAnswer => 'সেবাদাতা কোনো উত্তর দেয়নি।';
+
+  @override
+  String get smsResultReply => 'সেবাদাতার উত্তর';
+
+  @override
+  String smsResultAt(String time) {
+    return 'সময়: $time';
+  }
+
+  @override
+  String get smsResultNone =>
+      'সার্ভার শেষবার চালু হওয়ার পর কোনো বার্তা পাঠানো হয়নি।';
+
+  @override
+  String get actionSave => 'সংরক্ষণ করুন';
+
+  @override
+  String get actionSaving => 'সংরক্ষণ হচ্ছে…';
+
+  @override
+  String get signInMethodsSaved => 'সাইন ইনের উপায় সংরক্ষিত হয়েছে।';
+
+  @override
+  String get unsavedChanges => 'আপনার কিছু পরিবর্তন এখনও সংরক্ষণ করা হয়নি।';
+
+  @override
+  String get leaveTitle => 'সংরক্ষণ না করেই চলে যাবেন?';
+
+  @override
+  String get leaveBody =>
+      'সাইন ইনের উপায়ে করা আপনার পরিবর্তনগুলো হারিয়ে যাবে।';
+
+  @override
+  String get leaveStay => 'থাকুন';
+
+  @override
+  String get leaveDiscard => 'সংরক্ষণ না করে চলে যান';
 }
