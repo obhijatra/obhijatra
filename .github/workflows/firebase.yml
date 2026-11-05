@@ -128,6 +128,9 @@ jobs:
           models = json.load(open(sys.argv[1]))
           best = None
           for m in models:
+              # Phones only: the catalogue also lists TV, watch and car emulators.
+              if m.get("formFactor") != "PHONE":
+                  continue
               versions = [int(v) for v in m.get("supportedVersionIds", []) if str(v).isdigit() and 26 <= int(v) <= 30]
               if not versions:
                   continue
@@ -140,7 +143,7 @@ jobs:
               if best is None or key < best[0]:
                   best = (key, m["id"], max(versions), basis)
           if best is None:
-              sys.exit("No virtual device with Android API 26-30 found in the catalogue.")
+              sys.exit("No virtual phone with Android API 26-30 found in the catalogue.")
           print(f"model={best[1]}")
           print(f"version={best[2]}")
           print(f"basis={best[3]}")

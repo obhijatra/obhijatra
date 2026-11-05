@@ -1,6 +1,6 @@
 # Free cloud testing with Firebase: setup guide
 
-Last checked: 4 November 2026. Time needed: about 40 minutes, once.
+Last checked: 5 November 2026. Time needed: about 40 minutes, once.
 
 ## What this gives you
 
@@ -79,12 +79,15 @@ if ! gcloud iam service-accounts describe "$SA_EMAIL" --project="$PROJECT_ID" >/
   sleep 15   # give Google a moment to register the new account
 fi
 
-# 4. Give the robot account only the permissions it needs (least privilege).
+# 4. Give the robot account the permissions it needs.
 #    - App Distribution Admin: upload builds to testers.
 #    - Test Lab Admin: start tests.
 #    - Service Usage Consumer: allowed to call the services above.
-#    UNVERIFIED – check before use: these role names were not confirmed against Google's pages.
-for ROLE in roles/firebaseappdistro.admin roles/cloudtestservice.testAdmin roles/serviceusage.serviceUsageConsumer; do
+#    - Editor: Test Lab's free results storage needs it when tests start from
+#      the command line (Firebase "IAM permissions reference", checked
+#      5 November 2026). The narrower option needs a storage bucket of our
+#      own, which the free plan does not offer. This project holds only test data.
+for ROLE in roles/firebaseappdistro.admin roles/cloudtestservice.testAdmin roles/serviceusage.serviceUsageConsumer roles/editor; do
   gcloud projects add-iam-policy-binding "$PROJECT_ID" \
     --member="serviceAccount:${SA_EMAIL}" --role="$ROLE" --condition=None --quiet >/dev/null
 done
@@ -150,9 +153,9 @@ They are variables, not secrets, because none of them is a password. Without the
 
 ## If something fails
 
-- **"Permission denied" on the test step.** Google's own command help says the free results storage needs the editor role. Fix: in Cloud Shell run the command below (this project holds nothing but test data), then re-run the workflow.
-  `gcloud projects add-iam-policy-binding $(gcloud config get-value project) --member="serviceAccount:obhijatra-ci@$(gcloud config get-value project).iam.gserviceaccount.com" --role=roles/editor --condition=None`
-- **Sign-in fails.** UNVERIFIED – check before use: the workflow's hand-made keyless sign-in and the Firebase tool's acceptance of it were not confirmed against Google's pages. Tell the engineer; the fallback is the standard Google sign-in action.
+- **"does not have storage.objects.create access" on the test step.** Test Lab's free results storage needs the Editor role when tests start from the command line ([Firebase IAM permissions reference](https://firebase.google.com/docs/test-lab/android/iam-permissions-reference), checked 5 November 2026). Fix: in Cloud Shell run the command below (this project holds nothing but test data), then re-run the workflow.
+  `gcloud projects add-iam-policy-binding obhijatra-ci --member="serviceAccount:obhijatra-ci@obhijatra-ci.iam.gserviceaccount.com" --role=roles/editor --condition=None`
+- **Sign-in fails.** The keyless sign-in and the App Distribution upload were confirmed working on 5 November 2026 (run 42059937142). If sign-in fails later, check that the four repository variables still match the script's output.
 
 ## What this costs
 
