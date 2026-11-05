@@ -18,3 +18,5 @@ Obhijatra is an open-source (AGPL-3.0) platform for NGOs, made by Aninda Studio.
 - Commit as `Aninda (GRU-953) <GRU-953@users.noreply.github.com>`, in logical steps, with the session's attribution trailers.
 - App identifiers are permanent: `io.github.obhijatra.field` and `io.github.obhijatra.manager`.
 - The Firebase plugin is enabled for this repository (`.claude/settings.json`). In a fresh environment, add its marketplace first: `claude plugin marketplace add firebase/agent-skills`.
+- For any Firebase task (the test project `obhijatra-ci`: sign-in, project selection, App Distribution, Test Lab), first look for and follow the matching Firebase agent skill (for example `firebase-basics`), within the rule above that no Firebase code goes into the apps.
+- Sign-in is email and password, Google and SMS code, all on the organisation's own server (`docs/decisions/0005-sign-in-methods.md`). Google sign-in opens a secure browser tab; no Google sign-in library goes into the apps.
