@@ -56,11 +56,28 @@ type Request struct {
 	DryRun bool   `json:"dry_run"`
 }
 
-// Problem is something wrong with one row.
+// Problem is something wrong with one row. Code says which problem, so
+// the apps can word it in the person's language; Name is the place and
+// Value the code or limit it is about, when there is one.
 type Problem struct {
 	Line    int    `json:"line"`
+	Code    string `json:"code"`
 	Message string `json:"message"`
+	Name    string `json:"name,omitempty"`
+	Value   string `json:"value,omitempty"`
 }
+
+// Problem codes.
+const (
+	ProblemNoName       = "no_name"
+	ProblemTooDeep      = "too_deep"
+	ProblemCodeTooLong  = "code_too_long"
+	ProblemNameTooLong  = "name_too_long"
+	ProblemPlaceClosed  = "place_closed"
+	ProblemCodeMismatch = "code_mismatch" // the place already has another code
+	ProblemCodeRepeated = "code_repeated" // the same code twice in the file
+	ProblemCodeTaken    = "code_taken"    // another place has the code
+)
 
 // Result is the answer: how many places the import makes and finds, and
 // any problems. Saved is true only when the places were saved.
@@ -126,8 +143,9 @@ func importPlaces(e *core.RequestEvent) error {
 			if line == 0 {
 				line = i + 1
 			}
-			problem := func(format string, args ...any) {
-				result.Problems = append(result.Problems, Problem{Line: line, Message: fmt.Sprintf(format, args...)})
+			problem := func(code, name, value, format string, args ...any) {
+				result.Problems = append(result.Problems, Problem{Line: line, Code: code, Name: name, Value: value,
+					Message: fmt.Sprintf(format, args...)})
 			}
 
 			names := make([]string, 0, len(row.Path))
@@ -139,19 +157,19 @@ func importPlaces(e *core.RequestEvent) error {
 			code := strings.TrimSpace(row.Code)
 			switch {
 			case len(names) == 0:
-				problem("This row has no place name.")
+				problem(ProblemNoName, "", "", "This row has no place name.")
 				continue
 			case len(names) > schema.MaxPlaceDepth:
-				problem("This row has more than %d levels.", schema.MaxPlaceDepth)
+				problem(ProblemTooDeep, "", fmt.Sprint(schema.MaxPlaceDepth), "This row has more than %d levels.", schema.MaxPlaceDepth)
 				continue
 			case len(code) > 50:
-				problem("The code %q is longer than 50 characters.", code)
+				problem(ProblemCodeTooLong, "", code, "The code %q is longer than 50 characters.", code)
 				continue
 			}
 			bad := false
 			for _, n := range names {
 				if len([]rune(n)) > 200 {
-					problem("The name %q is longer than 200 characters.", n)
+					problem(ProblemNameTooLong, n, "", "The name %q is longer than 200 characters.", n)
 					bad = true
 				}
 			}
@@ -171,17 +189,17 @@ func importPlaces(e *core.RequestEvent) error {
 					created[next] = true
 				}
 				if next.closed {
-					problem("%q is closed. Reopen it first, or remove this row.", next.name)
+					problem(ProblemPlaceClosed, next.name, "", "%q is closed. Reopen it first, or remove this row.", next.name)
 					bad = true
 					break
 				}
 				if depth == len(names)-1 && code != "" {
 					switch {
 					case next.code != "" && !strings.EqualFold(next.code, code):
-						problem("%q already has the code %q, not %q.", next.name, next.code, code)
+						problem(ProblemCodeMismatch, next.name, next.code, "%q already has the code %q, not %q.", next.name, next.code, code)
 						bad = true
 					case next.code == "" && codes[strings.ToLower(code)]:
-						problem("The code %q is used more than once in this file.", code)
+						problem(ProblemCodeRepeated, "", code, "The code %q is used more than once in this file.", code)
 						bad = true
 					case next.code == "":
 						taken, err := txApp.CountRecords(schema.Locations,
@@ -190,7 +208,7 @@ func importPlaces(e *core.RequestEvent) error {
 							return err
 						}
 						if taken > 0 {
-							problem("Another place already has the code %q.", code)
+							problem(ProblemCodeTaken, "", code, "Another place already has the code %q.", code)
 							bad = true
 						} else {
 							next.code = code

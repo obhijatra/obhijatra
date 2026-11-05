@@ -251,16 +251,19 @@ func TestAnImportWithProblemsSavesNothing(t *testing.T) {
 	if status != http.StatusBadRequest || r.Saved {
 		t.Fatalf("import with problems: %d %s", status, body)
 	}
-	got := map[int]bool{}
+	got := map[int]string{}
 	for _, p := range r.Problems {
-		got[p.Line] = true
+		got[p.Line] = p.Code
 	}
-	for _, line := range []int{3, 4, 6, 7, 8, 9} {
-		if !got[line] {
-			t.Errorf("no problem reported for line %d: %s", line, body)
+	for line, code := range map[int]string{
+		3: places.ProblemPlaceClosed, 4: places.ProblemCodeTaken, 6: places.ProblemCodeRepeated,
+		7: places.ProblemNoName, 8: places.ProblemCodeMismatch, 9: places.ProblemNameTooLong,
+	} {
+		if got[line] != code {
+			t.Errorf("line %d: problem %q, want %q: %s", line, got[line], code, body)
 		}
 	}
-	if got[2] || got[5] {
+	if got[2] != "" || got[5] != "" {
 		t.Errorf("a good line was reported: %s", body)
 	}
 	if after, _ := app.CountRecords(schema.Locations); after != before {
