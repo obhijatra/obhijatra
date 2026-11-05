@@ -31,6 +31,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"ganigeorgiev.com/pocketbase/dbx"
@@ -171,6 +172,26 @@ func authWithPassword(e *core.RecordAuthWithPasswordRequestEvent) error {
 		return e.InternalServerError("", err)
 	}
 	return apis.RecordAuthResponse(e.RequestEvent, e.Record, core.MFAMethodPassword, nil)
+}
+
+// Locked reports whether the account r is locked for the IP address ip,
+// or for every address. Sign-in with an SMS code uses it, so wrong codes
+// and wrong passwords share one set of locks.
+func Locked(app core.App, r *core.Record, ip string) (bool, error) {
+	return isLocked(app, accountOf(r), ip, time.Now().UTC())
+}
+
+// RecordFailure counts one wrong sign-in secret (a password or an SMS
+// code) for the account r from ip and, at the limits, locks it exactly as
+// for wrong passwords.
+func RecordFailure(app core.App, r *core.Record, ip string) error {
+	return recordFailure(app, accountOf(r), ip, Privileged(r), time.Now().UTC())
+}
+
+// ClearFailures forgets the account r's wrong secrets from ip after a
+// correct one.
+func ClearFailures(app core.App, r *core.Record, ip string) error {
+	return clearFailures(app, accountOf(r), ip)
 }
 
 // mayAuthenticate applies the collection's auth rule to the account, as
@@ -369,26 +390,48 @@ type UnlockResult struct {
 	Collection string
 	ID         string
 	Email      string
+	Phone      string
 	Locks      int // locks lifted
 	Failures   int // wrong passwords forgotten
 }
 
+// Identity is how the account is named to a person: its email address, or
+// its phone number if it has no email address.
+func (r UnlockResult) Identity() string {
+	if r.Email != "" {
+		return r.Email
+	}
+	return r.Phone
+}
+
 // Unlock lifts every lock on the accounts with this email address (field
-// users, staff users and superusers) and forgets their wrong passwords,
-// which also ends the waiting of a privileged account. Every lifted lock
-// and every cleared count is an audit-chain entry by actor. It is for
-// `obhijatra-server unlock`, run on the server's own data folder, so a
-// locked-out org admin can recover without another admin.
+// users, staff users and superusers), or with this phone number in
+// international form (field and staff users), and forgets their wrong
+// passwords and codes, which also ends the waiting of a privileged
+// account. Every lifted lock and every cleared count is an audit-chain
+// entry by actor. It is for `obhijatra-server unlock`, run on the
+// server's own data folder, so a locked-out org admin can recover without
+// another admin.
 //
 // It returns one result per account found; none means no account has the
-// address.
-func Unlock(app core.App, actor audit.Actor, email string) ([]UnlockResult, error) {
+// address or number.
+func Unlock(app core.App, actor audit.Actor, identity string) ([]UnlockResult, error) {
 	var results []UnlockResult
+	byPhone := strings.HasPrefix(identity, "+")
 
 	err := audit.RunAs(app, actor, func(txApp core.App) error {
 		now := time.Now().UTC()
 		for _, collection := range schema.LockableCollections {
-			r, err := txApp.FindAuthRecordByEmail(collection, email)
+			var r *core.Record
+			var err error
+			switch {
+			case byPhone && slices.Contains(schema.PhoneSignInCollections, collection):
+				r, err = txApp.FindFirstRecordByData(collection, "phone", identity)
+			case byPhone:
+				continue
+			default:
+				r, err = txApp.FindAuthRecordByEmail(collection, identity)
+			}
 			if errors.Is(err, sql.ErrNoRows) {
 				continue
 			}
@@ -396,7 +439,7 @@ func Unlock(app core.App, actor audit.Actor, email string) ([]UnlockResult, erro
 				return fmt.Errorf("look up %s: %w", collection, err)
 			}
 			acct := accountOf(r)
-			res := UnlockResult{Collection: collection, ID: r.Id, Email: r.Email()}
+			res := UnlockResult{Collection: collection, ID: r.Id, Email: r.Email(), Phone: r.GetString("phone")}
 
 			if res.Failures, err = countFailures(txApp, acct, "", now); err != nil {
 				return err

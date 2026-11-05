@@ -31,6 +31,18 @@ const (
 	// and not in the audit chain, so unauthenticated traffic cannot grow
 	// the chain. The locks themselves are login_locks records, which are.
 	LoginFailuresTable = "_obhijatra_login_failures"
+
+	// SignInSettingsTable holds the sign-in settings an org admin chooses
+	// that PocketBase has no place for (phone sign-in and the SMS
+	// provider), encrypted with the server settings key. A plain table,
+	// invisible to the API and the Dashboard; changes are audit events.
+	SignInSettingsTable = "_obhijatra_signin"
+
+	// SignInAttemptsTable counts sign-in code requests and checks, for
+	// the per-number and per-address limits. A plain table, like
+	// LoginFailuresTable, so unauthenticated traffic cannot grow the
+	// audit chain.
+	SignInAttemptsTable = "_obhijatra_signin_attempts"
 )
 
 // CoreCollections cannot be renamed or deleted, because the API rules,
@@ -129,6 +141,50 @@ const (
 // LockableCollections are the auth collections whose accounts can be
 // locked after repeated wrong passwords.
 var LockableCollections = []string{FieldUsers, StaffUsers, Superusers}
+
+// Sign-in methods besides email and password
+// (docs/decisions/0005-sign-in-methods.md).
+const (
+	// GoogleProvider is PocketBase's name for Google sign-in (OAuth2).
+	GoogleProvider = "google"
+
+	// PhonePattern is the only shape a stored phone number may take: the
+	// international (E.164) form, a "+" and 8 to 15 digits, for example
+	// "+8801712345678".
+	PhonePattern = `^\+[1-9][0-9]{7,14}$`
+
+	// PhoneCodeLength digits in an SMS sign-in code; PhoneCodeLifetime
+	// before it expires; PhoneCodeMaxTries wrong entries before it is
+	// thrown away and a new one is needed.
+	PhoneCodeLength   = 6
+	PhoneCodeLifetime = 5 * time.Minute
+	PhoneCodeMaxTries = 3
+
+	// PhoneCodeResendAfter is how long the apps wait before offering to
+	// send another code.
+	PhoneCodeResendAfter = 60 * time.Second
+
+	// Limits on sending codes, which cost the organisation money: per
+	// phone number, PhoneCodesPerWindow within PhoneCodeWindow and
+	// PhoneCodesPerDay within 24 hours; per IP address,
+	// PhoneCodesPerIP within PhoneCodeWindow (a branch office of about 30
+	// staff behind one internet connection). Code checks are limited to
+	// PhoneChecksPerIP within PhoneCodeWindow per address.
+	PhoneCodesPerWindow = 3
+	PhoneCodesPerDay    = 10
+	PhoneCodesPerIP     = 30
+	PhoneChecksPerIP    = 60
+	PhoneCodeWindow     = 15 * time.Minute
+)
+
+// PhoneSignInCollections are the auth collections whose users may sign in
+// with an SMS code. Org admins are refused per account (package signin):
+// a swapped SIM card must not hand over the accounts that control every
+// other account.
+var PhoneSignInCollections = []string{FieldUsers, StaffUsers}
+
+// PhoneRegex is PhonePattern compiled.
+var PhoneRegex = regexp.MustCompile(PhonePattern)
 
 // MaxSuperusers caps the superuser accounts: the one init creates for
 // installation and recovery, and one spare. A guard refuses a third, for
@@ -235,7 +291,7 @@ const (
 )
 
 // userSelfUpdate lets users change their own name and password but none of
-// the fields that decide what they can see.
+// the fields that decide what they can see or how they sign in.
 func userSelfUpdate(collection string) string {
 	return `(@request.auth.collectionName = "` + collection + `" && id = @request.auth.id` +
 		` && @request.body.role:isset = false` +
@@ -243,6 +299,7 @@ func userSelfUpdate(collection string) string {
 		` && @request.body.location_path:isset = false` +
 		` && @request.body.active:isset = false` +
 		` && @request.body.email:isset = false` +
+		` && @request.body.phone:isset = false` +
 		` && @request.body.verified:isset = false)`
 }
 

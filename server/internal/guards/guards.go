@@ -40,11 +40,20 @@ func Register(app core.App) {
 
 	// Users: location_path always follows the location relation, and only
 	// an org admin (or the server) may change what a user can see.
+	// Every user can sign in somehow, and an org admin by email.
 	for _, name := range []string{schema.FieldUsers, schema.StaffUsers} {
-		app.OnRecordCreate(name).BindFunc(syncUserLocationPath)
+		app.OnRecordCreate(name).BindFunc(func(e *core.RecordEvent) error {
+			if err := checkUserSignIn(e.Record); err != nil {
+				return err
+			}
+			return syncUserLocationPath(e)
+		})
 		onUpdate(app, name, func(e *core.RecordEvent, old *core.Record) error {
 			if anyChanged(old, e.Record, "role", "location", "location_path", "active") && !mayAdminister(audit.ActorOf(e.App)) {
 				return errors.New("only an organisation admin can change a user's role, location or active status")
+			}
+			if err := checkUserSignIn(e.Record); err != nil {
+				return err
 			}
 			return syncUserLocationPath(e)
 		})
@@ -232,6 +241,23 @@ func Register(app core.App) {
 }
 
 // ---------------------------------------------------------------------
+
+// checkUserSignIn refuses a user with neither an email address nor a phone
+// number (they could not sign in), and an org admin without an email
+// address (SMS sign-in is not available to org admins, so a swapped SIM
+// card cannot take over the accounts that control all the others).
+func checkUserSignIn(r *core.Record) error {
+	email, phone := r.Email(), r.GetString("phone")
+	if email == "" && phone == "" {
+		return validation.Errors{"email": validation.NewError("validation_email_or_phone_required",
+			"Give an email address or a phone number, so this person can sign in.")}
+	}
+	if email == "" && r.Collection().Name == schema.StaffUsers && r.GetString("role") == schema.RoleOrgAdmin {
+		return validation.Errors{"email": validation.NewError("validation_org_admin_email_required",
+			"An organisation admin needs an email address. SMS sign-in is not available to organisation admins.")}
+	}
+	return nil
+}
 
 // onUpdate binds fn to updates of collection, passing the record as it is
 // stored in the database now. The guards compare against that, not against

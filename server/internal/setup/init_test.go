@@ -15,6 +15,7 @@ import (
 
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tests"
+	"ganigeorgiev.com/pocketbase/pocketbase/tools/dbutils"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/types"
 
 	"github.com/obhijatra/obhijatra/server/internal/audit"
@@ -239,7 +240,8 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 				t.Fatal(err)
 			}
 			windBackSchemaVersion4(t, app)
-			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%'").Execute(); err != nil {
+			windBackSchemaVersion5(t, app)
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%'").Execute(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -247,6 +249,7 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 				t.Fatalf("upgrade: %v", err)
 			}
 			checkSchemaVersion4(t, app)
+			checkSchemaVersion5(t, app)
 
 			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
 			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
@@ -291,6 +294,58 @@ func windBackSchemaVersion4(t *testing.T, app core.App) {
 	action.Values = []string{audit.ActionCreate, audit.ActionUpdate, audit.ActionDelete}
 	if err := app.Save(auditCol); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// windBackSchemaVersion5 undoes schema version 5: no phone field, email
+// required, PocketBase's default code settings, no sign-in tables.
+func windBackSchemaVersion5(t *testing.T, app core.App) {
+	t.Helper()
+	for _, name := range []string{schema.FieldUsers, schema.StaffUsers} {
+		c, _ := app.FindCollectionByNameOrId(name)
+		c.RemoveIndex("idx_" + name + "_phone")
+		c.Fields.RemoveByName("phone")
+		c.Fields.GetByName(core.FieldNameEmail).(*core.EmailField).Required = true
+		if idx, ok := dbutils.FindSingleColumnUniqueIndex(c.Indexes, core.FieldNameEmail); ok {
+			c.RemoveIndex(idx.IndexName)
+			c.AddIndex(idx.IndexName, true, "`email`", "`email` != ''")
+		}
+		c.OTP.Length, c.OTP.Duration = 8, 180
+		if err := app.Save(c); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, q := range []string{
+		"DROP TABLE " + schema.SignInSettingsTable,
+		"DROP TABLE " + schema.SignInAttemptsTable,
+	} {
+		if _, err := app.DB().NewQuery(q).Execute(); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+}
+
+func checkSchemaVersion5(t *testing.T, app core.App) {
+	t.Helper()
+	for _, name := range []string{schema.FieldUsers, schema.StaffUsers} {
+		c, _ := app.FindCollectionByNameOrId(name)
+		if c.Fields.GetByName("phone") == nil {
+			t.Errorf("after the upgrade %s has no phone field", name)
+		}
+		if c.Fields.GetByName(core.FieldNameEmail).(*core.EmailField).Required {
+			t.Errorf("after the upgrade %s still requires an email address", name)
+		}
+		if idx, ok := dbutils.FindSingleColumnUniqueIndex(c.Indexes, core.FieldNameEmail); !ok || !strings.EqualFold(idx.Columns[0].Collate, "nocase") {
+			t.Errorf("after the upgrade %s email index is %+v", name, idx)
+		}
+		if c.OTP.Enabled || c.OTP.Length != schema.PhoneCodeLength || c.OTP.Duration != int64(schema.PhoneCodeLifetime.Seconds()) {
+			t.Errorf("after the upgrade %s has code settings %+v", name, c.OTP)
+		}
+	}
+	for _, table := range []string{schema.SignInSettingsTable, schema.SignInAttemptsTable} {
+		if ok := app.HasTable(table); !ok {
+			t.Errorf("after the upgrade the table %s is missing", table)
+		}
 	}
 }
 
