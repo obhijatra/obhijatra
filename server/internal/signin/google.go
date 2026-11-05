@@ -1,10 +1,20 @@
 package signin
 
 import (
-	"errors"
 	"strings"
 
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
+	"ganigeorgiev.com/pocketbase/pocketbase/tools/router"
+)
+
+// Reasons for a refused Google sign-in, sent as data.reason.code so the
+// apps can show their own translated sentence.
+const (
+	ReasonGoogleNoEmail     = "google_no_email"
+	ReasonGoogleNoAccount   = "google_no_account"
+	ReasonGoogleUnconfirmed = "google_email_unconfirmed"
+	ReasonNotAllowed        = "account_not_allowed"
 )
 
 // Answers to a refused Google sign-in. The person has proved who they are
@@ -31,20 +41,23 @@ const (
 //     pre-hijacking pattern behind PocketBase's account-takeover advisories);
 //   - a Google link stops working when an admin changes the email address.
 func guardGoogle(e *core.RecordAuthWithOAuth2RequestEvent) error {
-	refuse := func(msg, reason string) error {
-		return e.BadRequestError(msg, errors.New("Google sign-in refused: "+reason))
+	refuse := func(reason, msg, why string) error {
+		e.App.Logger().Info("Google sign-in refused", "reason", why)
+		return router.NewBadRequestError(msg, map[string]validation.Error{
+			"reason": validation.NewError(reason, msg),
+		})
 	}
 
 	email := strings.TrimSpace(e.OAuth2User.Email)
 	switch {
 	case email == "":
-		return refuse(GoogleNoEmailMessage, "no confirmed email from Google")
+		return refuse(ReasonGoogleNoEmail, GoogleNoEmailMessage, "no confirmed email from Google")
 	case e.Record == nil:
-		return refuse(GoogleNoAccountMessage, "no account")
+		return refuse(ReasonGoogleNoAccount, GoogleNoAccountMessage, "no account")
 	case !strings.EqualFold(e.Record.Email(), email):
-		return refuse(GoogleNoAccountMessage, "account email differs from the Google email")
+		return refuse(ReasonGoogleNoAccount, GoogleNoAccountMessage, "account email differs from the Google email")
 	case !e.Record.Verified():
-		return refuse(GoogleUnconfirmedMessage, "account email not confirmed")
+		return refuse(ReasonGoogleUnconfirmed, GoogleUnconfirmedMessage, "account email not confirmed")
 	}
 
 	info, err := e.RequestInfo()
@@ -56,7 +69,7 @@ func guardGoogle(e *core.RecordAuthWithOAuth2RequestEvent) error {
 		return err
 	}
 	if !allowed {
-		return refuse(GoogleNotAllowedMessage, "account not allowed to sign in (deactivated)")
+		return refuse(ReasonNotAllowed, GoogleNotAllowedMessage, "account not allowed to sign in (deactivated)")
 	}
 
 	e.CreateData = nil

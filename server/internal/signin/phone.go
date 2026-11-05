@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"ganigeorgiev.com/pocketbase/dbx"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"ganigeorgiev.com/pocketbase/pocketbase/apis"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/router"
@@ -329,9 +330,11 @@ func note(app core.App, at time.Time, kind, key string) error {
 }
 
 // fieldError answers 400 with PocketBase's usual shape for a problem with
-// one submitted field.
+// one submitted field: data.<field>.code and data.<field>.message. (Plain
+// maps would reach the client as "Invalid value."; validation errors keep
+// their code and message.)
 func fieldError(field, code, message string) error {
-	return router.NewBadRequestError(message, map[string]any{
-		field: map[string]string{"code": code, "message": message},
+	return router.NewBadRequestError(message, map[string]validation.Error{
+		field: validation.NewError(code, message),
 	})
 }

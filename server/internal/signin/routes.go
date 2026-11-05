@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"ganigeorgiev.com/pocketbase/pocketbase/apis"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/hook"
@@ -172,9 +173,9 @@ func testSMS(e *core.RequestEvent) error {
 // fieldErrors answers 400 with one entry per field, in PocketBase's usual
 // shape.
 func fieldErrors(fe FieldErrors) error {
-	data := make(map[string]any, len(fe))
+	data := make(map[string]validation.Error, len(fe))
 	for field, msg := range fe {
-		data[field] = map[string]string{"code": "validation_invalid_value", "message": msg}
+		data[field] = validation.NewError("validation_invalid_value", msg)
 	}
 	return router.NewBadRequestError("Some sign-in settings need attention.", data)
 }

@@ -215,8 +215,13 @@ func TestSignInSettingsAreChecked(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			status, body := putSignInSettings(t, mux, o.Admin, c.body)
-			if status != http.StatusBadRequest || !strings.Contains(body, `"`+c.field+`"`) {
-				t.Fatalf("want 400 naming %s, got %d %s", c.field, status, body)
+			var resp struct {
+				Data map[string]struct{ Code, Message string } `json:"data"`
+			}
+			_ = json.Unmarshal([]byte(body), &resp)
+			msg := resp.Data[c.field].Message
+			if status != http.StatusBadRequest || msg == "" || msg == "Invalid value." {
+				t.Fatalf("want 400 with a plain-language message for %s, got %d %s", c.field, status, body)
 			}
 		})
 	}
@@ -443,7 +448,8 @@ func TestPhoneCodeRequestsAreLimitedAndChecked(t *testing.T) {
 	enablePhone(t, mux, o.Admin, srv)
 	setPhone(t, app, o.Field1, field1Phone)
 
-	if status, _, body := askForCode(t, mux, schema.FieldUsers, "01711111111"); status != http.StatusBadRequest {
+	if status, _, body := askForCode(t, mux, schema.FieldUsers, "01711111111"); status != http.StatusBadRequest ||
+		!strings.Contains(body, `"code":"validation_invalid_phone"`) || !strings.Contains(body, "international form") {
 		t.Errorf("a number without a country code: %d %s", status, body)
 	}
 	if status, _, body := askForCode(t, mux, schema.Superusers, field1Phone); status != http.StatusBadRequest {
@@ -627,12 +633,12 @@ func TestGoogleSignInReachesOnlyExistingConfirmedAccounts(t *testing.T) {
 	}{
 		{"existing field user", schema.FieldUsers, "field1", "", http.StatusOK, o.Field1.Id},
 		{"org admin", schema.StaffUsers, "admin", "", http.StatusOK, o.Admin.Id},
-		{"no account", schema.FieldUsers, "stranger", "", http.StatusBadRequest, "No Obhijatra account here uses this Google email"},
-		{"account not confirmed", schema.FieldUsers, "unconfirmed", "", http.StatusBadRequest, "must confirm your email address"},
-		{"deactivated", schema.FieldUsers, "gone", "", http.StatusBadRequest, "This account cannot sign in"},
-		{"Google email not confirmed", schema.FieldUsers, "noemail", "", http.StatusBadRequest, "did not share a confirmed email"},
-		{"signed-in user links another Google account", schema.FieldUsers, "stranger", testutil.Token(t, o.Peer1), http.StatusBadRequest, "No Obhijatra account"},
-		{"field account through the staff door", schema.StaffUsers, "field1", "", http.StatusBadRequest, "No Obhijatra account"},
+		{"no account", schema.FieldUsers, "stranger", "", http.StatusBadRequest, `"code":"google_no_account"`},
+		{"account not confirmed", schema.FieldUsers, "unconfirmed", "", http.StatusBadRequest, `"code":"google_email_unconfirmed"`},
+		{"deactivated", schema.FieldUsers, "gone", "", http.StatusBadRequest, `"code":"account_not_allowed"`},
+		{"Google email not confirmed", schema.FieldUsers, "noemail", "", http.StatusBadRequest, `"code":"google_no_email"`},
+		{"signed-in user links another Google account", schema.FieldUsers, "stranger", testutil.Token(t, o.Peer1), http.StatusBadRequest, `"code":"google_no_account"`},
+		{"field account through the staff door", schema.StaffUsers, "field1", "", http.StatusBadRequest, `"code":"google_no_account"`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
