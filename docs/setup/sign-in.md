@@ -21,7 +21,7 @@ Nothing is sent to Aninda Studio. Google learns only that the person signed in; 
 Until the manager app has screens for people's accounts (a later release), you change accounts in the server's admin dashboard (`https://your-server/_/`, signed in as the superuser): open **field_users** or **staff_users**, then the person's record.
 
 - Your server needs a web address that starts with `https://` and has a real domain name, for example `https://obhijatra.example.org`. Google refuses plain `http://` addresses and bare numbers such as `203.0.113.5` ([Google's rules for redirect addresses](https://support.google.com/cloud/answer/15549257)). SMS codes work without this.
-- Every person who will sign in with Google needs an account in Obhijatra with the **same email address** as their Google account, and that email address must be marked as confirmed (**Verified**).
+- Every person who will sign in with Google needs an account in Obhijatra with the **same email address** as their Google account, and that email address must be marked as confirmed (**Verified**). The address must be a **Gmail** address or an address in your organisation's **Google Workspace**. A Google account made with some other email address (for example a work address on another mail service) is refused, because Google cannot vouch that the address still belongs to the person.
 - Every person who will sign in by SMS needs their mobile number on their account, in international form: `+880` then the number without its first `0`. For example, `01712345678` becomes `+8801712345678`.
 
 ## Part 1: Google sign-in
@@ -45,7 +45,9 @@ Obhijatra asks Google only for the person's name and email address, which Google
 
 **7. Try it.** Sign out of the manager app, click **Continue with Google**, and choose your Google account. You should arrive signed in.
 
-If someone sees "No Obhijatra account here uses this Google email address", add their account with that address, or correct the address on their account. If they see "Your organisation admin must confirm your email address", mark their account as **Verified**.
+If someone sees "No Obhijatra account here uses this Google email address", add their account with that address, or correct the address on their account. If they see "Your organisation admin must confirm your email address", mark their account as **Verified**. If they see "Google cannot vouch that this email address belongs to this Google account", they need a Gmail or Google Workspace address, or another way to sign in.
+
+Changing someone's email address, phone number, role or confirmation signs them out on every device.
 
 ## Part 2: SMS codes
 
@@ -65,7 +67,7 @@ If someone sees "No Obhijatra account here uses this Google email address", add 
 | `{message}` | the text of the SMS | `123456 is your Obhijatra sign-in code. …` |
 | `{secret}` | your API key or token | (hidden) |
 
-Type your API key or token into **Secret key**, not into the address or body: Obhijatra keeps it encrypted and never shows it again.
+Type your API key or token into **Secret key**, not into the address or body: Obhijatra keeps it encrypted and never shows it again. If you later change the provider's server name in **Address**, type the key again; Obhijatra will not send a saved key to a different server.
 
 An example, for a made-up provider whose guide says "POST JSON `{"to": "8801…", "text": "…"}` to `https://api.example-sms.com/v1/send` with the header `Authorization: Bearer YOUR-KEY`":
 
@@ -91,6 +93,9 @@ An example, for a made-up provider whose guide says "POST JSON `{"to": "8801…"
 - One number can receive at most 3 codes in 15 minutes and 10 in a day. One internet connection (for example a branch office) can ask for at most 30 codes in 15 minutes.
 - Wrong codes count towards the same lock as wrong passwords: after 10 wrong tries from one place, sign-in is locked there for 15 minutes. You can unlock it sooner, or run `obhijatra-server unlock +8801712345678` on the server.
 - Codes are never sent to numbers that have no account, to deactivated accounts, or to organisation admins, but the screen looks the same to the person either way. This stops strangers from finding out which numbers have accounts.
+- Across the organisation, at most 3 codes a day per person with a phone number are sent (at least 100 a day), in case someone tries to run up your SMS bill.
+- Someone who asks for 10 codes for one number blocks SMS sign-in for that number for a day. The person can still sign in another way.
+- On the field app, an SMS code or Google cannot open the app lock on its own. To reset a forgotten app PIN, people sign in with their email address and password. If their account has no password, give it one (or an email address and password) so they can.
 
 ## If something goes wrong
 
