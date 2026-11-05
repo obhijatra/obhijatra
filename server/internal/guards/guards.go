@@ -47,8 +47,8 @@ func Register(app core.App) {
 		if anyChanged(old, e.Record, "parent", "path") {
 			return errors.New("a location cannot be moved: its parent and path are fixed once created")
 		}
-		if changed(old, e.Record, "name") {
-			if err := checkPlaceName(e.App, e.Record); err != nil {
+		if anyChanged(old, e.Record, "name", "code", "name_key") {
+			if err := checkPlaceText(e.App, e.Record); err != nil {
 				return err
 			}
 		}
@@ -57,6 +57,20 @@ func Register(app core.App) {
 				return err
 			}
 		}
+		return e.Next()
+	})
+	// A place's id is part of every path below it, and a deleted place's id
+	// must never come back somewhere else, so the server chooses ids.
+	app.OnRecordCreateRequest(schema.Locations).BindFunc(func(e *core.RecordRequestEvent) error {
+		info, err := e.RequestInfo()
+		if err != nil {
+			return err
+		}
+		if _, ok := info.Body["id"]; ok {
+			return router.NewBadRequestError("The server chooses place ids.", map[string]validation.Error{
+				"id": validation.NewError("validation_place_id_server_only", "The server chooses place ids.")})
+		}
+		e.Record.Id = ""
 		return e.Next()
 	})
 	app.OnRecordDelete(schema.Locations).BindFunc(func(e *core.RecordEvent) error {
@@ -107,7 +121,8 @@ func Register(app core.App) {
 			if err := checkUserSignIn(e.Record); err != nil {
 				return err
 			}
-			if changed(old, e.Record, "location") {
+			// Nobody is moved into, or made active again in, a closed place.
+			if changed(old, e.Record, "location") || (e.Record.GetBool("active") && !old.GetBool("active")) {
 				if err := checkOpenPlace(e.App, e.Record.GetString("location")); err != nil {
 					return err
 				}
@@ -725,8 +740,6 @@ func placeError(field, code, message string) error {
 
 // checkNewPlace: one root, a parent that is open, and a name of its own.
 func checkNewPlace(app core.App, r *core.Record) error {
-	r.Set("name", strings.TrimSpace(r.GetString("name")))
-	r.Set("code", strings.TrimSpace(r.GetString("code")))
 	if r.GetBool("closed") {
 		return placeError("closed", "validation_place_closed_on_create", "A new place cannot start closed.")
 	}
@@ -739,35 +752,46 @@ func checkNewPlace(app core.App, r *core.Record) error {
 			return placeError("parent", "validation_place_parent_required",
 				"Choose the place this one belongs under. Only the organisation itself has nothing above it.")
 		}
-		return nil
+		return checkPlaceText(app, r)
 	}
 	if err := checkOpenPlace(app, r.GetString("parent")); err != nil {
 		return validation.Errors{"parent": validation.NewError("validation_place_parent_closed",
 			"The place above is closed. Reopen it first, or choose an open place.")}
 	}
-	return checkPlaceName(app, r)
+	return checkPlaceText(app, r)
 }
 
-// checkPlaceName refuses an empty name, or one a sibling already has
-// (ignoring capital letters and surrounding spaces), so a place is never
-// confused with its neighbour and a spreadsheet import finds it again.
-func checkPlaceName(app core.App, r *core.Record) error {
-	name := strings.TrimSpace(r.GetString("name"))
+// checkPlaceText cleans the name and code and refuses an empty name,
+// unsafe characters, or a name a sibling already has. Names are compared
+// by schema.PlaceNameKey (Unicode NFC, invisible characters and extra
+// spaces removed, capitals ignored), so a place is never confused with its
+// neighbour and a spreadsheet import finds it again; the unique index on
+// (parent, name_key) holds the same line in the database.
+func checkPlaceText(app core.App, r *core.Record) error {
+	name := schema.CleanPlaceName(r.GetString("name"))
+	code := strings.TrimSpace(r.GetString("code"))
 	r.Set("name", name)
-	if name == "" {
+	r.Set("code", code)
+	r.Set("name_key", schema.PlaceNameKey(name))
+	switch {
+	case name == "":
 		return placeError("name", "validation_required", "Give the place a name.")
+	case strings.ContainsFunc(name, schema.UnsafeTextRune):
+		return placeError("name", "validation_place_text_unsafe",
+			"The name has a line break or a hidden control character. Type it again.")
+	case strings.ContainsFunc(code, schema.UnsafeTextRune):
+		return placeError("code", "validation_place_text_unsafe",
+			"The code has a line break or a hidden control character. Type it again.")
 	}
-	siblings, err := app.FindRecordsByFilter(schema.Locations,
-		"parent = {:parent} && id != {:id}", "", 0, 0,
-		dbx.Params{"parent": r.GetString("parent"), "id": r.Id})
-	if err != nil {
+	_, err := app.FindFirstRecordByFilter(schema.Locations,
+		"parent = {:parent} && name_key = {:key} && id != {:id}",
+		dbx.Params{"parent": r.GetString("parent"), "key": r.GetString("name_key"), "id": r.Id})
+	switch {
+	case err == nil:
+		return placeError("name", "validation_place_name_taken",
+			"Another place at this level already has this name. Choose a different name.")
+	case !errors.Is(err, sql.ErrNoRows):
 		return err
-	}
-	for _, s := range siblings {
-		if strings.EqualFold(strings.TrimSpace(s.GetString("name")), name) {
-			return placeError("name", "validation_place_name_taken",
-				"Another place at this level already has this name. Choose a different name.")
-		}
 	}
 	return nil
 }
@@ -829,7 +853,9 @@ func checkPlaceClosing(app core.App, r *core.Record) error {
 // checkPlaceUnused allows deleting a place only when nothing refers to it:
 // no place inside it, nobody assigned to it, and no record stamped with its
 // path, in any collection, so that records never point at a missing place.
-// The organisation itself is never deleted.
+// The organisation itself is never deleted. The convention every
+// collection follows: a place is referred to by a relation to locations or
+// by a text field named location_path (docs/decisions/0007-places.md).
 func checkPlaceUnused(app core.App, r *core.Record) error {
 	old, err := app.FindRecordById(schema.Locations, r.Id)
 	if err != nil {
@@ -851,14 +877,6 @@ func checkPlaceUnused(app core.App, r *core.Record) error {
 		if c.IsView() {
 			continue
 		}
-		// A collection with a place relation is counted through it; its
-		// location_path copy would count the same records twice.
-		hasRelation := false
-		for _, f := range c.Fields {
-			if rf, ok := f.(*core.RelationField); ok && rf.CollectionId == locations.Id {
-				hasRelation = true
-			}
-		}
 		for _, f := range c.Fields {
 			var n int64
 			switch field := f.(type) {
@@ -873,7 +891,7 @@ func checkPlaceUnused(app core.App, r *core.Record) error {
 					n, err = app.CountRecords(c, dbx.HashExp{field.Name: r.Id})
 				}
 			case *core.TextField:
-				if field.Name != "location_path" || hasRelation {
+				if field.Name != "location_path" {
 					continue
 				}
 				n, err = app.CountRecords(c, dbx.HashExp{"location_path": old.GetString("path")})
@@ -887,9 +905,8 @@ func checkPlaceUnused(app core.App, r *core.Record) error {
 		}
 	}
 	if uses > 0 {
-		return router.NewBadRequestError("This place is in use, so it cannot be deleted. Close it instead.",
-			map[string]validation.Error{"id": validation.NewError("validation_place_in_use",
-				fmt.Sprintf("This place is used by %d place(s), people or record(s), so it cannot be deleted. Close it instead.", uses))})
+		const msg = "This place is still used by places inside it, people or records, so it cannot be deleted. Close it instead."
+		return router.NewBadRequestError(msg, map[string]validation.Error{"id": validation.NewError("validation_place_in_use", msg)})
 	}
 	return nil
 }

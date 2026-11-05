@@ -376,6 +376,8 @@ func windBackSchemaVersion7(t *testing.T, app core.App) {
 	c, _ := app.FindCollectionByNameOrId(schema.Locations)
 	c.Fields.RemoveByName("closed")
 	c.RemoveIndex("idx_locations_code")
+	c.RemoveIndex("idx_locations_parent_name_key")
+	c.Fields.RemoveByName("name_key")
 	c.DeleteRule = nil
 	if err := app.Save(c); err != nil {
 		t.Fatal(err)
@@ -390,6 +392,13 @@ func checkSchemaVersion7(t *testing.T, app core.App) {
 	}
 	if _, ok := dbutils.FindSingleColumnUniqueIndex(c.Indexes, "code"); !ok {
 		t.Error("after the upgrade place codes are not unique")
+	}
+	if c.GetIndex("idx_locations_parent_name_key") == "" {
+		t.Error("after the upgrade place names are not unique among neighbours")
+	}
+	root, err := app.FindFirstRecordByFilter(schema.Locations, "parent = ''")
+	if err != nil || root.GetString("name_key") != schema.PlaceNameKey(root.GetString("name")) {
+		t.Errorf("after the upgrade the root's name key is %q (%v)", root.GetString("name_key"), err)
 	}
 }
 

@@ -26,6 +26,9 @@ const ImportPath = "/places/import"
 // importBodyLimit fits schema.MaxPlacesImport rows of long names.
 const importBodyLimit = 8 << 20
 
+// maxPathLength is the longest stored path (the locations path field).
+const maxPathLength = 1000
+
 // Register binds the import route.
 func Register(app core.App) {
 	app.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
@@ -77,6 +80,7 @@ const (
 	ProblemCodeMismatch = "code_mismatch" // the place already has another code
 	ProblemCodeRepeated = "code_repeated" // the same code twice in the file
 	ProblemCodeTaken    = "code_taken"    // another place has the code
+	ProblemUnsafeText   = "unsafe_text"   // a line break or hidden control character
 )
 
 // Result is the answer: how many places the import makes and finds, and
@@ -148,9 +152,11 @@ func importPlaces(e *core.RequestEvent) error {
 					Message: fmt.Sprintf(format, args...)})
 			}
 
+			// Names are cleaned and compared exactly as the guards do
+			// (schema.CleanPlaceName and schema.PlaceNameKey).
 			names := make([]string, 0, len(row.Path))
 			for _, n := range row.Path {
-				if n = strings.TrimSpace(n); n != "" {
+				if n = schema.CleanPlaceName(n); n != "" {
 					names = append(names, n)
 				}
 			}
@@ -159,17 +165,25 @@ func importPlaces(e *core.RequestEvent) error {
 			case len(names) == 0:
 				problem(ProblemNoName, "", "", "This row has no place name.")
 				continue
-			case len(names) > schema.MaxPlaceDepth:
+			case len(names) > schema.MaxPlaceDepth ||
+				len(parent.GetString("path"))+(1+core.DefaultIdLength)*len(names) > maxPathLength:
 				problem(ProblemTooDeep, "", fmt.Sprint(schema.MaxPlaceDepth), "This row has more than %d levels.", schema.MaxPlaceDepth)
 				continue
-			case len(code) > 50:
+			case schema.TextLength(code) > 50:
 				problem(ProblemCodeTooLong, "", code, "The code %q is longer than 50 characters.", code)
+				continue
+			case strings.ContainsFunc(code, schema.UnsafeTextRune):
+				problem(ProblemUnsafeText, "", code, "The code %q has a line break or a hidden control character.", code)
 				continue
 			}
 			bad := false
 			for _, n := range names {
-				if len([]rune(n)) > 200 {
+				switch {
+				case schema.TextLength(n) > 200:
 					problem(ProblemNameTooLong, n, "", "The name %q is longer than 200 characters.", n)
+					bad = true
+				case strings.ContainsFunc(n, schema.UnsafeTextRune):
+					problem(ProblemUnsafeText, n, "", "The name %q has a line break or a hidden control character.", n)
 					bad = true
 				}
 			}
@@ -182,10 +196,10 @@ func importPlaces(e *core.RequestEvent) error {
 				if err := loadChildren(txApp, cur); err != nil {
 					return err
 				}
-				next, ok := cur.children[strings.ToLower(name)]
+				next, ok := cur.children[schema.PlaceNameKey(name)]
 				if !ok {
 					next = &node{name: name, children: map[string]*node{}}
-					cur.children[strings.ToLower(name)] = next
+					cur.children[schema.PlaceNameKey(name)] = next
 					created[next] = true
 				}
 				if next.closed {
@@ -203,7 +217,7 @@ func importPlaces(e *core.RequestEvent) error {
 						bad = true
 					case next.code == "":
 						taken, err := txApp.CountRecords(schema.Locations,
-							dbx.NewExp("[[code]] = {:code} COLLATE NOCASE", dbx.Params{"code": code}))
+							dbx.NewExp("[[code]] = {:code} COLLATE NOCASE AND [[code]] != ''", dbx.Params{"code": code}))
 						if err != nil {
 							return err
 						}
@@ -310,7 +324,7 @@ func loadChildren(app core.App, n *node) error {
 		return err
 	}
 	for _, r := range rows {
-		key := strings.ToLower(strings.TrimSpace(r.GetString("name")))
+		key := schema.PlaceNameKey(r.GetString("name"))
 		if _, dup := n.children[key]; !dup {
 			n.children[key] = &node{id: r.Id, code: r.GetString("code"), closed: r.GetBool("closed"),
 				stored: true, name: r.GetString("name")}

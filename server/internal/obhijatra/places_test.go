@@ -2,9 +2,11 @@ package obhijatra_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"ganigeorgiev.com/pocketbase/dbx"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
@@ -272,5 +274,123 @@ func TestAnImportWithProblemsSavesNothing(t *testing.T) {
 
 	if status, _, body := importPlaces(t, mux, admin, map[string]any{"parent": closed.Id, "rows": rows[:1]}); status != http.StatusBadRequest {
 		t.Errorf("import into a closed place: %d %s", status, body)
+	}
+}
+
+// ---------------------------------------------------------------------
+// Findings of the review (6 November 2026)
+// ---------------------------------------------------------------------
+
+func TestLookAlikeNamesAreTheSameName(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	admin := testutil.Token(t, o.Admin)
+
+	// নয়াপাড়া with য় and ড় typed as one character each.
+	precomposed := "\u09a8\u09df\u09be\u09aa\u09be\u09dc\u09be"
+	decomposed := "\u09a8\u09af\u09bc\u09be\u09aa\u09be\u09a1\u09bc\u09be"
+	if status, body := call(mux, http.MethodPost, placesURL, admin, map[string]any{"name": precomposed, "parent": o.Root.Id}); status != http.StatusOK {
+		t.Fatalf("add: %d %s", status, body)
+	}
+	for _, name := range []string{decomposed, "Branch\u200b 1", "Branch  1", "BRANCH\u00a01"} {
+		if status, body := call(mux, http.MethodPost, placesURL, admin, map[string]any{"name": name, "parent": o.Root.Id}); status != http.StatusBadRequest ||
+			!strings.Contains(body, "validation_place_name_taken") {
+			t.Errorf("look-alike %q: %d %s", name, status, body)
+		}
+	}
+
+	// The import finds the existing place, in the dry run and for real.
+	rows := []map[string]any{{"line": 2, "path": []string{decomposed, "Ward 1"}}, {"line": 3, "path": []string{"\u039f\u0394\u039f\u03a3"}}, {"line": 4, "path": []string{"\u03bf\u03b4\u03bf\u03c2", "Inner"}}}
+	for _, dry := range []bool{true, false} {
+		status, r, body := importPlaces(t, mux, admin, map[string]any{"parent": o.Root.Id, "rows": rows, "dry_run": dry})
+		if status != http.StatusOK || r.Created != 3 || r.Existing != 1 {
+			t.Fatalf("import (dry run %v): %d %s", dry, status, body)
+		}
+	}
+	if n, _ := app.CountRecords(schema.Locations, dbx.HashExp{"parent": o.Root.Id}); n != 4 {
+		t.Errorf("%d places under the root, want 4 (two branches, নয়াপাড়া, ΟΔΟΣ)", n)
+	}
+}
+
+func TestPlaceTextIsCleanAndSafe(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	admin := testutil.Token(t, o.Admin)
+
+	// A line break in a name becomes a space, like any other run of spaces.
+	if status, body := call(mux, http.MethodPost, placesURL, admin, map[string]any{"name": "Line\nbreak", "parent": o.Root.Id}); status != http.StatusOK {
+		t.Errorf("a name with a line break: %d %s", status, body)
+	}
+	placeNamed(t, app, "Line break")
+	for _, body := range []map[string]any{
+		{"name": "Right\u202eto left", "parent": o.Root.Id},
+		{"name": "Fine", "code": "A\tB", "parent": o.Root.Id},
+		{"name": "Chosen id", "parent": o.Root.Id, "id": "aaaaaaaaaaaaaaa"},
+	} {
+		if status, resp := call(mux, http.MethodPost, placesURL, admin, body); status != http.StatusBadRequest {
+			t.Errorf("%v: %d %s", body, status, resp)
+		}
+	}
+	// A code changed later is trimmed too, and a Bangla code counts characters.
+	if status, body := call(mux, http.MethodPatch, placesURL+"/"+o.Branch1.Id, admin, map[string]any{"code": "  A9  "}); status != http.StatusOK {
+		t.Fatalf("change code: %d %s", status, body)
+	}
+	if r, _ := app.FindRecordById(schema.Locations, o.Branch1.Id); r.GetString("code") != "A9" {
+		t.Errorf("code stored as %q", r.GetString("code"))
+	}
+	bangla := strings.Repeat("\u0995", 20) // 20 characters, 60 bytes
+	status, r, body := importPlaces(t, mux, admin, map[string]any{"parent": o.Root.Id, "rows": []map[string]any{{"line": 2, "path": []string{"Area B"}, "code": bangla}}})
+	if status != http.StatusOK || r.Created != 1 {
+		t.Errorf("a 20-character Bangla code: %d %s", status, body)
+	}
+}
+
+func TestNobodyIsMadeActiveInAClosedPlace(t *testing.T) {
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+	admin := testutil.Token(t, o.Admin)
+
+	area := testutil.Location(t, app, "Small area", o.Root)
+	person := testutil.User(t, app, schema.FieldUsers, "small@example.org", schema.RoleFieldOfficer, area, true)
+	if status, body := call(mux, http.MethodPatch, "/api/collections/field_users/records/"+person.Id, admin, map[string]any{"active": false}); status != http.StatusOK {
+		t.Fatalf("deactivate: %d %s", status, body)
+	}
+	if status, body := call(mux, http.MethodPatch, placesURL+"/"+area.Id, admin, map[string]any{"closed": true}); status != http.StatusOK {
+		t.Fatalf("close: %d %s", status, body)
+	}
+	if status, body := call(mux, http.MethodPatch, "/api/collections/field_users/records/"+person.Id, admin, map[string]any{"active": true}); status != http.StatusBadRequest ||
+		!strings.Contains(body, "validation_place_closed") {
+		t.Errorf("reactivated in a closed place: %d %s", status, body)
+	}
+}
+
+func TestALargeImportStaysQuick(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow")
+	}
+	app := testutil.NewApp(t)
+	defer app.Cleanup()
+	o := testutil.SeedOrg(t, app)
+	mux := serveMux(t, app)
+
+	rows := make([]map[string]any, schema.MaxPlacesImport)
+	for i := range rows {
+		rows[i] = map[string]any{"line": i + 2, "path": []string{fmt.Sprintf("Village %04d", i)}, "code": fmt.Sprintf("V%04d", i)}
+	}
+	start := time.Now()
+	status, r, body := importPlaces(t, mux, testutil.Token(t, o.Admin), map[string]any{"parent": o.Branch1.Id, "rows": rows})
+	took := time.Since(start)
+	if status != http.StatusOK || r.Created != schema.MaxPlacesImport {
+		t.Fatalf("import: %d %.300s", status, body)
+	}
+	t.Logf("%d places imported in %s", schema.MaxPlacesImport, took)
+	if took > 45*time.Second {
+		t.Errorf("a %d-row import took %s", schema.MaxPlacesImport, took)
 	}
 }
