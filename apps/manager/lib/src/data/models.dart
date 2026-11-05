@@ -39,6 +39,8 @@ class StaffUser {
     required this.email,
     required this.role,
     this.phone = '',
+    this.active = true,
+    this.mustChangePassword = false,
   });
 
   /// Record id.
@@ -55,6 +57,24 @@ class StaffUser {
 
   /// One of the server's staff roles, for example `org_admin`.
   final String role;
+
+  /// Whether the account is switched on.
+  final bool active;
+
+  /// Whether the person signed in with a one-time password and must choose
+  /// their own before anything else.
+  final bool mustChangePassword;
+
+  /// A copy with [mustChangePassword] replaced.
+  StaffUser copyWith({bool? mustChangePassword}) => StaffUser(
+    id: id,
+    name: name,
+    email: email,
+    role: role,
+    phone: phone,
+    active: active,
+    mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+  );
 
   /// The name to show: the full name, else the email, else the number.
   String get displayName {
@@ -78,6 +98,9 @@ class StaffUser {
 
   /// Organisation admins upload and publish forms.
   bool get isOrgAdmin => role == 'org_admin';
+
+  /// Only an active organisation admin adds and manages people.
+  bool get canManagePeople => isOrgAdmin && active && !mustChangePassword;
 
   /// Whether the server lets this role change a submission's review state.
   bool get canReview =>

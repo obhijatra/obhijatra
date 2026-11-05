@@ -83,15 +83,15 @@ void main() {
     });
 
     group('Shell ($lang)', () {
-      testWidgets('has exactly four places and nothing unfinished', (
-        tester,
-      ) async {
+      testWidgets('an organisation admin has five places and nothing '
+          'unfinished', (tester) async {
         final api = FakeManagerApi(user: staff('org_admin'));
         await pumpManager(tester, api, lang: lang);
         final l10n = l10nOf(tester);
         for (final label in <String>[
           l10n.navForms,
           l10n.navSubmissions,
+          l10n.navPeople,
           l10n.navSettings,
           l10n.navAbout,
         ]) {
@@ -100,7 +100,6 @@ void main() {
         final words = everyWord(tester).toLowerCase();
         for (final hidden in <String>[
           'devices',
-          'people',
           'cases',
           'enrol',
           'key ceremony',

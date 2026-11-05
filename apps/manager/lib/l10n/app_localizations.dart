@@ -1154,10 +1154,10 @@ abstract class AppLocalizations {
   /// **'Branch manager'**
   String get roleBranchManager;
 
-  /// Role name.
+  /// Role name: monitoring and evaluation (M&E) officer.
   ///
   /// In en, this message translates to:
-  /// **'Monitoring and evaluation'**
+  /// **'M&E officer'**
   String get roleMe;
 
   /// Role name.
@@ -1933,6 +1933,708 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave without saving'**
   String get leaveDiscard;
+
+  /// Menu item: the people who use Obhijatra (organisation admins only).
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get navPeople;
+
+  /// Role name: a field officer, who uses the field app.
+  ///
+  /// In en, this message translates to:
+  /// **'Field officer'**
+  String get roleFieldOfficer;
+
+  /// Heading of the People screen.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get peopleTitle;
+
+  /// Line under the People heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the people who use Obhijatra, choose what each can do, and help them sign in.'**
+  String get peopleSummary;
+
+  /// Primary button and page heading: add a person.
+  ///
+  /// In en, this message translates to:
+  /// **'Add person'**
+  String get peopleAdd;
+
+  /// Spoken name of the Office staff / Field staff tabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind of staff'**
+  String get peopleKindLabel;
+
+  /// Tab and choice: people who use this manager app.
+  ///
+  /// In en, this message translates to:
+  /// **'Office staff'**
+  String get kindStaff;
+
+  /// Tab and choice: people who use the field app on a phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Field staff'**
+  String get kindField;
+
+  /// Label of the search box on the People screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get peopleSearch;
+
+  /// Hint inside the search box.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, email or mobile number'**
+  String get peopleSearchHint;
+
+  /// Spoken name of the button that empties the search box.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get peopleSearchClear;
+
+  /// Filter label: status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get peopleStatus;
+
+  /// Status filter choice: no status filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get peopleStatusAll;
+
+  /// Status chip, filter choice and switch label: the person can sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// Status chip and filter choice: the person cannot sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivated'**
+  String get statusDeactivated;
+
+  /// Status chip and filter choice: sign-in locked after too many wrong passwords.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get statusLocked;
+
+  /// Status chip: the person has a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Must choose a password'**
+  String get statusMustChoose;
+
+  /// Field label and filter label: the place where a person works.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get personPlace;
+
+  /// Place filter choice: every place.
+  ///
+  /// In en, this message translates to:
+  /// **'All places'**
+  String get placeAll;
+
+  /// Label of the list order menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Order'**
+  String get peopleSort;
+
+  /// List order: most recently added first.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get peopleSortNewest;
+
+  /// List order: by name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, A to Z'**
+  String get peopleSortName;
+
+  /// Small mark next to an email address an admin has confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get emailConfirmed;
+
+  /// Empty list title (office staff).
+  ///
+  /// In en, this message translates to:
+  /// **'No office staff yet'**
+  String get peopleEmptyStaffTitle;
+
+  /// Empty list title (field staff).
+  ///
+  /// In en, this message translates to:
+  /// **'No field staff yet'**
+  String get peopleEmptyFieldTitle;
+
+  /// Empty list text.
+  ///
+  /// In en, this message translates to:
+  /// **'Use ‘Add person’ to add the first one.'**
+  String get peopleEmptyBody;
+
+  /// Title when the search or filters find nobody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody matches'**
+  String get peopleNoMatchTitle;
+
+  /// Text when the search or filters find nobody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search, status or place.'**
+  String get peopleNoMatchBody;
+
+  /// Title when the Locked filter finds nobody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is locked out'**
+  String get peopleNoLockedTitle;
+
+  /// Text when the Locked filter finds nobody.
+  ///
+  /// In en, this message translates to:
+  /// **'People appear here when their sign-in is locked after too many wrong passwords.'**
+  String get peopleNoLockedBody;
+
+  /// Link back from a person's page to the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to People'**
+  String get peopleBack;
+
+  /// Heading of the person's details.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get personDetails;
+
+  /// Field label: the person's full name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get personName;
+
+  /// Field label: office staff or field staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get personKind;
+
+  /// Help under the Kind choice when adding a person.
+  ///
+  /// In en, this message translates to:
+  /// **'Office staff use this app. Field staff use the Obhijatra field app on a phone. This can’t be changed later.'**
+  String get personKindHelp;
+
+  /// Help under the Kind on a person's page.
+  ///
+  /// In en, this message translates to:
+  /// **'This can’t be changed.'**
+  String get personKindFixed;
+
+  /// Help under the Place field.
+  ///
+  /// In en, this message translates to:
+  /// **'Where this person works.'**
+  String get personPlaceHelp;
+
+  /// Button and dialog title: choose a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a place'**
+  String get personPlaceChoose;
+
+  /// Button: choose a different place.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get placeChange;
+
+  /// Search box in the place chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Search places'**
+  String get placeSearch;
+
+  /// Place chooser: the search finds nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No place matches.'**
+  String get placeNoMatch;
+
+  /// Place chooser: the organisation has no places.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no places yet. Ask whoever runs your server to add them.'**
+  String get placeNone;
+
+  /// Help under the Email field.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to sign in with a password or with Google.'**
+  String get personEmailHelp;
+
+  /// Switch label: the admin confirmed the email address belongs to the person.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address confirmed'**
+  String get personVerified;
+
+  /// Help under the Email address confirmed switch.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on when you are sure this address belongs to the person. Needed for Google sign-in.'**
+  String get personVerifiedHelp;
+
+  /// Help under the Mobile number field.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed for SMS-code sign-in. Not available to organisation admins.'**
+  String get personPhoneHelp;
+
+  /// Heading of the sign-in choice when adding a person.
+  ///
+  /// In en, this message translates to:
+  /// **'How will they sign in?'**
+  String get personHowSignIn;
+
+  /// Sign-in choice: email with a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Email and a one-time password'**
+  String get personSignInOtp;
+
+  /// Help for the one-time password choice.
+  ///
+  /// In en, this message translates to:
+  /// **'You will see a password to give them. They choose their own the first time they sign in.'**
+  String get personSignInOtpHelp;
+
+  /// Help for the one-time password choice when no email is typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an email address to use this.'**
+  String get personSignInOtpNeedsEmail;
+
+  /// Sign-in choice: no password from the admin.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS code or Google only'**
+  String get personSignInOther;
+
+  /// Help for the SMS code or Google choice.
+  ///
+  /// In en, this message translates to:
+  /// **'No password to give. They sign in with a code sent to their mobile, or with Google.'**
+  String get personSignInOtherHelp;
+
+  /// Warning when the details chosen give the person no way to sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'With these details they can’t sign in yet. Google sign-in needs a confirmed email address. SMS-code sign-in needs a mobile number and is not available to organisation admins.'**
+  String get personCannotSignIn;
+
+  /// Button label while a person is being added.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding…'**
+  String get personAdding;
+
+  /// Message after adding a person.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is added.'**
+  String personAdded(String name);
+
+  /// Heading above the one-time password after adding a person.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is added'**
+  String personAddedHeading(String name);
+
+  /// Message after saving a person's details.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved.'**
+  String get personSaved;
+
+  /// Note next to Save on a person's page.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes to sign-in details, role or status sign this person out on their devices.'**
+  String get personSignOutNote;
+
+  /// Leave dialog text on a person's page.
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes to this person will be lost.'**
+  String get leavePersonBody;
+
+  /// Field error: no name.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the person’s name.'**
+  String get personErrorName;
+
+  /// Field error: no role.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a role.'**
+  String get personErrorRole;
+
+  /// Field error: no place.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a place.'**
+  String get personErrorPlace;
+
+  /// Field error: the email address is not in a usable form.
+  ///
+  /// In en, this message translates to:
+  /// **'This does not look like an email address.'**
+  String get personErrorEmailInvalid;
+
+  /// Field error: neither an email address nor a mobile number.
+  ///
+  /// In en, this message translates to:
+  /// **'Give an email address or a mobile number, so this person can sign in.'**
+  String get personErrorEmailOrPhone;
+
+  /// Field error: an organisation admin without an email address.
+  ///
+  /// In en, this message translates to:
+  /// **'An organisation admin needs an email address. SMS-code sign-in is not available to organisation admins.'**
+  String get personErrorAdminEmail;
+
+  /// Field error: a one-time password without an email address.
+  ///
+  /// In en, this message translates to:
+  /// **'A one-time password needs an email address to sign in with.'**
+  String get personErrorOtpEmail;
+
+  /// Field error: the email address is used by another person.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else already has this email address.'**
+  String get personErrorEmailTaken;
+
+  /// Field error: the mobile number is used by another person.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else already has this mobile number.'**
+  String get personErrorPhoneTaken;
+
+  /// Field error: the change would leave no active organisation admin.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the only active organisation admin. Make someone else an organisation admin first.'**
+  String get personErrorLastAdmin;
+
+  /// Problem: the server refused some details.
+  ///
+  /// In en, this message translates to:
+  /// **'Some details need attention. Look for the messages under the fields.'**
+  String get problemDetailsInvalid;
+
+  /// Problem: the person must replace their one-time password first.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your own password before you carry on.'**
+  String get problemPasswordChangeRequired;
+
+  /// Problem: the new password was saved but signing in again failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new password is saved, but we could not sign you in again. Sign in with your new password.'**
+  String get problemPasswordSavedSignIn;
+
+  /// Heading of the sign-in and status panel on a person's page.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in and status'**
+  String get personStatusTitle;
+
+  /// Help under the Active switch.
+  ///
+  /// In en, this message translates to:
+  /// **'People who are deactivated can’t sign in. Everything they did is kept.'**
+  String get personActiveHelp;
+
+  /// Shown on your own page when you are the only active organisation admin.
+  ///
+  /// In en, this message translates to:
+  /// **'You are the only active organisation admin, so you can’t change your own role or status. Make someone else an organisation admin first.'**
+  String get personOnlyAdmin;
+
+  /// Dialog title before deactivating a person.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {name}?'**
+  String deactivateTitle(String name);
+
+  /// Dialog text before deactivating a person.
+  ///
+  /// In en, this message translates to:
+  /// **'They will be signed out and cannot sign in until you reactivate them.'**
+  String get deactivateBody;
+
+  /// Dialog text before deactivating yourself.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be signed out and cannot sign in until another organisation admin reactivates you.'**
+  String get deactivateSelfBody;
+
+  /// Dialog button: deactivate the person.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get deactivateButton;
+
+  /// Message after deactivating a person.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is deactivated.'**
+  String personDeactivated(String name);
+
+  /// Message after reactivating a person.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can sign in again.'**
+  String personReactivated(String name);
+
+  /// Note on a person's page while they have a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has a one-time password. They must choose their own password when they next sign in.'**
+  String personMustChooseNote(String name);
+
+  /// Note on a person's page while their sign-in is locked.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in is locked after too many wrong passwords. It unlocks by itself at {time}.'**
+  String personLockedNote(String time);
+
+  /// Button: lift a sign-in lock early.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock sign-in'**
+  String get unlockButton;
+
+  /// Message after unlocking sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in unlocked. {name} can try again now.'**
+  String unlockDone(String name);
+
+  /// Heading: give a new one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgotten password'**
+  String get resetTitle;
+
+  /// Help next to the new one-time password button.
+  ///
+  /// In en, this message translates to:
+  /// **'Give a new one-time password when someone has forgotten theirs. Their old password stops working.'**
+  String get resetHelp;
+
+  /// Button: give a new one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Give a new one-time password'**
+  String get resetButton;
+
+  /// Shown when a person without an email address cannot get a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an email address and save first: a one-time password is used with an email address.'**
+  String get resetNeedsEmail;
+
+  /// Dialog title before giving a new one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Give {name} a new one-time password?'**
+  String resetConfirmTitle(String name);
+
+  /// Dialog text before giving a new one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Their current password stops working, and they are signed out on all their devices. You will see the new one-time password once.'**
+  String get resetConfirmBody;
+
+  /// Dialog button: give a new one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Give a new password'**
+  String get resetConfirmButton;
+
+  /// Heading above a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time password for {name}'**
+  String otpTitle(String name);
+
+  /// Instructions under a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this to {name} in person or by phone. They must choose their own password when they first sign in. It will not be shown again.'**
+  String otpGive(String name);
+
+  /// The email address the person signs in with.
+  ///
+  /// In en, this message translates to:
+  /// **'They sign in with {email}.'**
+  String otpSignInWith(String email);
+
+  /// Screen-reader text for a one-time password, read letter by letter.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time password: {characters}'**
+  String otpSpoken(String characters);
+
+  /// Button: copy the one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy password'**
+  String get otpCopy;
+
+  /// Message after copying the one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password copied.'**
+  String get otpCopied;
+
+  /// Button: close the one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get otpDone;
+
+  /// Button: add another person after adding one.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another person'**
+  String get otpAddAnother;
+
+  /// Leave dialog title while a one-time password is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave without noting the password?'**
+  String get leaveOtpTitle;
+
+  /// Leave dialog text while a one-time password is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'The one-time password will not be shown again. If you leave now, you can give a new one from this person’s page.'**
+  String get leaveOtpBody;
+
+  /// Leave dialog button while a one-time password is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leaveOtpLeave;
+
+  /// Heading of the step after signing in with a one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your own password'**
+  String get choosePasswordTitle;
+
+  /// Text under the heading.
+  ///
+  /// In en, this message translates to:
+  /// **'You signed in with a one-time password. Choose a password that only you know before you carry on.'**
+  String get choosePasswordIntro;
+
+  /// Who is signed in.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String choosePasswordAccount(String name);
+
+  /// Field label: the one-time password from the admin.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time password'**
+  String get choosePasswordCurrent;
+
+  /// Help under the one-time password field.
+  ///
+  /// In en, this message translates to:
+  /// **'The password your organisation admin gave you.'**
+  String get choosePasswordCurrentHelp;
+
+  /// Field label: the new password.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get choosePasswordNew;
+
+  /// Help under the new password field.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 3 or 4 words you will remember, at least 12 characters.'**
+  String get choosePasswordHint;
+
+  /// Field label: repeat the new password.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the new password again'**
+  String get choosePasswordRepeat;
+
+  /// Field error: the new password is too short.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 12 characters.'**
+  String get choosePasswordTooShort;
+
+  /// Field error: the new password is the one-time password.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a password that is different from the one-time password.'**
+  String get choosePasswordSame;
+
+  /// Field error: the repeated password differs.
+  ///
+  /// In en, this message translates to:
+  /// **'The two passwords are not the same.'**
+  String get choosePasswordMismatch;
+
+  /// Field error: the one-time password is wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not the one-time password you were given. Check it and try again.'**
+  String get choosePasswordWrongCurrent;
+
+  /// Button: save the new password and carry on.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and continue'**
+  String get choosePasswordSave;
+
+  /// Message after choosing a new password.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new password is saved.'**
+  String get choosePasswordSaved;
 }
 
 class _AppLocalizationsDelegate

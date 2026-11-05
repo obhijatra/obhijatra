@@ -3,7 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
+import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
+import 'package:obhijatra_manager/src/ui/choose_password_screen.dart';
 import 'package:obhijatra_manager/src/ui/shell.dart';
 import 'package:obhijatra_manager/src/ui/sign_in_screen.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
@@ -32,7 +34,15 @@ class ObhijatraManagerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
-    final signedIn = ref.watch(sessionProvider.select((user) => user != null));
+    final stage = ref.watch(
+      sessionProvider.select(
+        (user) => switch (user) {
+          null => _Stage.signedOut,
+          StaffUser(mustChangePassword: true) => _Stage.choosePassword,
+          _ => _Stage.signedIn,
+        },
+      ),
+    );
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
@@ -45,7 +55,14 @@ class ObhijatraManagerApp extends ConsumerWidget {
       ],
       supportedLocales: const <Locale>[Locale('en'), Locale('bn')],
       theme: ObhijatraTheme.light(locale: locale),
-      home: signedIn ? const ManagerShell() : const SignInScreen(),
+      home: switch (stage) {
+        _Stage.signedOut => const SignInScreen(),
+        _Stage.choosePassword => const ChoosePasswordScreen(),
+        _Stage.signedIn => const ManagerShell(),
+      },
     );
   }
 }
+
+/// Where the person is: signed out, replacing a one-time password, or in.
+enum _Stage { signedOut, choosePassword, signedIn }

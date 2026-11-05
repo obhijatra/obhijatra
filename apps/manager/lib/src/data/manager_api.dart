@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:obhijatra_manager/src/data/models.dart';
+import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 
 /// Everything the manager screens ask of the server.
@@ -93,5 +94,58 @@ abstract interface class ManagerApi {
     SubmissionRow row,
     ReviewState state, {
     String? comment,
+  });
+
+  // ------------------------------------------------------------- people
+
+  /// One page of people of one kind (organisation admins only).
+  Future<PeoplePage> listPeople(PeopleQuery query);
+
+  /// One person, as the server has them now.
+  Future<Person> getPerson(PersonKind kind, String id);
+
+  /// Adds a person. [password] is a one-time password to show the admin
+  /// when [oneTimePassword] is true, or a hidden password that is never
+  /// shown. Refused fields come back as [ProblemKind.detailsInvalid].
+  Future<Person> createPerson(
+    PersonKind kind,
+    PersonDraft draft, {
+    required String password,
+    required bool oneTimePassword,
+  });
+
+  /// Saves the fields of [draft] that differ from [person].
+  Future<Person> updatePerson(Person person, PersonDraft draft);
+
+  /// Switches a person's account on or off.
+  Future<Person> setPersonActive(Person person, {required bool active});
+
+  /// Gives [person] the one-time password [password]: their old password
+  /// stops working and they must choose their own when they next sign in.
+  Future<Person> resetOneTimePassword(Person person, String password);
+
+  /// The sign-in locks in force now for any of [accountIds].
+  Future<List<SignInLock>> activeLocks(
+    PersonKind kind,
+    Iterable<String> accountIds,
+  );
+
+  /// Lifts a sign-in lock early.
+  Future<void> unlockSignIn(SignInLock lock);
+
+  /// Every place in the organisation.
+  Future<List<Place>> listPlaces();
+
+  /// How many organisation admins are active.
+  Future<int> countActiveOrgAdmins();
+
+  /// Replaces the signed-in person's one-time password with their own,
+  /// then signs them in again with it (the change ends every session).
+  /// Refused fields come back as [ProblemKind.detailsInvalid]; when the
+  /// password was saved but signing in again failed, the session is gone
+  /// and the problem is [ProblemKind.passwordSavedSignIn].
+  Future<StaffUser> chooseNewPassword({
+    required String currentPassword,
+    required String newPassword,
   });
 }

@@ -35,6 +35,9 @@ String problemMessage(AppLocalizations l10n, ProblemKind kind) =>
       ProblemKind.tooManyTries => l10n.problemTooManyTries,
       ProblemKind.tooManyTests => l10n.problemTooManyTests,
       ProblemKind.settingsInvalid => l10n.problemSettingsInvalid,
+      ProblemKind.detailsInvalid => l10n.problemDetailsInvalid,
+      ProblemKind.passwordChangeRequired => l10n.problemPasswordChangeRequired,
+      ProblemKind.passwordSavedSignIn => l10n.problemPasswordSavedSignIn,
       ProblemKind.unknown => l10n.problemUnknown,
     };
 

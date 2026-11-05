@@ -7,14 +7,16 @@ import 'package:obhijatra_ui/obhijatra_ui.dart';
 /// Asks before leaving a screen with unsaved changes. Returns whether to
 /// go on.
 Future<bool> confirmLeave(BuildContext context, WidgetRef ref) async {
-  if (!ref.read(leaveGuardProvider).hasUnsavedChanges) return true;
+  final guard = ref.read(leaveGuardProvider);
+  if (!guard.hasUnsavedChanges) return true;
   final l10n = AppLocalizations.of(context);
   final palette = context.palette;
+  final prompt = guard.promptIn(l10n);
   final leave = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(l10n.leaveTitle),
-      content: Text(l10n.leaveBody),
+      title: Text(prompt.title),
+      content: Text(prompt.body),
       actions: <Widget>[
         TextButton(
           autofocus: true,
@@ -27,7 +29,7 @@ Future<bool> confirmLeave(BuildContext context, WidgetRef ref) async {
             foregroundColor: palette.onAction,
           ),
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.leaveDiscard),
+          child: Text(prompt.leave),
         ),
       ],
     ),
@@ -44,6 +46,7 @@ Future<void> goToSection(
 ) async {
   if (!await confirmLeave(context, ref) || !context.mounted) return;
   ref.read(settingsPageProvider.notifier).open(SettingsPage.overview);
+  ref.read(peopleViewProvider.notifier).open(const PeopleView.list());
   ref.read(sectionProvider.notifier).go(section);
 }
 

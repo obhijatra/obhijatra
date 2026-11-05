@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/state/navigation.dart';
+import 'package:obhijatra_manager/src/state/people.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:obhijatra_manager/src/ui/about_screen.dart';
 import 'package:obhijatra_manager/src/ui/forms_screen.dart';
 import 'package:obhijatra_manager/src/ui/leave_guard.dart';
+import 'package:obhijatra_manager/src/ui/people_screen.dart';
 import 'package:obhijatra_manager/src/ui/settings_screen.dart';
 import 'package:obhijatra_manager/src/ui/submissions_screen.dart';
 import 'package:obhijatra_manager/widgets/brand_mark.dart';
@@ -34,7 +36,9 @@ void retryAll(WidgetRef ref) {
     ..invalidate(submissionsProvider)
     ..invalidate(submissionCountsProvider)
     ..invalidate(answersProvider)
-    ..invalidate(formDefinitionProvider);
+    ..invalidate(formDefinitionProvider)
+    ..invalidate(peopleListProvider)
+    ..invalidate(placesProvider);
 }
 
 /// The signed-in frame: top bar, menu, the chosen screen.
@@ -44,7 +48,16 @@ class ManagerShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final section = ref.watch(sectionProvider);
+    final canManagePeople = ref.watch(
+      sessionProvider.select((user) => user?.canManagePeople ?? false),
+    );
+    final chosen = ref.watch(sectionProvider);
+    // People is only ever shown to an active organisation admin, even if it
+    // was the place open when someone else signed in.
+    final section = chosen == Section.people && !canManagePeople
+        ? Section.forms
+        : chosen;
+    final destinations = _destinationsFor(canManagePeople: canManagePeople);
     final online = ref.watch(onlineProvider);
     final palette = context.palette;
     return Scaffold(
@@ -57,6 +70,7 @@ class ManagerShell extends ConsumerWidget {
           final body = switch (section) {
             Section.forms => const FormsScreen(),
             Section.submissions => const SubmissionsScreen(),
+            Section.people => const PeopleScreen(),
             Section.settings => const SettingsScreen(),
             Section.about => const AboutScreen(),
           };
@@ -69,13 +83,20 @@ class ManagerShell extends ConsumerWidget {
                     ? Column(
                         children: <Widget>[
                           Expanded(child: body),
-                          _BottomNav(section: section),
+                          _BottomNav(
+                            section: section,
+                            destinations: destinations,
+                          ),
                         ],
                       )
                     : Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
-                          _SideNav(section: section, extended: extended),
+                          _SideNav(
+                            section: section,
+                            extended: extended,
+                            destinations: destinations,
+                          ),
                           Expanded(child: body),
                         ],
                       ),
@@ -98,14 +119,24 @@ class _Destination {
 const List<_Destination> _destinations = <_Destination>[
   _Destination(Section.forms, Icons.description_outlined, Icons.description),
   _Destination(Section.submissions, Icons.inbox_outlined, Icons.inbox),
+  _Destination(Section.people, Icons.people_outline, Icons.people),
   _Destination(Section.settings, Icons.settings_outlined, Icons.settings),
   _Destination(Section.about, Icons.info_outline, Icons.info),
+];
+
+/// The places in the menu: People only for an active organisation admin.
+List<_Destination> _destinationsFor({
+  required bool canManagePeople,
+}) => <_Destination>[
+  for (final destination in _destinations)
+    if (destination.section != Section.people || canManagePeople) destination,
 ];
 
 String _sectionLabel(AppLocalizations l10n, Section section) =>
     switch (section) {
       Section.forms => l10n.navForms,
       Section.submissions => l10n.navSubmissions,
+      Section.people => l10n.navPeople,
       Section.settings => l10n.navSettings,
       Section.about => l10n.navAbout,
     };
@@ -302,10 +333,15 @@ class _OfflineBanner extends ConsumerWidget {
 }
 
 class _SideNav extends ConsumerWidget {
-  const _SideNav({required this.section, required this.extended});
+  const _SideNav({
+    required this.section,
+    required this.extended,
+    required this.destinations,
+  });
 
   final Section section;
   final bool extended;
+  final List<_Destination> destinations;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -328,7 +364,7 @@ class _SideNav extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              for (final destination in _destinations)
+              for (final destination in destinations)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 2),
                   child: _NavItem(
@@ -436,9 +472,10 @@ class _NavItem extends StatelessWidget {
 }
 
 class _BottomNav extends ConsumerWidget {
-  const _BottomNav({required this.section});
+  const _BottomNav({required this.section, required this.destinations});
 
   final Section section;
+  final List<_Destination> destinations;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -455,7 +492,7 @@ class _BottomNav extends ConsumerWidget {
         padding: const EdgeInsets.all(Spacing.space1),
         child: Row(
           children: <Widget>[
-            for (final destination in _destinations)
+            for (final destination in destinations)
               Expanded(
                 child: _NavItem(
                   icon: destination.section == section

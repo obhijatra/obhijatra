@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
+import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 
 /// A server stand-in for widget tests.
@@ -135,15 +136,27 @@ class FakeManagerApi implements ManagerApi {
   @override
   String get serverUrl => 'https://data.example.org';
 
+  /// Whether [signIn] answers with an account that has a one-time
+  /// password.
+  bool signInMustChange = false;
+
+  /// The role of the account [signIn] answers with.
+  String signInRole = 'org_admin';
+
+  /// Every password sign-in, in order.
+  final List<(String, String)> signIns = <(String, String)>[];
+
   @override
   Future<StaffUser> signIn(String email, String password) async {
     final f = signInFailure;
     if (f != null) throw f;
+    signIns.add((email, password));
     return user = StaffUser(
       id: 'u1',
       name: 'Tania Rahman',
       email: email,
-      role: 'org_admin',
+      role: signInRole,
+      mustChangePassword: signInMustChange,
     );
   }
 
@@ -364,5 +377,262 @@ class FakeManagerApi implements ManagerApi {
       for (final r in submissions) r.id == row.id ? updated : r,
     ];
     return updated;
+  }
+
+  // ------------------------------------------------------------- people
+
+  /// Everyone, by kind, newest first.
+  final Map<PersonKind, List<Person>> people = <PersonKind, List<Person>>{
+    PersonKind.staff: <Person>[],
+    PersonKind.field: <Person>[],
+  };
+
+  /// When set, [listPeople] makes up this many people with [personFor].
+  int? peopleTotalOverride;
+  Person Function(int index)? personFor;
+
+  /// Every place.
+  List<Place> places = <Place>[];
+
+  /// Sign-in locks in force.
+  List<SignInLock> locks = <SignInLock>[];
+
+  /// What [countActiveOrgAdmins] answers.
+  int activeOrgAdmins = 2;
+
+  /// Set to make the next change to a person fail; it is then cleared.
+  AppProblem? personFailure;
+
+  final List<PeopleQuery> peopleQueries = <PeopleQuery>[];
+  final List<
+    ({PersonKind kind, PersonDraft draft, String password, bool oneTime})
+  >
+  created =
+      <({PersonKind kind, PersonDraft draft, String password, bool oneTime})>[];
+  final List<(Person, PersonDraft)> updates = <(Person, PersonDraft)>[];
+  final List<(Person, bool)> activeChanges = <(Person, bool)>[];
+  final List<(Person, String)> resets = <(Person, String)>[];
+  final List<SignInLock> unlocked = <SignInLock>[];
+
+  void _failPerson() {
+    final failure = personFailure;
+    if (failure != null) {
+      personFailure = null;
+      throw failure;
+    }
+  }
+
+  void _store(Person person) {
+    final list = people[person.kind]!;
+    final index = list.indexWhere((p) => p.id == person.id);
+    if (index < 0) {
+      list.insert(0, person);
+    } else {
+      list[index] = person;
+    }
+  }
+
+  Person _fromDraft(
+    String id,
+    PersonKind kind,
+    PersonDraft draft, {
+    bool active = true,
+    bool mustChange = false,
+  }) => Person(
+    id: id,
+    kind: kind,
+    name: draft.name,
+    email: draft.email,
+    verified: draft.verified,
+    phone: draft.phone,
+    role: draft.role,
+    locationId: draft.locationId,
+    locationPath:
+        places
+            .where((place) => place.id == draft.locationId)
+            .firstOrNull
+            ?.path ??
+        '',
+    active: active,
+    mustChangePassword: mustChange,
+    created: DateTime(2026, 11, 6),
+  );
+
+  @override
+  Future<PeoplePage> listPeople(PeopleQuery query) async {
+    await _enter();
+    peopleQueries.add(query);
+    final total = peopleTotalOverride;
+    if (total != null) {
+      final first = (query.page - 1) * PeopleQuery.perPage;
+      final count = (total - first).clamp(0, PeopleQuery.perPage);
+      return PeoplePage(
+        items: <Person>[for (var i = 0; i < count; i++) personFor!(first + i)],
+        page: query.page,
+        perPage: PeopleQuery.perPage,
+        totalItems: total,
+        totalPages: (total / PeopleQuery.perPage).ceil(),
+      );
+    }
+    final search = query.search.toLowerCase();
+    final digits = search.replaceAll(RegExp('[^0-9]'), '');
+    final lockedIds = <String>{for (final lock in locks) lock.accountId};
+    final matching = <Person>[
+      for (final person in people[query.kind]!)
+        if ((search.isEmpty ||
+                person.name.toLowerCase().contains(search) ||
+                person.email.toLowerCase().contains(search) ||
+                (digits.length >= 3 && person.phone.contains(digits))) &&
+            switch (query.status) {
+              null => true,
+              PeopleStatus.active => person.active,
+              PeopleStatus.deactivated => !person.active,
+              PeopleStatus.locked => lockedIds.contains(person.id),
+            } &&
+            (query.placePath == null ||
+                person.locationPath.startsWith(query.placePath!)))
+          person,
+    ];
+    if (query.sort == PeopleSort.name) {
+      matching.sort((a, b) => a.name.compareTo(b.name));
+    }
+    final first = (query.page - 1) * PeopleQuery.perPage;
+    return PeoplePage(
+      items: matching.skip(first).take(PeopleQuery.perPage).toList(),
+      page: query.page,
+      perPage: PeopleQuery.perPage,
+      totalItems: matching.length,
+      totalPages: (matching.length / PeopleQuery.perPage).ceil(),
+    );
+  }
+
+  @override
+  Future<Person> getPerson(PersonKind kind, String id) async {
+    await _enter();
+    final person = people[kind]!.where((p) => p.id == id).firstOrNull;
+    if (person == null) throw const AppProblem(ProblemKind.notFound);
+    return person;
+  }
+
+  @override
+  Future<Person> createPerson(
+    PersonKind kind,
+    PersonDraft draft, {
+    required String password,
+    required bool oneTimePassword,
+  }) async {
+    await _enter();
+    _failPerson();
+    created.add((
+      kind: kind,
+      draft: draft,
+      password: password,
+      oneTime: oneTimePassword,
+    ));
+    final person = _fromDraft(
+      'new${created.length}',
+      kind,
+      draft,
+      mustChange: oneTimePassword,
+    );
+    _store(person);
+    return person;
+  }
+
+  @override
+  Future<Person> updatePerson(Person person, PersonDraft draft) async {
+    await _enter();
+    _failPerson();
+    updates.add((person, draft));
+    final updated = _fromDraft(
+      person.id,
+      person.kind,
+      draft,
+      active: person.active,
+      mustChange: person.mustChangePassword,
+    );
+    _store(updated);
+    return updated;
+  }
+
+  @override
+  Future<Person> setPersonActive(Person person, {required bool active}) async {
+    await _enter();
+    _failPerson();
+    activeChanges.add((person, active));
+    final updated = person.copyWith(active: active);
+    _store(updated);
+    return updated;
+  }
+
+  @override
+  Future<Person> resetOneTimePassword(Person person, String password) async {
+    await _enter();
+    _failPerson();
+    resets.add((person, password));
+    final updated = person.copyWith(mustChangePassword: true);
+    _store(updated);
+    return updated;
+  }
+
+  @override
+  Future<List<SignInLock>> activeLocks(
+    PersonKind kind,
+    Iterable<String> accountIds,
+  ) async {
+    await _enter();
+    final ids = accountIds.toSet();
+    return <SignInLock>[
+      for (final lock in locks)
+        if (lock.kind == kind && ids.contains(lock.accountId)) lock,
+    ];
+  }
+
+  @override
+  Future<void> unlockSignIn(SignInLock lock) async {
+    await _enter();
+    unlocked.add(lock);
+    locks = <SignInLock>[
+      for (final l in locks)
+        if (l.id != lock.id) l,
+    ];
+  }
+
+  @override
+  Future<List<Place>> listPlaces() async {
+    await _enter();
+    return places;
+  }
+
+  @override
+  Future<int> countActiveOrgAdmins() async {
+    await _enter();
+    return activeOrgAdmins;
+  }
+
+  // ------------------------------------------------- one-time password
+
+  /// Every password change, as (current, new).
+  final List<(String, String)> passwordChanges = <(String, String)>[];
+
+  /// Set to make the next [chooseNewPassword] fail; it is then cleared.
+  AppProblem? passwordChangeFailure;
+
+  @override
+  Future<StaffUser> chooseNewPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final failure = passwordChangeFailure;
+    if (failure != null) {
+      passwordChangeFailure = null;
+      throw failure;
+    }
+    final me = user;
+    if (me == null) throw const AppProblem(ProblemKind.signInRequired);
+    passwordChanges.add((currentPassword, newPassword));
+    // The real server ends every session; the app signs in again.
+    signIns.add((me.email, newPassword));
+    return user = me.copyWith(mustChangePassword: false);
   }
 }

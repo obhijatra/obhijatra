@@ -736,7 +736,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roleBranchManager => 'Branch manager';
 
   @override
-  String get roleMe => 'Monitoring and evaluation';
+  String get roleMe => 'M&E officer';
 
   @override
   String get roleOrgAdmin => 'Organisation admin';
@@ -1199,4 +1199,417 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get leaveDiscard => 'Leave without saving';
+
+  @override
+  String get navPeople => 'People';
+
+  @override
+  String get roleFieldOfficer => 'Field officer';
+
+  @override
+  String get peopleTitle => 'People';
+
+  @override
+  String get peopleSummary =>
+      'Add the people who use Obhijatra, choose what each can do, and help them sign in.';
+
+  @override
+  String get peopleAdd => 'Add person';
+
+  @override
+  String get peopleKindLabel => 'Kind of staff';
+
+  @override
+  String get kindStaff => 'Office staff';
+
+  @override
+  String get kindField => 'Field staff';
+
+  @override
+  String get peopleSearch => 'Search';
+
+  @override
+  String get peopleSearchHint => 'Name, email or mobile number';
+
+  @override
+  String get peopleSearchClear => 'Clear search';
+
+  @override
+  String get peopleStatus => 'Status';
+
+  @override
+  String get peopleStatusAll => 'Everyone';
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusDeactivated => 'Deactivated';
+
+  @override
+  String get statusLocked => 'Locked';
+
+  @override
+  String get statusMustChoose => 'Must choose a password';
+
+  @override
+  String get personPlace => 'Place';
+
+  @override
+  String get placeAll => 'All places';
+
+  @override
+  String get peopleSort => 'Order';
+
+  @override
+  String get peopleSortNewest => 'Newest first';
+
+  @override
+  String get peopleSortName => 'Name, A to Z';
+
+  @override
+  String get emailConfirmed => 'Confirmed';
+
+  @override
+  String get peopleEmptyStaffTitle => 'No office staff yet';
+
+  @override
+  String get peopleEmptyFieldTitle => 'No field staff yet';
+
+  @override
+  String get peopleEmptyBody => 'Use ‘Add person’ to add the first one.';
+
+  @override
+  String get peopleNoMatchTitle => 'Nobody matches';
+
+  @override
+  String get peopleNoMatchBody => 'Try another search, status or place.';
+
+  @override
+  String get peopleNoLockedTitle => 'Nobody is locked out';
+
+  @override
+  String get peopleNoLockedBody =>
+      'People appear here when their sign-in is locked after too many wrong passwords.';
+
+  @override
+  String get peopleBack => 'Back to People';
+
+  @override
+  String get personDetails => 'Details';
+
+  @override
+  String get personName => 'Name';
+
+  @override
+  String get personKind => 'Kind';
+
+  @override
+  String get personKindHelp =>
+      'Office staff use this app. Field staff use the Obhijatra field app on a phone. This can’t be changed later.';
+
+  @override
+  String get personKindFixed => 'This can’t be changed.';
+
+  @override
+  String get personPlaceHelp => 'Where this person works.';
+
+  @override
+  String get personPlaceChoose => 'Choose a place';
+
+  @override
+  String get placeChange => 'Change';
+
+  @override
+  String get placeSearch => 'Search places';
+
+  @override
+  String get placeNoMatch => 'No place matches.';
+
+  @override
+  String get placeNone =>
+      'There are no places yet. Ask whoever runs your server to add them.';
+
+  @override
+  String get personEmailHelp =>
+      'Used to sign in with a password or with Google.';
+
+  @override
+  String get personVerified => 'Email address confirmed';
+
+  @override
+  String get personVerifiedHelp =>
+      'Turn on when you are sure this address belongs to the person. Needed for Google sign-in.';
+
+  @override
+  String get personPhoneHelp =>
+      'Needed for SMS-code sign-in. Not available to organisation admins.';
+
+  @override
+  String get personHowSignIn => 'How will they sign in?';
+
+  @override
+  String get personSignInOtp => 'Email and a one-time password';
+
+  @override
+  String get personSignInOtpHelp =>
+      'You will see a password to give them. They choose their own the first time they sign in.';
+
+  @override
+  String get personSignInOtpNeedsEmail => 'Add an email address to use this.';
+
+  @override
+  String get personSignInOther => 'SMS code or Google only';
+
+  @override
+  String get personSignInOtherHelp =>
+      'No password to give. They sign in with a code sent to their mobile, or with Google.';
+
+  @override
+  String get personCannotSignIn =>
+      'With these details they can’t sign in yet. Google sign-in needs a confirmed email address. SMS-code sign-in needs a mobile number and is not available to organisation admins.';
+
+  @override
+  String get personAdding => 'Adding…';
+
+  @override
+  String personAdded(String name) {
+    return '$name is added.';
+  }
+
+  @override
+  String personAddedHeading(String name) {
+    return '$name is added';
+  }
+
+  @override
+  String get personSaved => 'Changes saved.';
+
+  @override
+  String get personSignOutNote =>
+      'Changes to sign-in details, role or status sign this person out on their devices.';
+
+  @override
+  String get leavePersonBody => 'Your changes to this person will be lost.';
+
+  @override
+  String get personErrorName => 'Type the person’s name.';
+
+  @override
+  String get personErrorRole => 'Choose a role.';
+
+  @override
+  String get personErrorPlace => 'Choose a place.';
+
+  @override
+  String get personErrorEmailInvalid =>
+      'This does not look like an email address.';
+
+  @override
+  String get personErrorEmailOrPhone =>
+      'Give an email address or a mobile number, so this person can sign in.';
+
+  @override
+  String get personErrorAdminEmail =>
+      'An organisation admin needs an email address. SMS-code sign-in is not available to organisation admins.';
+
+  @override
+  String get personErrorOtpEmail =>
+      'A one-time password needs an email address to sign in with.';
+
+  @override
+  String get personErrorEmailTaken =>
+      'Someone else already has this email address.';
+
+  @override
+  String get personErrorPhoneTaken =>
+      'Someone else already has this mobile number.';
+
+  @override
+  String get personErrorLastAdmin =>
+      'This is the only active organisation admin. Make someone else an organisation admin first.';
+
+  @override
+  String get problemDetailsInvalid =>
+      'Some details need attention. Look for the messages under the fields.';
+
+  @override
+  String get problemPasswordChangeRequired =>
+      'Choose your own password before you carry on.';
+
+  @override
+  String get problemPasswordSavedSignIn =>
+      'Your new password is saved, but we could not sign you in again. Sign in with your new password.';
+
+  @override
+  String get personStatusTitle => 'Sign-in and status';
+
+  @override
+  String get personActiveHelp =>
+      'People who are deactivated can’t sign in. Everything they did is kept.';
+
+  @override
+  String get personOnlyAdmin =>
+      'You are the only active organisation admin, so you can’t change your own role or status. Make someone else an organisation admin first.';
+
+  @override
+  String deactivateTitle(String name) {
+    return 'Deactivate $name?';
+  }
+
+  @override
+  String get deactivateBody =>
+      'They will be signed out and cannot sign in until you reactivate them.';
+
+  @override
+  String get deactivateSelfBody =>
+      'You will be signed out and cannot sign in until another organisation admin reactivates you.';
+
+  @override
+  String get deactivateButton => 'Deactivate';
+
+  @override
+  String personDeactivated(String name) {
+    return '$name is deactivated.';
+  }
+
+  @override
+  String personReactivated(String name) {
+    return '$name can sign in again.';
+  }
+
+  @override
+  String personMustChooseNote(String name) {
+    return '$name has a one-time password. They must choose their own password when they next sign in.';
+  }
+
+  @override
+  String personLockedNote(String time) {
+    return 'Sign-in is locked after too many wrong passwords. It unlocks by itself at $time.';
+  }
+
+  @override
+  String get unlockButton => 'Unlock sign-in';
+
+  @override
+  String unlockDone(String name) {
+    return 'Sign-in unlocked. $name can try again now.';
+  }
+
+  @override
+  String get resetTitle => 'Forgotten password';
+
+  @override
+  String get resetHelp =>
+      'Give a new one-time password when someone has forgotten theirs. Their old password stops working.';
+
+  @override
+  String get resetButton => 'Give a new one-time password';
+
+  @override
+  String get resetNeedsEmail =>
+      'Add an email address and save first: a one-time password is used with an email address.';
+
+  @override
+  String resetConfirmTitle(String name) {
+    return 'Give $name a new one-time password?';
+  }
+
+  @override
+  String get resetConfirmBody =>
+      'Their current password stops working, and they are signed out on all their devices. You will see the new one-time password once.';
+
+  @override
+  String get resetConfirmButton => 'Give a new password';
+
+  @override
+  String otpTitle(String name) {
+    return 'One-time password for $name';
+  }
+
+  @override
+  String otpGive(String name) {
+    return 'Give this to $name in person or by phone. They must choose their own password when they first sign in. It will not be shown again.';
+  }
+
+  @override
+  String otpSignInWith(String email) {
+    return 'They sign in with $email.';
+  }
+
+  @override
+  String otpSpoken(String characters) {
+    return 'One-time password: $characters';
+  }
+
+  @override
+  String get otpCopy => 'Copy password';
+
+  @override
+  String get otpCopied => 'Password copied.';
+
+  @override
+  String get otpDone => 'Done';
+
+  @override
+  String get otpAddAnother => 'Add another person';
+
+  @override
+  String get leaveOtpTitle => 'Leave without noting the password?';
+
+  @override
+  String get leaveOtpBody =>
+      'The one-time password will not be shown again. If you leave now, you can give a new one from this person’s page.';
+
+  @override
+  String get leaveOtpLeave => 'Leave';
+
+  @override
+  String get choosePasswordTitle => 'Choose your own password';
+
+  @override
+  String get choosePasswordIntro =>
+      'You signed in with a one-time password. Choose a password that only you know before you carry on.';
+
+  @override
+  String choosePasswordAccount(String name) {
+    return 'Signed in as $name';
+  }
+
+  @override
+  String get choosePasswordCurrent => 'One-time password';
+
+  @override
+  String get choosePasswordCurrentHelp =>
+      'The password your organisation admin gave you.';
+
+  @override
+  String get choosePasswordNew => 'New password';
+
+  @override
+  String get choosePasswordHint =>
+      'Use 3 or 4 words you will remember, at least 12 characters.';
+
+  @override
+  String get choosePasswordRepeat => 'Type the new password again';
+
+  @override
+  String get choosePasswordTooShort => 'Use at least 12 characters.';
+
+  @override
+  String get choosePasswordSame =>
+      'Choose a password that is different from the one-time password.';
+
+  @override
+  String get choosePasswordMismatch => 'The two passwords are not the same.';
+
+  @override
+  String get choosePasswordWrongCurrent =>
+      'This is not the one-time password you were given. Check it and try again.';
+
+  @override
+  String get choosePasswordSave => 'Save and continue';
+
+  @override
+  String get choosePasswordSaved => 'Your new password is saved.';
 }

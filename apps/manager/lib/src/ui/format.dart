@@ -22,6 +22,20 @@ abstract final class Format {
     return l10n.dateOther(DateFormat(pattern, locale).format(moment), time);
   }
 
+  /// "14:10" today, otherwise "7 November, 00:05": a moment in the next
+  /// few hours.
+  static String clock(BuildContext context, DateTime moment, {DateTime? now}) {
+    final locale = _locale(context);
+    final current = now ?? DateTime.now();
+    final sameDay =
+        moment.year == current.year &&
+        moment.month == current.month &&
+        moment.day == current.day;
+    final time = DateFormat.Hm(locale).format(moment);
+    if (sameDay) return time;
+    return '${DateFormat('d MMMM', locale).format(moment)}, $time';
+  }
+
   /// "12 October 2026".
   static String day(BuildContext context, DateTime moment) =>
       DateFormat('d MMMM y', _locale(context)).format(moment);

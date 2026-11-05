@@ -882,9 +882,9 @@
   "@roleBranchManager": {
     "description": "Role name."
   },
-  "roleMe": "Monitoring and evaluation",
+  "roleMe": "M&E officer",
   "@roleMe": {
-    "description": "Role name."
+    "description": "Role name: monitoring and evaluation (M&E) officer."
   },
   "roleOrgAdmin": "Organisation admin",
   "@roleOrgAdmin": {
@@ -1459,5 +1459,543 @@
   "leaveDiscard": "Leave without saving",
   "@leaveDiscard": {
     "description": "Dialog button: leave and lose changes."
+  },
+  "navPeople": "People",
+  "@navPeople": {
+    "description": "Menu item: the people who use Obhijatra (organisation admins only)."
+  },
+  "roleFieldOfficer": "Field officer",
+  "@roleFieldOfficer": {
+    "description": "Role name: a field officer, who uses the field app."
+  },
+  "peopleTitle": "People",
+  "@peopleTitle": {
+    "description": "Heading of the People screen."
+  },
+  "peopleSummary": "Add the people who use Obhijatra, choose what each can do, and help them sign in.",
+  "@peopleSummary": {
+    "description": "Line under the People heading."
+  },
+  "peopleAdd": "Add person",
+  "@peopleAdd": {
+    "description": "Primary button and page heading: add a person."
+  },
+  "peopleKindLabel": "Kind of staff",
+  "@peopleKindLabel": {
+    "description": "Spoken name of the Office staff / Field staff tabs."
+  },
+  "kindStaff": "Office staff",
+  "@kindStaff": {
+    "description": "Tab and choice: people who use this manager app."
+  },
+  "kindField": "Field staff",
+  "@kindField": {
+    "description": "Tab and choice: people who use the field app on a phone."
+  },
+  "peopleSearch": "Search",
+  "@peopleSearch": {
+    "description": "Label of the search box on the People screen."
+  },
+  "peopleSearchHint": "Name, email or mobile number",
+  "@peopleSearchHint": {
+    "description": "Hint inside the search box."
+  },
+  "peopleSearchClear": "Clear search",
+  "@peopleSearchClear": {
+    "description": "Spoken name of the button that empties the search box."
+  },
+  "peopleStatus": "Status",
+  "@peopleStatus": {
+    "description": "Filter label: status."
+  },
+  "peopleStatusAll": "Everyone",
+  "@peopleStatusAll": {
+    "description": "Status filter choice: no status filter."
+  },
+  "statusActive": "Active",
+  "@statusActive": {
+    "description": "Status chip, filter choice and switch label: the person can sign in."
+  },
+  "statusDeactivated": "Deactivated",
+  "@statusDeactivated": {
+    "description": "Status chip and filter choice: the person cannot sign in."
+  },
+  "statusLocked": "Locked",
+  "@statusLocked": {
+    "description": "Status chip and filter choice: sign-in locked after too many wrong passwords."
+  },
+  "statusMustChoose": "Must choose a password",
+  "@statusMustChoose": {
+    "description": "Status chip: the person has a one-time password."
+  },
+  "personPlace": "Place",
+  "@personPlace": {
+    "description": "Field label and filter label: the place where a person works."
+  },
+  "placeAll": "All places",
+  "@placeAll": {
+    "description": "Place filter choice: every place."
+  },
+  "peopleSort": "Order",
+  "@peopleSort": {
+    "description": "Label of the list order menu."
+  },
+  "peopleSortNewest": "Newest first",
+  "@peopleSortNewest": {
+    "description": "List order: most recently added first."
+  },
+  "peopleSortName": "Name, A to Z",
+  "@peopleSortName": {
+    "description": "List order: by name."
+  },
+  "emailConfirmed": "Confirmed",
+  "@emailConfirmed": {
+    "description": "Small mark next to an email address an admin has confirmed."
+  },
+  "peopleEmptyStaffTitle": "No office staff yet",
+  "@peopleEmptyStaffTitle": {
+    "description": "Empty list title (office staff)."
+  },
+  "peopleEmptyFieldTitle": "No field staff yet",
+  "@peopleEmptyFieldTitle": {
+    "description": "Empty list title (field staff)."
+  },
+  "peopleEmptyBody": "Use ‘Add person’ to add the first one.",
+  "@peopleEmptyBody": {
+    "description": "Empty list text."
+  },
+  "peopleNoMatchTitle": "Nobody matches",
+  "@peopleNoMatchTitle": {
+    "description": "Title when the search or filters find nobody."
+  },
+  "peopleNoMatchBody": "Try another search, status or place.",
+  "@peopleNoMatchBody": {
+    "description": "Text when the search or filters find nobody."
+  },
+  "peopleNoLockedTitle": "Nobody is locked out",
+  "@peopleNoLockedTitle": {
+    "description": "Title when the Locked filter finds nobody."
+  },
+  "peopleNoLockedBody": "People appear here when their sign-in is locked after too many wrong passwords.",
+  "@peopleNoLockedBody": {
+    "description": "Text when the Locked filter finds nobody."
+  },
+  "peopleBack": "Back to People",
+  "@peopleBack": {
+    "description": "Link back from a person's page to the list."
+  },
+  "personDetails": "Details",
+  "@personDetails": {
+    "description": "Heading of the person's details."
+  },
+  "personName": "Name",
+  "@personName": {
+    "description": "Field label: the person's full name."
+  },
+  "personKind": "Kind",
+  "@personKind": {
+    "description": "Field label: office staff or field staff."
+  },
+  "personKindHelp": "Office staff use this app. Field staff use the Obhijatra field app on a phone. This can’t be changed later.",
+  "@personKindHelp": {
+    "description": "Help under the Kind choice when adding a person."
+  },
+  "personKindFixed": "This can’t be changed.",
+  "@personKindFixed": {
+    "description": "Help under the Kind on a person's page."
+  },
+  "personPlaceHelp": "Where this person works.",
+  "@personPlaceHelp": {
+    "description": "Help under the Place field."
+  },
+  "personPlaceChoose": "Choose a place",
+  "@personPlaceChoose": {
+    "description": "Button and dialog title: choose a place."
+  },
+  "placeChange": "Change",
+  "@placeChange": {
+    "description": "Button: choose a different place."
+  },
+  "placeSearch": "Search places",
+  "@placeSearch": {
+    "description": "Search box in the place chooser."
+  },
+  "placeNoMatch": "No place matches.",
+  "@placeNoMatch": {
+    "description": "Place chooser: the search finds nothing."
+  },
+  "placeNone": "There are no places yet. Ask whoever runs your server to add them.",
+  "@placeNone": {
+    "description": "Place chooser: the organisation has no places."
+  },
+  "personEmailHelp": "Used to sign in with a password or with Google.",
+  "@personEmailHelp": {
+    "description": "Help under the Email field."
+  },
+  "personVerified": "Email address confirmed",
+  "@personVerified": {
+    "description": "Switch label: the admin confirmed the email address belongs to the person."
+  },
+  "personVerifiedHelp": "Turn on when you are sure this address belongs to the person. Needed for Google sign-in.",
+  "@personVerifiedHelp": {
+    "description": "Help under the Email address confirmed switch."
+  },
+  "personPhoneHelp": "Needed for SMS-code sign-in. Not available to organisation admins.",
+  "@personPhoneHelp": {
+    "description": "Help under the Mobile number field."
+  },
+  "personHowSignIn": "How will they sign in?",
+  "@personHowSignIn": {
+    "description": "Heading of the sign-in choice when adding a person."
+  },
+  "personSignInOtp": "Email and a one-time password",
+  "@personSignInOtp": {
+    "description": "Sign-in choice: email with a one-time password."
+  },
+  "personSignInOtpHelp": "You will see a password to give them. They choose their own the first time they sign in.",
+  "@personSignInOtpHelp": {
+    "description": "Help for the one-time password choice."
+  },
+  "personSignInOtpNeedsEmail": "Add an email address to use this.",
+  "@personSignInOtpNeedsEmail": {
+    "description": "Help for the one-time password choice when no email is typed."
+  },
+  "personSignInOther": "SMS code or Google only",
+  "@personSignInOther": {
+    "description": "Sign-in choice: no password from the admin."
+  },
+  "personSignInOtherHelp": "No password to give. They sign in with a code sent to their mobile, or with Google.",
+  "@personSignInOtherHelp": {
+    "description": "Help for the SMS code or Google choice."
+  },
+  "personCannotSignIn": "With these details they can’t sign in yet. Google sign-in needs a confirmed email address. SMS-code sign-in needs a mobile number and is not available to organisation admins.",
+  "@personCannotSignIn": {
+    "description": "Warning when the details chosen give the person no way to sign in."
+  },
+  "personAdding": "Adding…",
+  "@personAdding": {
+    "description": "Button label while a person is being added."
+  },
+  "personAdded": "{name} is added.",
+  "@personAdded": {
+    "description": "Message after adding a person.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "personAddedHeading": "{name} is added",
+  "@personAddedHeading": {
+    "description": "Heading above the one-time password after adding a person.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "personSaved": "Changes saved.",
+  "@personSaved": {
+    "description": "Message after saving a person's details."
+  },
+  "personSignOutNote": "Changes to sign-in details, role or status sign this person out on their devices.",
+  "@personSignOutNote": {
+    "description": "Note next to Save on a person's page."
+  },
+  "leavePersonBody": "Your changes to this person will be lost.",
+  "@leavePersonBody": {
+    "description": "Leave dialog text on a person's page."
+  },
+  "personErrorName": "Type the person’s name.",
+  "@personErrorName": {
+    "description": "Field error: no name."
+  },
+  "personErrorRole": "Choose a role.",
+  "@personErrorRole": {
+    "description": "Field error: no role."
+  },
+  "personErrorPlace": "Choose a place.",
+  "@personErrorPlace": {
+    "description": "Field error: no place."
+  },
+  "personErrorEmailInvalid": "This does not look like an email address.",
+  "@personErrorEmailInvalid": {
+    "description": "Field error: the email address is not in a usable form."
+  },
+  "personErrorEmailOrPhone": "Give an email address or a mobile number, so this person can sign in.",
+  "@personErrorEmailOrPhone": {
+    "description": "Field error: neither an email address nor a mobile number."
+  },
+  "personErrorAdminEmail": "An organisation admin needs an email address. SMS-code sign-in is not available to organisation admins.",
+  "@personErrorAdminEmail": {
+    "description": "Field error: an organisation admin without an email address."
+  },
+  "personErrorOtpEmail": "A one-time password needs an email address to sign in with.",
+  "@personErrorOtpEmail": {
+    "description": "Field error: a one-time password without an email address."
+  },
+  "personErrorEmailTaken": "Someone else already has this email address.",
+  "@personErrorEmailTaken": {
+    "description": "Field error: the email address is used by another person."
+  },
+  "personErrorPhoneTaken": "Someone else already has this mobile number.",
+  "@personErrorPhoneTaken": {
+    "description": "Field error: the mobile number is used by another person."
+  },
+  "personErrorLastAdmin": "This is the only active organisation admin. Make someone else an organisation admin first.",
+  "@personErrorLastAdmin": {
+    "description": "Field error: the change would leave no active organisation admin."
+  },
+  "problemDetailsInvalid": "Some details need attention. Look for the messages under the fields.",
+  "@problemDetailsInvalid": {
+    "description": "Problem: the server refused some details."
+  },
+  "problemPasswordChangeRequired": "Choose your own password before you carry on.",
+  "@problemPasswordChangeRequired": {
+    "description": "Problem: the person must replace their one-time password first."
+  },
+  "problemPasswordSavedSignIn": "Your new password is saved, but we could not sign you in again. Sign in with your new password.",
+  "@problemPasswordSavedSignIn": {
+    "description": "Problem: the new password was saved but signing in again failed."
+  },
+  "personStatusTitle": "Sign-in and status",
+  "@personStatusTitle": {
+    "description": "Heading of the sign-in and status panel on a person's page."
+  },
+  "personActiveHelp": "People who are deactivated can’t sign in. Everything they did is kept.",
+  "@personActiveHelp": {
+    "description": "Help under the Active switch."
+  },
+  "personOnlyAdmin": "You are the only active organisation admin, so you can’t change your own role or status. Make someone else an organisation admin first.",
+  "@personOnlyAdmin": {
+    "description": "Shown on your own page when you are the only active organisation admin."
+  },
+  "deactivateTitle": "Deactivate {name}?",
+  "@deactivateTitle": {
+    "description": "Dialog title before deactivating a person.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deactivateBody": "They will be signed out and cannot sign in until you reactivate them.",
+  "@deactivateBody": {
+    "description": "Dialog text before deactivating a person."
+  },
+  "deactivateSelfBody": "You will be signed out and cannot sign in until another organisation admin reactivates you.",
+  "@deactivateSelfBody": {
+    "description": "Dialog text before deactivating yourself."
+  },
+  "deactivateButton": "Deactivate",
+  "@deactivateButton": {
+    "description": "Dialog button: deactivate the person."
+  },
+  "personDeactivated": "{name} is deactivated.",
+  "@personDeactivated": {
+    "description": "Message after deactivating a person.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "personReactivated": "{name} can sign in again.",
+  "@personReactivated": {
+    "description": "Message after reactivating a person.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "personMustChooseNote": "{name} has a one-time password. They must choose their own password when they next sign in.",
+  "@personMustChooseNote": {
+    "description": "Note on a person's page while they have a one-time password.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "personLockedNote": "Sign-in is locked after too many wrong passwords. It unlocks by itself at {time}.",
+  "@personLockedNote": {
+    "description": "Note on a person's page while their sign-in is locked.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "unlockButton": "Unlock sign-in",
+  "@unlockButton": {
+    "description": "Button: lift a sign-in lock early."
+  },
+  "unlockDone": "Sign-in unlocked. {name} can try again now.",
+  "@unlockDone": {
+    "description": "Message after unlocking sign-in.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "resetTitle": "Forgotten password",
+  "@resetTitle": {
+    "description": "Heading: give a new one-time password."
+  },
+  "resetHelp": "Give a new one-time password when someone has forgotten theirs. Their old password stops working.",
+  "@resetHelp": {
+    "description": "Help next to the new one-time password button."
+  },
+  "resetButton": "Give a new one-time password",
+  "@resetButton": {
+    "description": "Button: give a new one-time password."
+  },
+  "resetNeedsEmail": "Add an email address and save first: a one-time password is used with an email address.",
+  "@resetNeedsEmail": {
+    "description": "Shown when a person without an email address cannot get a one-time password."
+  },
+  "resetConfirmTitle": "Give {name} a new one-time password?",
+  "@resetConfirmTitle": {
+    "description": "Dialog title before giving a new one-time password.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "resetConfirmBody": "Their current password stops working, and they are signed out on all their devices. You will see the new one-time password once.",
+  "@resetConfirmBody": {
+    "description": "Dialog text before giving a new one-time password."
+  },
+  "resetConfirmButton": "Give a new password",
+  "@resetConfirmButton": {
+    "description": "Dialog button: give a new one-time password."
+  },
+  "otpTitle": "One-time password for {name}",
+  "@otpTitle": {
+    "description": "Heading above a one-time password.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "otpGive": "Give this to {name} in person or by phone. They must choose their own password when they first sign in. It will not be shown again.",
+  "@otpGive": {
+    "description": "Instructions under a one-time password.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "otpSignInWith": "They sign in with {email}.",
+  "@otpSignInWith": {
+    "description": "The email address the person signs in with.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "otpSpoken": "One-time password: {characters}",
+  "@otpSpoken": {
+    "description": "Screen-reader text for a one-time password, read letter by letter.",
+    "placeholders": {
+      "characters": {
+        "type": "String"
+      }
+    }
+  },
+  "otpCopy": "Copy password",
+  "@otpCopy": {
+    "description": "Button: copy the one-time password."
+  },
+  "otpCopied": "Password copied.",
+  "@otpCopied": {
+    "description": "Message after copying the one-time password."
+  },
+  "otpDone": "Done",
+  "@otpDone": {
+    "description": "Button: close the one-time password."
+  },
+  "otpAddAnother": "Add another person",
+  "@otpAddAnother": {
+    "description": "Button: add another person after adding one."
+  },
+  "leaveOtpTitle": "Leave without noting the password?",
+  "@leaveOtpTitle": {
+    "description": "Leave dialog title while a one-time password is shown."
+  },
+  "leaveOtpBody": "The one-time password will not be shown again. If you leave now, you can give a new one from this person’s page.",
+  "@leaveOtpBody": {
+    "description": "Leave dialog text while a one-time password is shown."
+  },
+  "leaveOtpLeave": "Leave",
+  "@leaveOtpLeave": {
+    "description": "Leave dialog button while a one-time password is shown."
+  },
+  "choosePasswordTitle": "Choose your own password",
+  "@choosePasswordTitle": {
+    "description": "Heading of the step after signing in with a one-time password."
+  },
+  "choosePasswordIntro": "You signed in with a one-time password. Choose a password that only you know before you carry on.",
+  "@choosePasswordIntro": {
+    "description": "Text under the heading."
+  },
+  "choosePasswordAccount": "Signed in as {name}",
+  "@choosePasswordAccount": {
+    "description": "Who is signed in.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "choosePasswordCurrent": "One-time password",
+  "@choosePasswordCurrent": {
+    "description": "Field label: the one-time password from the admin."
+  },
+  "choosePasswordCurrentHelp": "The password your organisation admin gave you.",
+  "@choosePasswordCurrentHelp": {
+    "description": "Help under the one-time password field."
+  },
+  "choosePasswordNew": "New password",
+  "@choosePasswordNew": {
+    "description": "Field label: the new password."
+  },
+  "choosePasswordHint": "Use 3 or 4 words you will remember, at least 12 characters.",
+  "@choosePasswordHint": {
+    "description": "Help under the new password field."
+  },
+  "choosePasswordRepeat": "Type the new password again",
+  "@choosePasswordRepeat": {
+    "description": "Field label: repeat the new password."
+  },
+  "choosePasswordTooShort": "Use at least 12 characters.",
+  "@choosePasswordTooShort": {
+    "description": "Field error: the new password is too short."
+  },
+  "choosePasswordSame": "Choose a password that is different from the one-time password.",
+  "@choosePasswordSame": {
+    "description": "Field error: the new password is the one-time password."
+  },
+  "choosePasswordMismatch": "The two passwords are not the same.",
+  "@choosePasswordMismatch": {
+    "description": "Field error: the repeated password differs."
+  },
+  "choosePasswordWrongCurrent": "This is not the one-time password you were given. Check it and try again.",
+  "@choosePasswordWrongCurrent": {
+    "description": "Field error: the one-time password is wrong."
+  },
+  "choosePasswordSave": "Save and continue",
+  "@choosePasswordSave": {
+    "description": "Button: save the new password and carry on."
+  },
+  "choosePasswordSaved": "Your new password is saved.",
+  "@choosePasswordSaved": {
+    "description": "Message after choosing a new password."
   }
 }

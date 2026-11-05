@@ -92,15 +92,25 @@ final onlineProvider = NotifierProvider<OnlineNotifier, bool>(
 
 /// Runs [call] from a provider, remembering whether the server could be
 /// reached.
-Future<T> tracked<T>(Ref ref, Future<T> Function() call) =>
-    _track(ref.read(onlineProvider.notifier), call);
+Future<T> tracked<T>(Ref ref, Future<T> Function() call) => _track(
+  ref.read(onlineProvider.notifier),
+  ref.read(sessionProvider.notifier),
+  call,
+);
 
 /// Runs [call] from a screen, remembering whether the server could be
 /// reached.
-Future<T> trackedUi<T>(WidgetRef ref, Future<T> Function() call) =>
-    _track(ref.read(onlineProvider.notifier), call);
+Future<T> trackedUi<T>(WidgetRef ref, Future<T> Function() call) => _track(
+  ref.read(onlineProvider.notifier),
+  ref.read(sessionProvider.notifier),
+  call,
+);
 
-Future<T> _track<T>(OnlineNotifier online, Future<T> Function() call) async {
+Future<T> _track<T>(
+  OnlineNotifier online,
+  SessionNotifier session,
+  Future<T> Function() call,
+) async {
   try {
     final result = await call();
     online.report(online: true);
@@ -109,6 +119,11 @@ Future<T> _track<T>(OnlineNotifier online, Future<T> Function() call) async {
     final problem = problemFrom(error);
     // A refusal from the server still proves the server is there.
     online.report(online: problem.kind != ProblemKind.offline);
+    // The server refuses everything until a one-time password is replaced:
+    // the app shows the "choose your own password" step instead.
+    if (problem.kind == ProblemKind.passwordChangeRequired) {
+      session.requirePasswordChange();
+    }
     throw problem;
   }
 }
@@ -120,20 +135,54 @@ class SessionNotifier extends Notifier<StaffUser?> {
   @override
   StaffUser? build() => ref.watch(apiProvider).currentUser;
 
+  /// [tracked] for the session itself, which cannot read its own provider.
+  Future<T> _tracked<T>(Future<T> Function() call) =>
+      _track(ref.read(onlineProvider.notifier), this, call);
+
   /// Signs in. Throws an [AppProblem] when the server says no.
   Future<void> signIn(String email, String password) async {
-    final user = await tracked(
-      ref,
+    final user = await _tracked(
       () => ref.read(apiProvider).signIn(email, password),
     );
+    // Kept in memory for a moment, so the person does not type their
+    // one-time password twice.
+    ref
+        .read(typedOneTimePasswordProvider.notifier)
+        .keep(user.mustChangePassword ? password : null);
+    state = user;
+  }
+
+  /// Shows the "choose your own password" step: the server refused a
+  /// request until the person replaces their one-time password.
+  void requirePasswordChange() {
+    final user = state;
+    if (user == null || user.mustChangePassword) return;
+    state = user.copyWith(mustChangePassword: true);
+  }
+
+  /// Replaces the one-time password and carries on signed in with the new
+  /// password. Throws an [AppProblem] when the server says no; after
+  /// [ProblemKind.passwordSavedSignIn] the person must sign in again.
+  Future<void> chooseNewPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = await _tracked(
+      () => ref
+          .read(apiProvider)
+          .chooseNewPassword(
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+          ),
+    );
+    ref.read(typedOneTimePasswordProvider.notifier).keep(null);
     state = user;
   }
 
   /// Signs in with the code from an SMS. Throws an [AppProblem] when the
   /// server says no.
   Future<void> signInWithPhoneCode(String codeId, String code) async {
-    final user = await tracked(
-      ref,
+    final user = await _tracked(
       () => ref.read(apiProvider).signInWithPhoneCode(codeId, code),
     );
     state = user;
@@ -145,8 +194,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
     required FutureOr<void> Function(Uri url) openUrl,
     required Future<void> cancelled,
   }) async {
-    final user = await tracked(
-      ref,
+    final user = await _tracked(
       () => ref
           .read(apiProvider)
           .signInWithGoogle(openUrl: openUrl, cancelled: cancelled),
@@ -159,6 +207,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
   /// Ends the session and forgets everything loaded for it.
   void signOut() {
     ref.read(apiProvider).signOut();
+    ref.read(typedOneTimePasswordProvider.notifier).keep(null);
     state = null;
   }
 }
@@ -167,6 +216,22 @@ class SessionNotifier extends Notifier<StaffUser?> {
 final sessionProvider = NotifierProvider<SessionNotifier, StaffUser?>(
   SessionNotifier.new,
 );
+
+/// The one-time password the person has just typed to sign in, kept in
+/// memory only until they have chosen their own.
+class TypedOneTimePasswordNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  /// Keeps [password], or forgets it with null.
+  void keep(String? password) => state = password;
+}
+
+/// Holds the one-time password just typed, or null.
+final typedOneTimePasswordProvider =
+    NotifierProvider<TypedOneTimePasswordNotifier, String?>(
+      TypedOneTimePasswordNotifier.new,
+    );
 
 String? _userId(Ref ref) => ref.watch(sessionProvider.select((u) => u?.id));
 

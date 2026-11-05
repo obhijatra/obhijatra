@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
+import 'package:obhijatra_manager/src/data/people.dart';
+import 'package:obhijatra_manager/src/data/phone_number.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 import 'package:pocketbase/pocketbase.dart';
 
@@ -52,7 +54,12 @@ class PocketBaseApi implements ManagerApi {
     email: record.getStringValue('email'),
     phone: record.getStringValue('phone'),
     role: record.getStringValue('role'),
+    // An answer without the field (an older server) counts as active.
+    active: record.data['active'] != false,
+    mustChangePassword: record.getBoolValue(_mustChange),
   );
+
+  static const String _mustChange = 'must_change_password';
 
   Future<T> _guard<T>(Future<T> Function() call) async {
     try {
@@ -631,4 +638,301 @@ class PocketBaseApi implements ManagerApi {
     }
     return saved;
   });
+
+  // ------------------------------------------------------------- people
+
+  static const String _locks = 'login_locks';
+
+  /// The sign-in locks in force now. `@now` is the server's clock, so a
+  /// wrong clock on this computer changes nothing.
+  static const String _lockInForce =
+      'account_collection = {:kind} && unlocked = false && '
+      'locked_until > @now';
+
+  /// The most accounts one "locked" filter or lock lookup asks about.
+  static const int _maxIds = 200;
+
+  Person _personFrom(PersonKind kind, RecordModel record) => Person(
+    id: record.id,
+    kind: kind,
+    name: record.getStringValue('name'),
+    email: record.getStringValue('email'),
+    verified: record.getBoolValue('verified'),
+    phone: record.getStringValue('phone'),
+    role: record.getStringValue('role'),
+    locationId: record.getStringValue('location'),
+    locationPath: record.getStringValue('location_path'),
+    active: record.getBoolValue('active'),
+    mustChangePassword: record.getBoolValue(_mustChange),
+    created: _date(record.getStringValue('created')),
+  );
+
+  /// `(field = {:p0} || field = {:p1} ...)` for [ids], with its values.
+  (String, Map<String, dynamic>) _anyOf(String field, List<String> ids) {
+    final params = <String, dynamic>{};
+    final parts = <String>[];
+    for (var i = 0; i < ids.length; i++) {
+      parts.add('$field = {:id$i}');
+      params['id$i'] = ids[i];
+    }
+    return ('(${parts.join(' || ')})', params);
+  }
+
+  @override
+  Future<PeoplePage> listPeople(PeopleQuery query) => _guard(() async {
+    final parts = <String>[];
+    final params = <String, dynamic>{};
+    final search = query.search.trim();
+    if (search.isNotEmpty) {
+      // Mobile numbers are kept as +8801712345678, so the digits typed
+      // ("01712 345678") are looked for as well as the text itself.
+      final digits = latinDigits(search).replaceAll(RegExp('[^0-9]'), '');
+      parts.add(
+        digits.length >= 3
+            ? '(name ~ {:q} || email ~ {:q} || phone ~ {:digits})'
+            : '(name ~ {:q} || email ~ {:q} || phone ~ {:q})',
+      );
+      params['q'] = search;
+      if (digits.length >= 3) params['digits'] = digits;
+    }
+    switch (query.status) {
+      case null:
+        break;
+      case PeopleStatus.active:
+        parts.add('active = true');
+      case PeopleStatus.deactivated:
+        parts.add('active = false');
+      case PeopleStatus.locked:
+        final locks = await _pb
+            .collection(_locks)
+            .getFullList(
+              filter: _pb.filter(_lockInForce, <String, dynamic>{
+                'kind': query.kind.collection,
+              }),
+            );
+        final ids = <String>{
+          for (final lock in locks) lock.getStringValue('account_id'),
+        }.where((id) => id.isNotEmpty).take(_maxIds).toList();
+        if (ids.isEmpty) return PeoplePage.empty(page: query.page);
+        final (expression, values) = _anyOf('id', ids);
+        parts.add(expression);
+        params.addAll(values);
+    }
+    final place = query.placePath;
+    if (place != null && place.isNotEmpty) {
+      // A path occurs inside another only as its start (see the server's
+      // LocationPathPattern), so "contains" finds the place and every
+      // place below it.
+      parts.add('location_path ~ {:place}');
+      params['place'] = place;
+    }
+    final result = await _pb
+        .collection(query.kind.collection)
+        .getList(
+          page: query.page,
+          perPage: PeopleQuery.perPage,
+          sort: switch (query.sort) {
+            PeopleSort.newest => '-created',
+            PeopleSort.name => 'name,-created',
+          },
+          filter: parts.isEmpty ? null : _pb.filter(parts.join(' && '), params),
+        );
+    return PeoplePage(
+      items: result.items.map((r) => _personFrom(query.kind, r)).toList(),
+      page: result.page,
+      perPage: result.perPage,
+      totalItems: result.totalItems,
+      totalPages: result.totalPages,
+    );
+  });
+
+  @override
+  Future<Person> getPerson(PersonKind kind, String id) => _guard(() async {
+    final record = await _pb.collection(kind.collection).getOne(id);
+    return _personFrom(kind, record);
+  });
+
+  /// Runs a change to a person; refused fields become
+  /// [ProblemKind.detailsInvalid] with the server's codes and messages.
+  Future<T> _personChange<T>(Future<T> Function() call) async {
+    try {
+      return await call().timeout(timeout);
+    } on ClientException catch (e) {
+      throw _detailsProblem(e);
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  static AppProblem _detailsProblem(ClientException e) {
+    final fields = e.statusCode == 400
+        ? fieldProblems(e)
+        : const <String, String>{};
+    if (fields.isEmpty) return problemFrom(e);
+    return AppProblem(
+      ProblemKind.detailsInvalid,
+      statusCode: 400,
+      fields: fields,
+      codes: fieldCodes(e),
+    );
+  }
+
+  @override
+  Future<Person> createPerson(
+    PersonKind kind,
+    PersonDraft draft, {
+    required String password,
+    required bool oneTimePassword,
+  }) => _personChange(() async {
+    final record = await _pb
+        .collection(kind.collection)
+        .create(
+          body: <String, dynamic>{
+            ...draft.toJson(),
+            'active': true,
+            'password': password,
+            'passwordConfirm': password,
+            _mustChange: oneTimePassword,
+          },
+        );
+    return _personFrom(kind, record);
+  });
+
+  @override
+  Future<Person> updatePerson(Person person, PersonDraft draft) =>
+      _personChange(() async {
+        final changes = draft.changesFrom(person);
+        if (changes.isEmpty) return person;
+        final record = await _pb
+            .collection(person.kind.collection)
+            .update(person.id, body: changes);
+        return _personFrom(person.kind, record);
+      });
+
+  @override
+  Future<Person> setPersonActive(Person person, {required bool active}) =>
+      _personChange(() async {
+        final record = await _pb
+            .collection(person.kind.collection)
+            .update(person.id, body: <String, dynamic>{'active': active});
+        return _personFrom(person.kind, record);
+      });
+
+  @override
+  Future<Person> resetOneTimePassword(Person person, String password) =>
+      _personChange(() async {
+        final record = await _pb
+            .collection(person.kind.collection)
+            .update(
+              person.id,
+              body: <String, dynamic>{
+                'password': password,
+                'passwordConfirm': password,
+                _mustChange: true,
+              },
+            );
+        return _personFrom(person.kind, record);
+      });
+
+  @override
+  Future<List<SignInLock>> activeLocks(
+    PersonKind kind,
+    Iterable<String> accountIds,
+  ) => _guard(() async {
+    final ids = accountIds.toSet().take(_maxIds).toList();
+    if (ids.isEmpty) return const <SignInLock>[];
+    final (expression, values) = _anyOf('account_id', ids);
+    final records = await _pb
+        .collection(_locks)
+        .getFullList(
+          filter: _pb.filter('$_lockInForce && $expression', <String, dynamic>{
+            'kind': kind.collection,
+            ...values,
+          }),
+        );
+    return <SignInLock>[
+      for (final record in records)
+        SignInLock(
+          id: record.id,
+          kind: kind,
+          accountId: record.getStringValue('account_id'),
+          ip: record.getStringValue('ip'),
+          failedAttempts: record.getIntValue('failed_attempts'),
+          lockedUntil:
+              _date(record.getStringValue('locked_until')) ?? DateTime.now(),
+        ),
+    ];
+  });
+
+  @override
+  Future<void> unlockSignIn(SignInLock lock) => _guard(() async {
+    await _pb
+        .collection(_locks)
+        .update(lock.id, body: <String, dynamic>{'unlocked': true});
+  });
+
+  @override
+  Future<List<Place>> listPlaces() => _guard(() async {
+    final records = await _pb.collection('locations').getFullList();
+    return <Place>[
+      for (final record in records)
+        Place(
+          id: record.id,
+          name: record.getStringValue('name'),
+          code: record.getStringValue('code'),
+          parentId: record.getStringValue('parent'),
+          path: record.getStringValue('path'),
+        ),
+    ];
+  });
+
+  @override
+  Future<int> countActiveOrgAdmins() => _guard(() async {
+    final result = await _pb
+        .collection(_staff)
+        .getList(
+          perPage: 1,
+          filter: _pb.filter(
+            'role = {:role} && active = true',
+            <String, dynamic>{'role': orgAdminRole},
+          ),
+        );
+    return result.totalItems;
+  });
+
+  @override
+  Future<StaffUser> chooseNewPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final record = _pb.authStore.record;
+    if (record == null || !_pb.authStore.isValid) {
+      throw const AppProblem(ProblemKind.signInRequired);
+    }
+    final email = record.getStringValue('email');
+    await _personChange(
+      () => _pb
+          .collection(_staff)
+          .update(
+            record.id,
+            body: <String, dynamic>{
+              'oldPassword': currentPassword,
+              'password': newPassword,
+              'passwordConfirm': newPassword,
+            },
+          ),
+    );
+    // Choosing a password ends every session the person has, this one too,
+    // so the app signs in again with the new password.
+    try {
+      final auth = await _pb
+          .collection(_staff)
+          .authWithPassword(email, newPassword)
+          .timeout(timeout);
+      return _staffFrom(auth.record);
+    } on Object {
+      _pb.authStore.clear();
+      throw const AppProblem(ProblemKind.passwordSavedSignIn);
+    }
+  }
 }

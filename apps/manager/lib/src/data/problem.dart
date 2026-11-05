@@ -91,6 +91,17 @@ enum ProblemKind {
   /// Some submitted settings were refused; see [AppProblem.fields].
   settingsInvalid,
 
+  /// Some details about a person (or a new password) were refused; see
+  /// [AppProblem.fields] and [AppProblem.codes].
+  detailsInvalid,
+
+  /// HTTP 403 with reason `password_change_required`: the person signed
+  /// in with a one-time password and must choose their own first.
+  passwordChangeRequired,
+
+  /// The new password was saved, but signing in again with it failed.
+  passwordSavedSignIn,
+
   /// Anything else.
   unknown,
 }
@@ -118,6 +129,7 @@ class AppProblem implements Exception {
     this.kind, {
     this.statusCode,
     this.fields = const <String, String>{},
+    this.codes = const <String, String>{},
   });
 
   /// What went wrong.
@@ -130,6 +142,11 @@ class AppProblem implements Exception {
   /// name (for example `phone.sms.url`), in the server's plain words.
   final Map<String, String> fields;
 
+  /// The server's reason codes for [fields], by the same field names (for
+  /// example `validation_not_unique`), so screens can show their own
+  /// translated sentence for the codes they know.
+  final Map<String, String> codes;
+
   /// The single action offered for this problem.
   ProblemAction get action => switch (kind) {
     ProblemKind.offline ||
@@ -139,8 +156,10 @@ class AppProblem implements Exception {
     ProblemKind.signInFailed ||
     ProblemKind.formUnavailable ||
     ProblemKind.googleFailed ||
+    ProblemKind.passwordChangeRequired ||
     ProblemKind.unknown => ProblemAction.tryAgain,
-    ProblemKind.signInRequired => ProblemAction.signInAgain,
+    ProblemKind.signInRequired ||
+    ProblemKind.passwordSavedSignIn => ProblemAction.signInAgain,
     ProblemKind.unreadableFile => ProblemAction.chooseFile,
     ProblemKind.notAllowed ||
     ProblemKind.notFound ||
@@ -160,7 +179,8 @@ class AppProblem implements Exception {
     ProblemKind.tooManyCodes ||
     ProblemKind.tooManyTries ||
     ProblemKind.tooManyTests ||
-    ProblemKind.settingsInvalid => ProblemAction.close,
+    ProblemKind.settingsInvalid ||
+    ProblemKind.detailsInvalid => ProblemAction.close,
   };
 
   @override
@@ -183,7 +203,10 @@ AppProblem problemFrom(Object error) {
     final kind = switch (status) {
       0 => ProblemKind.offline,
       401 => ProblemKind.signInRequired,
-      403 => ProblemKind.notAllowed,
+      403 =>
+        _reasonCode(error) == passwordChangeRequiredReason
+            ? ProblemKind.passwordChangeRequired
+            : ProblemKind.notAllowed,
       404 => ProblemKind.notFound,
       413 => ProblemKind.tooLarge,
       429 => ProblemKind.serverBusy,
@@ -210,6 +233,26 @@ Map<String, String> fieldProblems(ClientException error) {
         },
   };
 }
+
+/// The server's reason codes per field in a 400 answer, by field name.
+Map<String, String> fieldCodes(ClientException error) {
+  final data = error.response['data'];
+  if (data is! Map<String, dynamic>) return const <String, String>{};
+  return <String, String>{
+    for (final entry in data.entries)
+      if (entry.value case {'code': final String code}) entry.key: code,
+  };
+}
+
+/// The reason code the server gives a person who must choose a new
+/// password before anything else (HTTP 403).
+const String passwordChangeRequiredReason = 'password_change_required';
+
+/// `data.reason.code` of an error answer, or an empty string.
+String _reasonCode(ClientException error) => switch (error.response['data']) {
+  {'reason': {'code': final String code}} => code,
+  _ => '',
+};
 
 /// The server's own sentence in an error answer, or an empty string.
 String serverMessage(ClientException error) =>

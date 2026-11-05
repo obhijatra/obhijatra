@@ -5,6 +5,7 @@ import 'package:obhijatra_manager/l10n/app_localizations.dart';
 import 'package:obhijatra_manager/src/state/navigation.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:obhijatra_manager/src/ui/page_scaffold.dart';
+import 'package:obhijatra_manager/src/ui/people_words.dart';
 import 'package:obhijatra_manager/src/ui/sign_in_methods_screen.dart';
 import 'package:obhijatra_manager/widgets/language_switch.dart';
 import 'package:obhijatra_manager/widgets/ob_panel.dart';
@@ -15,15 +16,6 @@ import 'package:obhijatra_ui/obhijatra_ui.dart';
 class SettingsScreen extends ConsumerWidget {
   /// Creates the screen.
   const SettingsScreen({super.key});
-
-  static String _roleName(AppLocalizations l10n, String role) => switch (role) {
-    'supervisor' => l10n.roleSupervisor,
-    'branch_manager' => l10n.roleBranchManager,
-    'me' => l10n.roleMe,
-    'org_admin' => l10n.roleOrgAdmin,
-    'donor_readonly' => l10n.roleDonorReadonly,
-    _ => role,
-  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -108,7 +100,7 @@ class SettingsScreen extends ConsumerWidget {
                           row(l10n.accountEmail, user.email),
                         if (user.phone.isNotEmpty)
                           row(l10n.accountPhone, user.phone),
-                        row(l10n.accountRole, _roleName(l10n, user.role)),
+                        row(l10n.accountRole, roleName(l10n, user.role)),
                       ],
                       if (org.isNotEmpty) row(l10n.accountOrganisation, org),
                       if (!kIsWeb && server.isNotEmpty)
