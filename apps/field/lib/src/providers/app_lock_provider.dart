@@ -7,6 +7,7 @@ import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/src/app_info.dart';
 import 'package:obhijatra_field/src/platform/device_authenticator.dart';
 import 'package:obhijatra_field/src/platform/secure_storage_key_store.dart';
+import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 
 /// Where the app lock keeps its values (next to the database key).
@@ -122,6 +123,76 @@ final class LockNeedsPin extends AppLockState {
 class WrongAccount implements Exception {
   /// Creates the exception.
   const WrongAccount();
+}
+
+/// Only email and password may sign in now (see
+/// [AppLockController.passwordOnly]); an SMS code or Google was refused
+/// before anything was sent.
+class PasswordRequired implements Exception {
+  /// Creates the exception for [reason].
+  const PasswordRequired(this.reason);
+
+  /// Why the person is signing in.
+  final OnlineSignInReason? reason;
+}
+
+/// A way to sign in with the server from a lock screen. The app lock runs it
+/// itself ([AppLockController.signInOnlineWith]), so it always knows which
+/// way was used: an SMS code or Google only shows that someone holds this
+/// phone (the code arrives on it; the Google account may be signed in on
+/// it), while a password is something the person knows.
+sealed class OnlineSignIn {
+  const OnlineSignIn();
+
+  Future<SignedInUser> _signIn(ObhijatraServer server);
+}
+
+/// Email address and password.
+final class PasswordSignIn extends OnlineSignIn {
+  /// Creates the sign-in.
+  const PasswordSignIn({required this.email, required this.password});
+
+  /// The email address.
+  final String email;
+
+  /// The password.
+  final String password;
+
+  @override
+  Future<SignedInUser> _signIn(ObhijatraServer server) =>
+      server.signIn(email: email, password: password);
+}
+
+/// The code from the SMS of [request].
+final class PhoneCodeSignIn extends OnlineSignIn {
+  /// Creates the sign-in.
+  const PhoneCodeSignIn(this.request, this.code);
+
+  /// The code request the SMS answered.
+  final PhoneCodeRequest request;
+
+  /// The code typed.
+  final String code;
+
+  @override
+  Future<SignedInUser> _signIn(ObhijatraServer server) =>
+      server.signInWithPhoneCode(codeId: request.codeId, code: code);
+}
+
+/// Google, in [browser], until [cancellation].
+final class GoogleBrowserSignIn extends OnlineSignIn {
+  /// Creates the sign-in.
+  const GoogleBrowserSignIn(this.browser, this.cancellation);
+
+  /// The browser tab for Google's page.
+  final SignInBrowser browser;
+
+  /// Stops waiting for Google.
+  final SignInCancellation cancellation;
+
+  @override
+  Future<SignedInUser> _signIn(ObhijatraServer server) =>
+      signInWithGoogleIn(server, browser, cancellation);
 }
 
 /// The app lock: decides at start and on return from the background what
@@ -253,9 +324,18 @@ class AppLockController extends AsyncNotifier<AppLockState> {
   Future<void> signInOnline({
     required String email,
     required String password,
-  }) => signInOnlineWith(
-    (server) => server.signIn(email: email, password: password),
-  );
+  }) => signInOnlineWith(PasswordSignIn(email: email, password: password));
+
+  /// Whether only email and password may sign in now, because the phone's
+  /// existing unlock cannot be checked afterwards: the PIN is forgotten, or
+  /// the phone has no screen lock and no app PIN. An SMS code (which
+  /// arrives on this phone) or Google (whose account may be signed in on
+  /// it) would then open the data to anyone holding the phone.
+  Future<bool> passwordOnly() async => switch (state.value) {
+    LockNeedsSignIn(reason: OnlineSignInReason.expired) =>
+      await _unlockMethod() == null,
+    _ => true,
+  };
 
   /// Runs [body] with a connection to the remembered server that holds no
   /// session, for what comes before a sign-in (which ways to sign in, an
@@ -279,15 +359,18 @@ class AppLockController extends AsyncNotifier<AppLockState> {
     }
   }
 
-  /// Signs in by [method] (email and password, SMS code or Google) with
+  /// Signs in by [signIn] (email and password, SMS code or Google) with
   /// the server while the database is still closed (see
   /// [OnlineSignInReason]). Only the account that last signed in on this
   /// phone is accepted ([WrongAccount] otherwise); failures throw an
   /// [ObhijatraException]. The new session is saved into the database once
   /// it opens.
-  Future<void> signInOnlineWith(
-    Future<SignedInUser> Function(ObhijatraServer server) method,
-  ) async {
+  ///
+  /// An SMS code or Google never opens the data by itself: it is refused
+  /// with [PasswordRequired] when [passwordOnly], and otherwise (after 30
+  /// days offline) the phone's screen lock or the app PIN must still unlock
+  /// the data afterwards. Email and password work as before.
+  Future<void> signInOnlineWith(OnlineSignIn signIn) async {
     final reason = switch (state.value) {
       LockNeedsSignIn(:final reason) => reason,
       _ => null,
@@ -299,6 +382,8 @@ class AppLockController extends AsyncNotifier<AppLockState> {
       state = const AsyncData<AppLockState>(LockFresh());
       return;
     }
+    final byPassword = signIn is PasswordSignIn;
+    if (!byPassword && await passwordOnly()) throw PasswordRequired(reason);
     String? session;
     final server = ObhijatraServer(
       baseUrl: address,
@@ -307,7 +392,7 @@ class AppLockController extends AsyncNotifier<AppLockState> {
       httpClientFactory: ref.read(httpClientFactoryProvider),
     );
     try {
-      final user = await method(server);
+      final user = await signIn._signIn(server);
       final last = await _lock.lastOnlineSignIn();
       if (last != null && last.userId != user.id) {
         server.signOut();
@@ -316,9 +401,13 @@ class AppLockController extends AsyncNotifier<AppLockState> {
       _pendingSession = session;
       await _lock.recordOnlineSignIn(user.id);
       state = AsyncData<AppLockState>(
-        await _afterOnlineSignIn(
-          newPin: reason == OnlineSignInReason.forgotPin,
-        ),
+        byPassword
+            ? await _afterOnlineSignIn(
+                newPin: reason == OnlineSignInReason.forgotPin,
+              )
+            // Holding the phone is not enough: its screen lock or the app
+            // PIN opens the data, as on any other day.
+            : await _evaluate(),
       );
     } finally {
       server.close();

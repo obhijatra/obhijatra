@@ -725,6 +725,14 @@ class AppLocalizationsBn extends AppLocalizations {
   String get reSignInBack => 'পিনে ফিরে যান';
 
   @override
+  String get reSignInPasswordForPin =>
+      'পিন নতুন করে ঠিক করতে আপনার ইমেইল ও পাসওয়ার্ড দিয়ে সাইন ইন করুন। আপনার অ্যাকাউন্টে পাসওয়ার্ড না থাকলে আপনার প্রতিষ্ঠানের অ্যাডমিনকে বলুন।';
+
+  @override
+  String get reSignInPasswordForLock =>
+      'অ্যাপ পিন বেছে নিতে আপনার ইমেইল ও পাসওয়ার্ড দিয়ে সাইন ইন করুন। আপনার অ্যাকাউন্টে পাসওয়ার্ড না থাকলে আপনার প্রতিষ্ঠানের অ্যাডমিনকে বলুন।';
+
+  @override
   String get aboutSecurityHeading => 'তথ্য নিরাপদ রাখা';
 
   @override

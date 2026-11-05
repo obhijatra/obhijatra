@@ -127,6 +127,11 @@ class SignInProblem {
 SignInProblem? signInProblemFor(AppLocalizations l, Object error) =>
     switch (error) {
       WrongAccount() => SignInProblem(l.reSignInWrongAccount),
+      PasswordRequired(:final reason) => SignInProblem(
+        reason == OnlineSignInReason.forgotPin
+            ? l.reSignInPasswordForPin
+            : l.reSignInPasswordForLock,
+      ),
       ObhijatraException(code: ProblemCode.signInCancelled) => null,
       ObhijatraException(:final code) => SignInProblem.of(l, code),
       _ => SignInProblem.of(l, ProblemCode.unknown),
@@ -157,6 +162,8 @@ class SignInForm extends StatefulWidget {
     this.notice,
     this.secondaryLabel,
     this.onSecondary,
+    this.passwordOnly = false,
+    this.passwordOnlyNote,
     super.key,
   });
 
@@ -174,6 +181,14 @@ class SignInForm extends StatefulWidget {
 
   /// What the quiet button does.
   final VoidCallback? onSecondary;
+
+  /// Whether only email and password are offered, whatever else the server
+  /// offers (the app lock decides; see `AppLockController.passwordOnly`).
+  final bool passwordOnly;
+
+  /// Said when [passwordOnly] hides other ways the server offers, for
+  /// people whose account has no password.
+  final String? passwordOnlyNote;
 
   @override
   State<SignInForm> createState() => _SignInFormState();
@@ -218,8 +233,13 @@ class _SignInFormState extends State<SignInForm> {
   /// Set while Google's page is open.
   SignInCancellation? _google;
 
-  bool get _offersPhone => _methods?.phone ?? false;
-  bool get _offersGoogle => _methods?.google ?? false;
+  bool get _offersPhone => !widget.passwordOnly && (_methods?.phone ?? false);
+  bool get _offersGoogle => !widget.passwordOnly && (_methods?.google ?? false);
+
+  /// Whether the server offers ways that [SignInForm.passwordOnly] hides.
+  bool get _hidesWays =>
+      widget.passwordOnly &&
+      ((_methods?.phone ?? false) || (_methods?.google ?? false));
   bool get _offersPassword => _methods?.password ?? true;
 
   @override
@@ -248,7 +268,9 @@ class _SignInFormState extends State<SignInForm> {
         _methods = methods;
         _methodsError = null;
         _loadingMethods = false;
-        _step = methods.phone ? _Step.phone : _Step.password;
+        _step = methods.phone && !widget.passwordOnly
+            ? _Step.phone
+            : _Step.password;
       });
     } on Object catch (e) {
       if (!mounted) return;
@@ -484,6 +506,10 @@ class _SignInFormState extends State<SignInForm> {
         if (problem != null && _step != _Step.code) ...<Widget>[
           const SizedBox(height: Spacing.space4),
           _ProblemPanel(problem: problem),
+        ],
+        if (widget.passwordOnlyNote case final note? when _hidesWays) ...[
+          const SizedBox(height: Spacing.space4),
+          _Note(text: note),
         ],
         ..._otherWays(l),
       ],
@@ -792,6 +818,45 @@ class _SignInFormState extends State<SignInForm> {
       ),
     };
     return BottomActions(children: <Widget>[button]);
+  }
+}
+
+/// A plain information note, spoken when it appears.
+class _Note extends StatelessWidget {
+  const _Note({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Panel(
+      color: p.infoSubtle,
+      borderColor: p.info,
+      child: Semantics(
+        liveRegion: true,
+        container: true,
+        label: text,
+        child: ExcludeSemantics(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.only(top: Spacing.space1),
+                child: Icon(LucideIcons.info, color: p.info),
+              ),
+              const SizedBox(width: Spacing.space3),
+              Expanded(
+                child: Text(
+                  text,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -771,6 +771,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reSignInBack => 'Back to the PIN';
 
   @override
+  String get reSignInPasswordForPin =>
+      'To reset your PIN, sign in with your email and password. If your account has no password, ask your organisation admin.';
+
+  @override
+  String get reSignInPasswordForLock =>
+      'To choose an app PIN, sign in with your email and password. If your account has no password, ask your organisation admin.';
+
+  @override
   String get aboutSecurityHeading => 'Keeping the data safe';
 
   @override

@@ -1238,6 +1238,18 @@ abstract class AppLocalizations {
   /// **'Back to the PIN'**
   String get reSignInBack;
 
+  /// After a forgotten PIN only email and password can sign in (an SMS code or Google only shows that someone holds the phone). Shown when the server also offers SMS or Google sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'To reset your PIN, sign in with your email and password. If your account has no password, ask your organisation admin.'**
+  String get reSignInPasswordForPin;
+
+  /// On a phone with no screen lock and no app PIN only email and password can sign in. Shown when the server also offers SMS or Google sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'To choose an app PIN, sign in with your email and password. If your account has no password, ask your organisation admin.'**
+  String get reSignInPasswordForLock;
+
   /// Heading of the security notes on the About screen.
   ///
   /// In en, this message translates to:

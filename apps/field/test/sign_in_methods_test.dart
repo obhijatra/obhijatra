@@ -5,8 +5,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_core/testing.dart';
 import 'package:obhijatra_field/l10n/app_localizations.dart';
+import 'package:obhijatra_field/src/platform/device_authenticator.dart';
+import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
 import 'package:obhijatra_field/src/screens/lock_screens.dart';
 import 'package:obhijatra_field/src/screens/sign_in_screen.dart';
@@ -559,13 +562,17 @@ void main() {
     testWidgets('first use with Google: the lock records the sign-in', (
       tester,
     ) async {
-      final env = TestEnv(server: _offering(google: true));
+      final env = TestEnv(server: _offering(phone: true, google: true));
       final l = wordsFor('bn');
       await tester.runAsync(
         () =>
             env.seedDevice((db) => env.seedSignedIn(signedIn: false, into: db)),
       );
       await pumpApp(tester, env, locked: true);
+      // First use on this phone: every way the server offers.
+      expect(await reveal(tester, _phoneField), findsOneWidget);
+      expect(await reveal(tester, _button(l.signInUseEmail)), findsOne);
+      expect(find.text(l.reSignInPasswordForLock), findsNothing);
       await tester.tap(await reveal(tester, _button(l.signInWithGoogle)));
       await _settleBriefly(tester);
       env.server.finishGoogleSignIn(env.browser.opened.single);
@@ -578,12 +585,17 @@ void main() {
       await endTest(tester, env);
     });
 
-    testWidgets('after 30 days offline, an SMS code opens the data again', (
-      tester,
-    ) async {
+    testWidgets('after 30 days offline, an SMS code renews the session, but '
+        'the app PIN still opens the data', (tester) async {
       final env = TestEnv(server: _offering(phone: true));
+      env.deviceAuth.screenLock = false;
       final l = wordsFor('en');
-      await _usedBefore(tester, env, signedInAgo: const Duration(days: 31));
+      await _usedBefore(
+        tester,
+        env,
+        signedInAgo: const Duration(days: 31),
+        pin: '481592',
+      );
       await pumpApp(tester, env, language: 'en', locked: true);
       expect(find.text(l.reSignInExpired), findsOneWidget);
       expect(env.opener.opens, 0);
@@ -591,10 +603,58 @@ void main() {
       await _typeNumberAndSend(tester, l);
       await _typeCode(tester, env.server.sentSms.single.code);
       await settleApp(tester);
-      expect(find.text(l.todayTitle), findsWidgets);
-      expect(env.opener.opens, 1);
+      // The session is renewed (the 30 days start again) ...
       final last = await tester.runAsync(env.lockStore().lastOnlineSignIn);
       expect(last!.at, env.now.toUtc());
+      // ... but the code only shows that someone holds the phone: the PIN
+      // still has to open the data, and a wrong one keeps it closed.
+      expect(find.byType(PinUnlockScreen), findsOneWidget);
+      expect(env.opener.opens, 0);
+      await tester.enterText(
+        await reveal(tester, find.byKey(const Key('pin-field'))),
+        '000000',
+      );
+      await tester.tap(await reveal(tester, _button(l.lockUnlock)));
+      await settleApp(tester);
+      expect(await reveal(tester, find.text(l.pinWrong(4))), findsOneWidget);
+      expect(find.byType(PinUnlockScreen), findsOneWidget);
+      expect(env.opener.opens, 0);
+
+      await tester.enterText(
+        await reveal(tester, find.byKey(const Key('pin-field'))),
+        '481592',
+      );
+      await tester.tap(await reveal(tester, _button(l.lockUnlock)));
+      await settleApp(tester);
+      expect(find.text(l.todayTitle), findsWidgets);
+      expect(env.opener.opens, 1);
+      await endTest(tester, env);
+    });
+
+    testWidgets('after 30 days offline, Google renews the session, but the '
+        'phone\'s screen lock still opens the data', (tester) async {
+      final env = TestEnv(server: _offering(google: true));
+      final l = wordsFor('en');
+      await _usedBefore(tester, env, signedInAgo: const Duration(days: 31));
+      // The phone's own unlock prompt: closed once, then unlocked.
+      env.deviceAuth.answers.add(DeviceUnlockResult.cancelled);
+      await pumpApp(tester, env, language: 'en', locked: true);
+      expect(find.text(l.reSignInExpired), findsOneWidget);
+      expect(env.deviceAuth.prompts, 0);
+
+      await tester.tap(await reveal(tester, _button(l.signInWithGoogle)));
+      await _settleBriefly(tester);
+      env.server.finishGoogleSignIn(env.browser.opened.single);
+      await settleApp(tester);
+      expect(find.byType(DeviceUnlockScreen), findsOneWidget);
+      expect(env.deviceAuth.prompts, 1);
+      expect(env.opener.opens, 0);
+
+      await tester.tap(await reveal(tester, _button(l.lockUnlock)));
+      await settleApp(tester);
+      expect(env.deviceAuth.prompts, 2);
+      expect(find.text(l.todayTitle), findsWidgets);
+      expect(env.opener.opens, 1);
       await endTest(tester, env);
     });
 
@@ -636,19 +696,157 @@ void main() {
       await endTest(tester, env);
     });
   });
+
+  group('where the existing unlock cannot be checked: password only', () {
+    /// Asks the app lock directly for an SMS-code and a Google sign-in, as a
+    /// tampered screen could: both are refused before anything is sent.
+    Future<void> expectRefused(WidgetTester tester, TestEnv env) async {
+      final lock = containerOf(tester).read(appLockProvider.notifier);
+      final before = lock.state.value;
+      await tester.runAsync(() async {
+        // A real code for this account, which would work if it were sent.
+        final request = await lock.withServer(
+          (server) => server.requestPhoneCode(fakePhone),
+        );
+        await expectLater(
+          lock.signInOnlineWith(
+            PhoneCodeSignIn(request, env.server.sentSms.last.code),
+          ),
+          throwsA(isA<PasswordRequired>()),
+        );
+        await expectLater(
+          lock.signInOnlineWith(
+            GoogleBrowserSignIn(env.browser, SignInCancellation()),
+          ),
+          throwsA(isA<PasswordRequired>()),
+        );
+      });
+      expect(
+        env.server.log,
+        isNot(contains('POST /api/obhijatra/v1/signin/phone/verify')),
+      );
+      expect(env.browser.opened, isEmpty);
+      expect(env.server.openRealtimeConnections, 0);
+      expect(lock.state.value, same(before));
+      expect(env.opener.opens, 0);
+    }
+
+    /// Only email and password on the screen, with [note].
+    Future<void> expectPasswordOnly(
+      WidgetTester tester,
+      AppLocalizations l,
+      String note,
+    ) async {
+      expect(await reveal(tester, _emailField), findsOneWidget);
+      expect(_phoneField, findsNothing);
+      expect(_button(l.signInWithGoogle), findsNothing);
+      expect(_button(l.signInUsePhone), findsNothing);
+      expect(find.text(l.signInOtherWays), findsNothing);
+      expect(await reveal(tester, find.text(note)), findsOneWidget);
+    }
+
+    matrix('a forgotten PIN: email and password only, then a new PIN', (
+      tester,
+      language,
+      scale,
+      l,
+    ) async {
+      final env = TestEnv(server: _offering(phone: true, google: true));
+      env.deviceAuth.screenLock = false;
+      await _usedBefore(tester, env, pin: '481592');
+      await pumpApp(
+        tester,
+        env,
+        language: language,
+        textScale: scale,
+        locked: true,
+      );
+      await tester.tap(await reveal(tester, _button(l.pinForgot)));
+      await settleApp(tester);
+      expect(find.text(l.reSignInForgotPin), findsOneWidget);
+      await expectPasswordOnly(tester, l, l.reSignInPasswordForPin);
+      await expectAccessibleTargets(tester);
+      await expectRefused(tester, env);
+
+      await tester.enterText(await reveal(tester, _emailField), fakeEmail);
+      await tester.enterText(
+        await reveal(tester, find.byKey(const Key('password-field'))),
+        fakePassword,
+      );
+      await tester.tap(await reveal(tester, _button(l.signInTitle)));
+      await settleApp(tester);
+      expect(find.byType(SetPinScreen), findsOneWidget);
+      expect(env.opener.opens, 0);
+      await endTest(tester, env);
+    });
+
+    testWidgets('no screen lock and no PIN: email and password only', (
+      tester,
+    ) async {
+      final env = TestEnv(server: _offering(phone: true, google: true));
+      env.deviceAuth.screenLock = false;
+      final l = wordsFor('bn');
+      await _usedBefore(tester, env);
+      await pumpApp(tester, env, locked: true);
+      expect(find.text(l.reSignInNoLock), findsOneWidget);
+      await expectPasswordOnly(tester, l, l.reSignInPasswordForLock);
+      await expectRefused(tester, env);
+      await endTest(tester, env);
+    });
+
+    testWidgets('30 days offline on a phone with no way to unlock: email and '
+        'password only', (tester) async {
+      final env = TestEnv(server: _offering(phone: true, google: true));
+      env.deviceAuth.screenLock = false;
+      final l = wordsFor('en');
+      await _usedBefore(tester, env, signedInAgo: const Duration(days: 31));
+      await pumpApp(tester, env, language: 'en', locked: true);
+      expect(find.text(l.reSignInExpired), findsOneWidget);
+      await expectPasswordOnly(tester, l, l.reSignInPasswordForLock);
+      await expectRefused(tester, env);
+      await endTest(tester, env);
+    });
+
+    testWidgets('no note when the server offers only the password', (
+      tester,
+    ) async {
+      final env = TestEnv();
+      env.deviceAuth.screenLock = false;
+      final l = wordsFor('en');
+      await _usedBefore(tester, env, pin: '481592');
+      await pumpApp(tester, env, language: 'en', locked: true);
+      await tester.tap(await reveal(tester, _button(l.pinForgot)));
+      await settleApp(tester);
+      expect(await reveal(tester, _emailField), findsOneWidget);
+      expect(find.text(l.reSignInPasswordForPin), findsNothing);
+      await endTest(tester, env);
+    });
+
+    test('the sentences', () {
+      final en = wordsFor('en');
+      expect(
+        en.reSignInPasswordForPin,
+        'To reset your PIN, sign in with your email and password. If your '
+        'account has no password, ask your organisation admin.',
+      );
+    });
+  });
 }
 
 /// The phone was used before by the fake's first user: the server address
-/// and a session in the database, and an online sign-in [signedInAgo].
+/// and a session in the database, an online sign-in [signedInAgo], and the
+/// app PIN [pin] if given.
 Future<void> _usedBefore(
   WidgetTester tester,
   TestEnv env, {
-  required Duration signedInAgo,
+  Duration signedInAgo = const Duration(days: 1),
+  String? pin,
 }) async {
   await tester.runAsync(() async {
     await env.seedDevice((db) => env.seedSignedIn(into: db));
     final lock = env.lockStore(at: env.now.subtract(signedInAgo));
     await lock.recordOnlineSignIn(_userId);
     await lock.rememberServerAddress(FakeObhijatraServer.baseUrl);
+    if (pin != null) await lock.setPin(pin);
   });
 }

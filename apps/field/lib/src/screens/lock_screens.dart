@@ -8,7 +8,6 @@ import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/l10n/app_localizations.dart';
 import 'package:obhijatra_field/src/l10n/problem_text.dart';
 import 'package:obhijatra_field/src/platform/device_authenticator.dart';
-import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
 import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/screens/sign_in_screen.dart';
@@ -517,12 +516,21 @@ class OnlineSignInScreen extends ConsumerStatefulWidget {
 class _OnlineSignInState extends ConsumerState<OnlineSignInScreen> {
   String? _host;
 
+  /// Whether only email and password may sign in; `null` until known.
+  bool? _passwordOnly;
+
   @override
   void initState() {
     super.initState();
+    final lock = ref.read(appLockProvider.notifier);
     unawaited(
-      ref.read(appLockProvider.notifier).serverAddress().then((address) {
+      lock.serverAddress().then((address) {
         if (mounted) setState(() => _host = address?.host);
+      }),
+    );
+    unawaited(
+      lock.passwordOnly().then((only) {
+        if (mounted) setState(() => _passwordOnly = only);
       }),
     );
   }
@@ -531,9 +539,16 @@ class _OnlineSignInState extends ConsumerState<OnlineSignInScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final forgot = widget.reason == OnlineSignInReason.forgotPin;
+    final passwordOnly = _passwordOnly;
+    // A moment, while the app lock checks which ways may open the data.
+    if (passwordOnly == null) return const SplashScreen();
     return SignInForm(
       host: _host,
       actions: _LockSignIn(ref),
+      passwordOnly: passwordOnly,
+      passwordOnlyNote: forgot
+          ? l.reSignInPasswordForPin
+          : l.reSignInPasswordForLock,
       notice: switch (widget.reason) {
         OnlineSignInReason.expired => l.reSignInExpired,
         OnlineSignInReason.noUnlockMethod => l.reSignInNoLock,
@@ -550,7 +565,9 @@ class _OnlineSignInState extends ConsumerState<OnlineSignInScreen> {
 /// The app lock's online sign-in, with the remembered server while the
 /// data stays closed: every way ends in
 /// [AppLockController.signInOnlineWith], which accepts only the account
-/// that last used this phone.
+/// that last used this phone, refuses an SMS code or Google where only a
+/// password may sign in, and after one of them still asks for the phone's
+/// own unlock.
 class _LockSignIn implements SignInActions {
   _LockSignIn(this._ref);
 
@@ -572,16 +589,11 @@ class _LockSignIn implements SignInActions {
 
   @override
   Future<void> withPhoneCode(PhoneCodeRequest request, String code) =>
-      _lock.signInOnlineWith(
-        (server) =>
-            server.signInWithPhoneCode(codeId: request.codeId, code: code),
-      );
+      _lock.signInOnlineWith(PhoneCodeSignIn(request, code));
 
   @override
-  Future<void> withGoogle(SignInCancellation cancellation) {
-    final browser = _ref.read(signInBrowserProvider);
-    return _lock.signInOnlineWith(
-      (server) => signInWithGoogleIn(server, browser, cancellation),
-    );
-  }
+  Future<void> withGoogle(SignInCancellation cancellation) =>
+      _lock.signInOnlineWith(
+        GoogleBrowserSignIn(_ref.read(signInBrowserProvider), cancellation),
+      );
 }
