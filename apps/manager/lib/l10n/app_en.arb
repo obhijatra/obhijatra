@@ -1098,6 +1098,10 @@
   "@problemGoogleNoEmail": {
     "description": "Google sign-in refused: Google gave no confirmed email."
   },
+  "problemGoogleUnmanaged": "Google cannot vouch that this email address belongs to this Google account. Sign in with a Gmail address or your organisation's Google Workspace account, or use another way to sign in.",
+  "@problemGoogleUnmanaged": {
+    "description": "Google sign-in refused: the address is neither Gmail nor Google Workspace."
+  },
   "problemGoogleUnavailable": "Google sign-in is not switched on for this server. Use another way to sign in.",
   "@problemGoogleUnavailable": {
     "description": "Google sign-in is off."

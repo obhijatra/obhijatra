@@ -8,6 +8,7 @@ import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/phone_number.dart';
 import 'package:obhijatra_manager/src/data/pocketbase_api.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
+import 'package:pocketbase/pocketbase.dart';
 
 const String server = 'https://data.example.org';
 const String signIn = '/api/obhijatra/v1/signin';
@@ -222,9 +223,13 @@ void main() {
       required StreamController<List<int>> live,
       required List<http.Request> seen,
       http.Response Function()? exchange,
+      String authUrl = 'https://accounts.example.com/o/oauth2/auth?client_id=abc&redirect_uri=',
+      Future<void>? exchangeGate,
     }) => MockClient.streaming((request, body) async {
       final bytes = await body.toBytes();
-      final copy = http.Request(request.method, request.url)..bodyBytes = bytes;
+      final copy = http.Request(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..bodyBytes = bytes;
       seen.add(copy);
       http.StreamedResponse reply(http.Response r) => http.StreamedResponse(
         Stream<List<int>>.value(r.bodyBytes),
@@ -246,7 +251,7 @@ void main() {
                   'name': 'google',
                   'displayName': 'Google',
                   'state': 'ignored',
-                  'authURL': 'https://accounts.example.com/o/oauth2/auth?client_id=abc&redirect_uri=',
+                  'authURL': authUrl,
                   'codeVerifier': 'verifier-1',
                   'codeChallenge': 'challenge',
                   'codeChallengeMethod': 'S256',
@@ -263,6 +268,7 @@ void main() {
       }
       if (path == '/api/realtime') return reply(http.Response('', 204));
       if (path.endsWith('/auth-with-oauth2')) {
+        if (exchangeGate != null) await exchangeGate;
         return reply(
           exchange?.call() ??
               json(<String, Object?>{'token': token, 'record': staffRecord()}),
@@ -338,6 +344,115 @@ void main() {
       await live.close();
     });
 
+    test('only a secure (https) Google address is ever opened', () async {
+      for (final address in <String>[
+        'http://accounts.example.com/o/oauth2/auth?redirect_uri=',
+        'javascript:alert(1)//',
+        'file:///etc/passwd?redirect_uri=',
+        '/o/oauth2/auth?redirect_uri=',
+        'https:///no-host?redirect_uri=',
+      ]) {
+        final live = StreamController<List<int>>();
+        final seen = <http.Request>[];
+        final api = PocketBaseApi(
+          server,
+          httpClient: googleServer(live: live, seen: seen, authUrl: address),
+        );
+        push(live, 'PB_CONNECT', <String, Object?>{'clientId': 'client-1'});
+        var opened = false;
+        await expectLater(
+          api.signInWithGoogle(
+            openUrl: (_) => opened = true,
+            cancelled: Completer<void>().future,
+          ),
+          problem(ProblemKind.googleFailed),
+          reason: address,
+        );
+        expect(opened, isFalse, reason: address);
+        // Refused before any live connection is made.
+        expect(
+          seen.where((r) => r.url.path == '/api/realtime'),
+          isEmpty,
+          reason: address,
+        );
+        // Nobody listened, so closing would wait for ever: do not wait.
+        unawaited(live.close());
+      }
+    });
+
+    test('cancelled while the code is exchanged: nobody is signed in, not '
+        'even for a moment', () async {
+      final live = StreamController<List<int>>();
+      final gate = Completer<void>();
+      final store = AuthStore();
+      final tokens = <String>[];
+      final watch = store.onChange.listen((event) => tokens.add(event.token));
+      addTearDown(watch.cancel);
+      final api = PocketBaseApi(
+        server,
+        authStore: store,
+        httpClient: googleServer(
+          live: live,
+          seen: <http.Request>[],
+          exchangeGate: gate.future,
+        ),
+      );
+      push(live, 'PB_CONNECT', <String, Object?>{'clientId': 'client-1'});
+      final cancel = Completer<void>();
+      final user = api.signInWithGoogle(
+        openUrl: (_) => push(live, '@oauth2', <String, Object?>{
+          'state': 'client-1',
+          'code': 'google-code',
+        }),
+        cancelled: cancel.future,
+      );
+      // Let the browser's answer arrive and the exchange start.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      cancel.complete();
+      expect(await user, isNull);
+      // Google finishes after the person cancelled.
+      gate.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(api.currentUser, isNull);
+      expect(store.token, isEmpty);
+      expect(tokens.where((t) => t.isNotEmpty), isEmpty);
+      await live.close();
+    });
+
+    test('the code is exchanged without the current session token', () async {
+      final live = StreamController<List<int>>();
+      final seen = <http.Request>[];
+      final store = AuthStore()
+        ..save(
+          'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTksImlkIjoidTkifQ.old',
+          RecordModel.fromJson(staffRecord()),
+        );
+      final api = PocketBaseApi(
+        server,
+        authStore: store,
+        httpClient: googleServer(live: live, seen: seen),
+      );
+      push(live, 'PB_CONNECT', <String, Object?>{'clientId': 'client-1'});
+      final user = await api.signInWithGoogle(
+        openUrl: (_) => push(live, '@oauth2', <String, Object?>{
+          'state': 'client-1',
+          'code': 'google-code',
+        }),
+        cancelled: Completer<void>().future,
+      );
+      expect(user?.id, 'u2');
+      final exchange = seen.lastWhere(
+        (r) => r.url.path.endsWith('/auth-with-oauth2'),
+      );
+      expect(
+        exchange.headers.keys.map((k) => k.toLowerCase()),
+        isNot(contains('authorization')),
+      );
+      // The new session replaces the old one only after the exchange.
+      expect(store.token, token);
+      await live.close();
+    });
+
     test('a refusal from the server becomes its own plain problem', () async {
       // The server sends a reason code in data.reason.code; the English
       // sentence is not relied on.
@@ -346,6 +461,7 @@ void main() {
         'google_email_unconfirmed': ProblemKind.googleUnconfirmed,
         'account_not_allowed': ProblemKind.googleNotAllowed,
         'google_no_email': ProblemKind.googleNoEmail,
+        'google_email_not_managed': ProblemKind.googleUnmanaged,
         'something_new': ProblemKind.googleFailed,
         null: ProblemKind.googleFailed,
       };

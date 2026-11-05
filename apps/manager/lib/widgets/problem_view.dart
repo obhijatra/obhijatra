@@ -25,6 +25,7 @@ String problemMessage(AppLocalizations l10n, ProblemKind kind) =>
       ProblemKind.googleUnconfirmed => l10n.problemGoogleUnconfirmed,
       ProblemKind.googleNotAllowed => l10n.problemGoogleNotAllowed,
       ProblemKind.googleNoEmail => l10n.problemGoogleNoEmail,
+      ProblemKind.googleUnmanaged => l10n.problemGoogleUnmanaged,
       ProblemKind.googleUnavailable => l10n.problemGoogleUnavailable,
       ProblemKind.googleFailed => l10n.problemGoogleFailed,
       ProblemKind.smsOff => l10n.problemSmsOff,

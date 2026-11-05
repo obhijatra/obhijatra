@@ -60,6 +60,10 @@ enum ProblemKind {
   /// Google sign-in: Google shared no confirmed email address.
   googleNoEmail,
 
+  /// Google sign-in: the address is neither Gmail nor Google Workspace, so
+  /// Google cannot vouch that it still belongs to the person.
+  googleUnmanaged,
+
   /// Google sign-in is not switched on for this server.
   googleUnavailable,
 
@@ -148,6 +152,7 @@ class AppProblem implements Exception {
     ProblemKind.googleUnconfirmed ||
     ProblemKind.googleNotAllowed ||
     ProblemKind.googleNoEmail ||
+    ProblemKind.googleUnmanaged ||
     ProblemKind.googleUnavailable ||
     ProblemKind.smsOff ||
     ProblemKind.phoneInvalid ||

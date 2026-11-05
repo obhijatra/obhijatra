@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:obhijatra_manager/src/data/manager_api.dart';
@@ -19,9 +20,11 @@ class PocketBaseApi implements ManagerApi {
     String baseUrl, {
     http.Client? httpClient,
     this.timeout = const Duration(seconds: 30),
+    @visibleForTesting AuthStore? authStore,
   }) : _client = httpClient ?? http.Client(),
        _pb = PocketBase(
          baseUrl,
+         authStore: authStore,
          httpClientFactory: httpClient == null ? null : () => httpClient,
        );
 
@@ -181,10 +184,12 @@ class PocketBaseApi implements ManagerApi {
   }) async {
     // PocketBase's own flow (RecordService.authWithOAuth2), written out so
     // that waiting can be cancelled and the live connection closed.
-    final staff = _pb.collection(_staff);
     AuthMethodProvider? offered;
     try {
-      final methods = await staff.listAuthMethods().timeout(timeout);
+      final methods = await _pb
+          .collection(_staff)
+          .listAuthMethods()
+          .timeout(timeout);
       if (methods.oauth2.enabled) {
         offered = methods.oauth2.providers
             .where((p) => p.name == _google)
@@ -199,6 +204,9 @@ class PocketBaseApi implements ManagerApi {
     final provider = offered;
 
     final redirect = _pb.buildURL('/api/oauth2-redirect').toString();
+    // Only ever open a secure web page, whatever the server says.
+    final page = _secureUrl(provider.authURL + redirect);
+    if (page == null) throw const AppProblem(ProblemKind.googleFailed);
     final realtime = RealtimeService(_pb);
     final result = Completer<StaffUser?>();
     var stopped = false;
@@ -231,7 +239,19 @@ class PocketBaseApi implements ManagerApi {
                 finish(problem: const AppProblem(ProblemKind.googleFailed));
                 return;
               }
-              final auth = await staff
+              // The code is exchanged on a separate client with an empty
+              // session: no existing session token is sent (so PocketBase
+              // cannot link this Google account to whoever is signed in),
+              // and nobody watching the real session sees a sign-in that
+              // the person has already cancelled.
+              final exchange = PocketBase(
+                _pb.baseURL,
+                lang: _pb.lang,
+                authStore: AuthStore(),
+                httpClientFactory: _pb.httpClientFactory,
+              );
+              final auth = await exchange
+                  .collection(_staff)
                   .authWithOAuth2Code(
                     provider.name,
                     code,
@@ -240,11 +260,10 @@ class PocketBaseApi implements ManagerApi {
                   )
                   .timeout(timeout);
               if (stopped) {
-                // Cancelled while Google was finishing: do not stay signed in.
-                _pb.authStore.clear();
-                finish();
+                finish(); // Cancelled while Google was finishing.
                 return;
               }
+              _pb.authStore.save(auth.token, auth.record);
               finish(user: _staffFrom(auth.record));
             } on ClientException catch (e) {
               finish(problem: _googleProblem(e));
@@ -261,7 +280,6 @@ class PocketBaseApi implements ManagerApi {
     realtime.onDisconnect = (_) =>
         finish(problem: const AppProblem(ProblemKind.offline));
 
-    final page = Uri.parse(provider.authURL + redirect);
     final url = page.replace(
       queryParameters: <String, String>{
         ...page.queryParameters,
@@ -288,6 +306,13 @@ class PocketBaseApi implements ManagerApi {
     }
   }
 
+  /// [address] if it is an absolute `https` address with a host, else null.
+  static Uri? _secureUrl(String address) {
+    final url = Uri.tryParse(address);
+    if (url == null || url.scheme != 'https' || url.host.isEmpty) return null;
+    return url;
+  }
+
   /// Google refusals arrive as 400 with a reason code in
   /// `data.reason.code` (server schema version 5); each becomes its own
   /// plain, translated message. Anything else is "did not finish".
@@ -300,6 +325,7 @@ class PocketBaseApi implements ManagerApi {
       'google_no_account' => ProblemKind.googleNoAccount,
       'google_email_unconfirmed' => ProblemKind.googleUnconfirmed,
       'google_no_email' => ProblemKind.googleNoEmail,
+      'google_email_not_managed' => ProblemKind.googleUnmanaged,
       'account_not_allowed' => ProblemKind.googleNotAllowed,
       _ => ProblemKind.googleFailed,
     };

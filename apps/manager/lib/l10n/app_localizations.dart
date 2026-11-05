@@ -1436,6 +1436,12 @@ abstract class AppLocalizations {
   /// **'Google did not share a confirmed email address for this Google account. Use another Google account, or another way to sign in.'**
   String get problemGoogleNoEmail;
 
+  /// Google sign-in refused: the address is neither Gmail nor Google Workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Google cannot vouch that this email address belongs to this Google account. Sign in with a Gmail address or your organisation\'s Google Workspace account, or use another way to sign in.'**
+  String get problemGoogleUnmanaged;
+
   /// Google sign-in is off.
   ///
   /// In en, this message translates to:

@@ -911,6 +911,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Google did not share a confirmed email address for this Google account. Use another Google account, or another way to sign in.';
 
   @override
+  String get problemGoogleUnmanaged =>
+      'Google cannot vouch that this email address belongs to this Google account. Sign in with a Gmail address or your organisation\'s Google Workspace account, or use another way to sign in.';
+
+  @override
   String get problemGoogleUnavailable =>
       'Google sign-in is not switched on for this server. Use another way to sign in.';
 

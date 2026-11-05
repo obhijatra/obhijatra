@@ -304,6 +304,50 @@ void main() {
         expect(find.text(urlProblem), findsOneWidget);
       });
 
+      testWidgets('a new provider address asks for the secret key again, '
+          'under the Secret key field', (tester) async {
+        const again =
+            'Type the secret key again: the SMS provider\'s address changed.';
+        final api = FakeManagerApi(user: staff('org_admin'))
+          ..settings = savedSettings();
+        final l10n = await openSignInMethods(tester, api, lang: lang);
+        await tester.enterText(
+          find.byKey(const ValueKey<String>('sms-address')),
+          'https://api.other-sms.example.com/v2/send',
+        );
+        final underSecret = find.descendant(
+          of: find.byKey(const ValueKey<String>('sms-secret')),
+          matching: find.text(again),
+        );
+
+        // From Save.
+        api.saveFailure = const AppProblem(
+          ProblemKind.settingsInvalid,
+          statusCode: 400,
+          fields: <String, String>{'phone.sms.secret': again},
+        );
+        await tapAndSettle(tester, button<FilledButton>(l10n.actionSave));
+        expect(underSecret, findsOneWidget);
+        expect(find.text(again), findsOneWidget);
+        // Typing the key clears the message.
+        await tester.enterText(fieldIn('sms-secret'), 'sms-api-key');
+        await tester.pumpAndSettle();
+        expect(find.text(again), findsNothing);
+
+        // From Send test SMS (the server names the field "sms.secret").
+        await tester.enterText(fieldIn('sms-secret'), '');
+        api.testFailure = const AppProblem(
+          ProblemKind.settingsInvalid,
+          statusCode: 400,
+          fields: <String, String>{'sms.secret': again},
+        );
+        await tester.enterText(fieldIn('sms-test-phone'), '01712345678');
+        await tapAndSettle(tester, button<OutlinedButton>(l10n.smsTestButton));
+        expect(underSecret, findsOneWidget);
+        expect(find.text(again), findsOneWidget);
+        expect(api.tests, isEmpty);
+      });
+
       testWidgets('a test SMS shows what the provider answered', (
         tester,
       ) async {
