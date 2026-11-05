@@ -213,6 +213,9 @@ func TestAuditAttributionAndAtomicity(t *testing.T) {
 
 	o := testutil.SeedOrg(t, app)
 	su := testutil.Superuser(t, app)
+	adminToken, fieldToken := testutil.Token(t, o.Admin), testutil.Token(t, o.Field1)
+	testutil.Prime(t, app, o.Admin, adminToken)
+	testutil.Prime(t, app, o.Field1, fieldToken)
 
 	before := auditCount(t, app)
 	const instanceID = "uuid:c0000000-0000-4000-8000-000000000001"
@@ -222,12 +225,12 @@ func TestAuditAttributionAndAtomicity(t *testing.T) {
 		{
 			Name: "org admin creates a location through the API", Method: http.MethodPost,
 			URL:  "/api/collections/locations/records",
-			Body: strings.NewReader(`{"name":"Branch 3","parent":"` + o.Root.Id + `"}`), Headers: auth(t, o.Admin),
+			Body: strings.NewReader(`{"name":"Branch 3","parent":"` + o.Root.Id + `"}`), Headers: map[string]string{"Authorization": adminToken},
 			ExpectedStatus: 200, ExpectedContent: []string{`"name":"Branch 3"`, `"path":"/` + o.Root.Id + `/`},
 		},
 		{
 			Name: "field user submits", Method: http.MethodPost, URL: submitURL, Body: body,
-			Headers:        map[string]string{"Content-Type": contentType, "Authorization": testutil.Token(t, o.Field1)},
+			Headers:        map[string]string{"Content-Type": contentType, "Authorization": fieldToken},
 			ExpectedStatus: 200, ExpectedContent: []string{`"status":"received"`},
 		},
 		{

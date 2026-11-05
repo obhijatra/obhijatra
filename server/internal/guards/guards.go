@@ -319,9 +319,12 @@ func Register(app core.App) {
 		return e.Next()
 	})
 
-	// Sessions: identity fields are fixed; a revoked session stays revoked.
+	// Sessions: identity fields are fixed (a session not yet used by any
+	// device is tied to the first one, once); a revoked session stays
+	// revoked.
 	onUpdate(app, schema.Sessions, func(e *core.RecordEvent, old *core.Record) error {
-		if anyChanged(old, e.Record, "field_user", "staff_user", "device", "token_hash", "issued") {
+		if anyChanged(old, e.Record, "field_user", "staff_user", "token_hash", "issued") ||
+			(changed(old, e.Record, "device") && old.GetString("device") != "") {
 			return errors.New("a session's user, device, token and issue time cannot be changed")
 		}
 		wasRevoked := old.GetBool("revoked")

@@ -14,6 +14,7 @@ import (
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tests"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/filesystem"
+	"ganigeorgiev.com/pocketbase/pocketbase/tools/hook"
 
 	"github.com/obhijatra/obhijatra/server/internal/obhijatra"
 	"github.com/obhijatra/obhijatra/server/internal/schema"
@@ -38,6 +39,13 @@ func NewApp(t testing.TB) *tests.TestApp {
 		t.Fatalf("create test app: %v", err)
 	}
 	obhijatra.Register(app)
+	app.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
+		Id: "obhijatraTestAutoSignBinder",
+		Func: func(se *core.ServeEvent) error {
+			se.Router.Bind(autoSign())
+			return se.Next()
+		},
+	})
 
 	return app
 }

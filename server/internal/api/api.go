@@ -25,6 +25,7 @@ const submissionBodyLimit = 128 << 20
 
 // Register binds the routes and the fence to app's router.
 func Register(app core.App) {
+	bindSessions(app)
 	app.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
 		Id: "obhijatraRoutes",
 		Func: func(se *core.ServeEvent) error {
@@ -37,7 +38,7 @@ func Register(app core.App) {
 				apis.RequireAuth(schema.FieldUsers),
 				apis.BodyLimit(submissionBodyLimit),
 			)
-			se.Router.POST(schema.DeviceEnrolPath, enrolDevice)
+			registerDevices(app, se)
 
 			return se.Next()
 		},
@@ -67,8 +68,11 @@ func fence() *hook.Handler[*core.RequestEvent] {
 	}
 }
 
+// cleanPath is urlPath cleaned the way the router matches it.
+func cleanPath(urlPath string) string { return path.Clean("/" + urlPath) }
+
 func fencedReason(method, urlPath string) string {
-	p := path.Clean("/" + urlPath)
+	p := cleanPath(urlPath)
 	parts := strings.Split(strings.Trim(p, "/"), "/")
 
 	switch {

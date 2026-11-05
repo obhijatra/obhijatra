@@ -201,6 +201,31 @@ const (
 	MaxPlaceDepth   = 10
 )
 
+// Device trust (docs/decisions/0008-device-trust.md).
+const (
+	// DeviceLifetime after approval; then the device is approved again.
+	DeviceLifetime = 365 * 24 * time.Hour
+	// SignatureWindow either side of the server's clock.
+	SignatureWindow = 5 * time.Minute
+	// MaxPendingDevices waiting for approval per person.
+	MaxPendingDevices = 3
+)
+
+// DevicePlatforms are the platforms a device can report.
+var DevicePlatforms = []string{"android", "ios", "windows", "macos", "linux", "web"}
+
+// Reasons a device-signed request is refused, sent as data.reason.code.
+const (
+	ReasonDeviceSignatureRequired = "device_signature_required"
+	ReasonDeviceSignatureInvalid  = "device_signature_invalid"
+	ReasonDeviceClock             = "device_clock"
+	ReasonDeviceNotApproved       = "device_not_approved"
+	ReasonDeviceRevoked           = "device_revoked"
+	ReasonDeviceExpired           = "device_expired"
+	ReasonSessionRevoked          = "session_revoked"
+	ReasonSessionOtherDevice      = "session_other_device"
+)
+
 // MustChangePassword is the user field an org admin sets with a one-time
 // password. While it is set, the server answers only the requests needed
 // to choose a new password (package api); the person's own password change
@@ -219,6 +244,9 @@ const MaxSuperusers = 2
 const (
 	DeviceActive  = "active"
 	DeviceRevoked = "revoked"
+	// DevicePending: enrolled, waiting for approval
+	// (docs/decisions/0008-device-trust.md).
+	DevicePending = "pending"
 
 	AttestationNone     = "none"
 	AttestationSoftware = "software"
@@ -226,14 +254,14 @@ const (
 )
 
 // DeviceTrustFields are the device fields that decide whether a device is
-// trusted: its keys, the organisation's signature, its status and its
-// expiry. Only the server sets them, through the device-enrolment route
-// (zero-trust milestone); the guards refuse them in every records-API
-// create or update, from superusers too.
-var DeviceTrustFields = []string{"sign_public_key", "enc_public_key", "org_signature", "status", "expires"}
+// trusted: its owner, keys, status, expiry and who approved it. Only the
+// server's device routes and commands set them; the guards refuse them in
+// every records-API create or update, from superusers and the Dashboard
+// too.
+var DeviceTrustFields = []string{"field_user", "staff_user", "sign_public_key", "enc_public_key", "org_signature",
+	"status", "expires", "enrolled_by", "approved_at", "first_approved_by", "attestation_level", "revoked_at"}
 
-// DeviceEnrolPath is the only way a device will be enrolled (zero-trust
-// milestone); until then it answers 501 Not Implemented.
+// DeviceEnrolPath is the only way a device is enrolled.
 const DeviceEnrolPath = "/api/obhijatra/v1/devices/enrol"
 
 // LocationPathPattern is the only shape a materialised location path may
@@ -388,15 +416,18 @@ var (
 	SubmissionsUpdate = Active + ` && ` + staffReviewer + ` && ` + inScope
 )
 
-// Device rules: a user sees their own devices. An org admin may still
-// write through the records API, but never DeviceTrustFields (and status
-// is required), so in practice a device can only be enrolled through POST
-// /api/obhijatra/v1/devices/enrol (zero-trust milestone).
+// Device rules: a person sees their own devices, an org admin every
+// device, and a branch manager the devices of field staff in their part of
+// the tree. From schema version 8 nobody writes devices through the records
+// API (DevicesWrite is only the version 1 rule); the device routes enrol,
+// approve and switch them off.
 var (
 	DevicesRead = Active + ` && (` +
 		`(` + isField + ` && field_user = @request.auth.id)` +
 		` || (` + isStaff + ` && staff_user = @request.auth.id)` +
-		` || ` + isOrgAdmin + `)`
+		` || ` + isOrgAdmin +
+		` || (` + isStaff + ` && @request.auth.role = "` + RoleBranchManager + `"` +
+		` && @request.auth.location_path != "" && field_user.location_path ~ @request.auth.location_path))`
 	DevicesWrite = OrgAdminOnly
 )
 

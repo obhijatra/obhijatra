@@ -8,15 +8,14 @@ import (
 	"ganigeorgiev.com/pocketbase/dbx"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 
-	"github.com/obhijatra/obhijatra/server/internal/api"
 	"github.com/obhijatra/obhijatra/server/internal/audit"
 	"github.com/obhijatra/obhijatra/server/internal/schema"
 	"github.com/obhijatra/obhijatra/server/internal/testutil"
 )
 
-// A device's keys, organisation signature, status and expiry are never
-// written through the records API, by an org admin or a superuser; only
-// the server's own code (the future enrolment route) sets them.
+// Nobody but a superuser writes devices through the records API, and not
+// even a superuser sets the fields that decide whether a device is trusted:
+// only the server's device routes and commands do.
 func TestDeviceTrustFieldsAreServerOnly(t *testing.T) {
 	app := testutil.NewApp(t)
 	defer app.Cleanup()
@@ -39,53 +38,55 @@ func TestDeviceTrustFieldsAreServerOnly(t *testing.T) {
 	const list = "/api/collections/devices/records"
 	one := list + "/" + device.Id
 	values := map[string]any{
+		"field_user": o.Field2.Id, "staff_user": o.Admin.Id,
 		"sign_public_key": "bmV3", "enc_public_key": "bmV3", "org_signature": "Zm9yZ2Vk",
 		"status": schema.DeviceRevoked, "expires": "2099-01-01 00:00:00.000Z",
+		"enrolled_by": o.Admin.Id, "approved_at": "2026-11-01 00:00:00.000Z", "first_approved_by": o.Admin.Id,
+		"attestation_level": schema.AttestationHardware, "revoked_at": "2026-11-01 00:00:00.000Z",
 	}
+	adminToken := testutil.Token(t, o.Admin)
+	testutil.Prime(t, app, o.Admin, adminToken)
+	suToken := testutil.Token(t, su)
 	before := auditCount(t, app)
 
-	for _, who := range []struct {
-		name  string
-		token string
-	}{
-		{"org admin", testutil.Token(t, o.Admin)},
-		{"superuser", testutil.Token(t, su)},
-	} {
-		for _, field := range schema.DeviceTrustFields {
-			create := map[string]any{"field_user": o.Field1.Id, "attestation_level": schema.AttestationNone,
-				"status": schema.DeviceActive, field: values[field]}
-			status, body := call(mux, http.MethodPost, list, who.token, create)
-			if status != 400 || !strings.Contains(body, `"`+field+`":{"code":"validation_device_field_server_only"`) {
-				t.Errorf("%s creates a device with %s: %d %s", who.name, field, status, body)
-			}
-
-			status, body = call(mux, http.MethodPatch, one, who.token, map[string]any{field: values[field]})
-			if status != 400 || !strings.Contains(body, `"`+field+`":{"code":"validation_device_field_server_only"`) {
-				t.Errorf("%s changes %s: %d %s", who.name, field, status, body)
-			}
-		}
-
-		// Without them a device cannot be created at all (status is
-		// required): enrolment is the only way in.
-		status, body := call(mux, http.MethodPost, list, who.token,
-			map[string]any{"field_user": o.Field1.Id, "attestation_level": schema.AttestationNone})
-		if status != 400 {
-			t.Errorf("%s creates a device without a status: %d %s", who.name, status, body)
+	// An org admin cannot write devices through the records API at all.
+	if status, body := call(mux, http.MethodPost, list, adminToken, map[string]any{"label": "x"}); status != http.StatusForbidden {
+		t.Errorf("org admin creates a device: %d %s", status, body)
+	}
+	for _, change := range []map[string]any{{"label": "x"}, {"first_approved_by": o.Admin.Id}} {
+		if status, body := call(mux, http.MethodPatch, one, adminToken, change); status != http.StatusForbidden {
+			t.Errorf("org admin changes %v: %d %s", change, status, body)
 		}
 	}
-	if n, _ := app.CountRecords(schema.Devices); n != 1 {
+
+	// A superuser is refused every trust field, alone.
+	for _, field := range schema.DeviceTrustFields {
+		v, ok := values[field]
+		if !ok {
+			t.Fatalf("no test value for %s", field)
+		}
+		status, body := call(mux, http.MethodPost, list, suToken, map[string]any{"label": "x", field: v})
+		if status != 400 || !strings.Contains(body, `"`+field+`":{"code":"validation_device_field_server_only"`) {
+			t.Errorf("superuser creates a device with %s: %d %s", field, status, body)
+		}
+		status, body = call(mux, http.MethodPatch, one, suToken, map[string]any{field: v})
+		if status != 400 || !strings.Contains(body, `"`+field+`":{"code":"validation_device_field_server_only"`) {
+			t.Errorf("superuser changes %s: %d %s", field, status, body)
+		}
+	}
+	if n, _ := app.CountRecords(schema.Devices, dbx.Not(dbx.HashExp{"label": "Test device"})); n != 1 {
 		t.Errorf("%d devices, want only the one the server wrote", n)
 	}
 	if auditCount(t, app) != before {
 		t.Error("refused device writes must change nothing")
 	}
 
-	// Other fields stay editable by an org admin; sending a trust field
-	// unchanged is not a change.
-	status, body := call(mux, http.MethodPatch, one, testutil.Token(t, o.Admin),
-		map[string]any{"label": "Rahima's phone", "status": schema.DeviceActive})
-	if status != 200 || !strings.Contains(body, `"label":"Rahima's phone"`) {
-		t.Errorf("org admin renames a device: %d %s", status, body)
+	// A superuser may still rename one; sending a trust field unchanged
+	// is not a change.
+	status, body := call(mux, http.MethodPatch, one, suToken,
+		map[string]any{"label": "Sample phone", "status": schema.DeviceActive})
+	if status != 200 || !strings.Contains(body, `"label":"Sample phone"`) {
+		t.Errorf("superuser renames a device: %d %s", status, body)
 	}
 	stored, _ := app.FindRecordById(schema.Devices, device.Id)
 	if stored.GetString("org_signature") != "c2ln" || stored.GetString("status") != schema.DeviceActive {
@@ -94,24 +95,6 @@ func TestDeviceTrustFieldsAreServerOnly(t *testing.T) {
 
 	if r := mustVerify(t, app); !r.OK {
 		t.Fatalf("audit chain: %+v", r)
-	}
-}
-
-// The enrolment route exists as a placeholder and says so plainly.
-func TestDeviceEnrolmentIsNotYetAvailable(t *testing.T) {
-	app := testutil.NewApp(t)
-	defer app.Cleanup()
-	o := testutil.SeedOrg(t, app)
-	mux := serveMux(t, app)
-
-	for name, token := range map[string]string{
-		"guest":     "",
-		"org admin": testutil.Token(t, o.Admin),
-	} {
-		status, body := call(mux, http.MethodPost, schema.DeviceEnrolPath, token, map[string]any{"label": "Phone"})
-		if status != http.StatusNotImplemented || !strings.Contains(body, api.DeviceEnrolNotReady) {
-			t.Errorf("%s: %d %s; want 501 with the plain message", name, status, body)
-		}
 	}
 }
 

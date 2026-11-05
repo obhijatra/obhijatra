@@ -61,6 +61,7 @@ func main() {
 		setup.NewInitCommand(app, envFile),
 		cli.NewAuditCommand(app),
 		cli.NewUnlockCommand(app),
+		cli.NewDeviceCommand(app),
 	)
 
 	// `serve` refuses to start a server that `init` has not set up, so the

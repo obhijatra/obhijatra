@@ -28,8 +28,9 @@ var passwordFields = []string{"oldPassword", "password", "passwordConfirm"}
 
 // passwordGate lets a person whose account has a one-time password do only
 // what choosing a new one needs: read their own account, change their own
-// password, sign in or refresh the session, and the public version and
-// sign-in-method checks, never with related records expanded. Everything
+// password, sign in or refresh the session, enrol the device and read its
+// status, and the public version and sign-in-method checks, never with
+// related records expanded. Everything
 // else is refused, whatever the API rules would allow.
 func passwordGate() *hook.Handler[*core.RequestEvent] {
 	return &hook.Handler[*core.RequestEvent]{
@@ -63,6 +64,12 @@ func mayPassGate(e *core.RequestEvent) (bool, error) {
 	switch p {
 	case Prefix + "/meta", Prefix + "/signin/methods":
 		return true, nil
+	case schema.DeviceEnrolPath:
+		// Enrolling only puts the device on the waiting list; the new
+		// password must then be chosen from it.
+		return e.Request.Method == http.MethodPost, nil
+	case Prefix + DeviceMePath:
+		return e.Request.Method == http.MethodGet, nil
 	}
 
 	parts := strings.Split(strings.Trim(p, "/"), "/")

@@ -260,7 +260,8 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			windBackSchemaVersion5(t, app)
 			windBackSchemaVersion6(t, app)
 			windBackSchemaVersion7(t, app)
-			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%' OR file LIKE '1793836800_%' OR file LIKE '1793840400_%'").Execute(); err != nil {
+			windBackSchemaVersion8(t, app)
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%' OR file LIKE '1793836800_%' OR file LIKE '1793840400_%' OR file LIKE '1793844000_%'").Execute(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -271,6 +272,7 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			checkSchemaVersion5(t, app)
 			checkSchemaVersion6(t, app)
 			checkSchemaVersion7(t, app)
+			checkSchemaVersion8(t, app)
 
 			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
 			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
@@ -381,6 +383,37 @@ func windBackSchemaVersion7(t *testing.T, app core.App) {
 	c.DeleteRule = nil
 	if err := app.Save(c); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// windBackSchemaVersion8 undoes schema version 8: no pending status, no
+// platform, approval fields or key index on devices.
+func windBackSchemaVersion8(t *testing.T, app core.App) {
+	t.Helper()
+	c, _ := app.FindCollectionByNameOrId(schema.Devices)
+	c.Fields.GetByName("status").(*core.SelectField).Values = []string{schema.DeviceActive, schema.DeviceRevoked}
+	for _, f := range []string{"platform", "approved_at", "first_approved_by"} {
+		c.Fields.RemoveByName(f)
+	}
+	c.RemoveIndex("idx_devices_sign_public_key")
+	if err := app.Save(c); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func checkSchemaVersion8(t *testing.T, app core.App) {
+	t.Helper()
+	c, _ := app.FindCollectionByNameOrId(schema.Devices)
+	if !slices.Contains(c.Fields.GetByName("status").(*core.SelectField).Values, schema.DevicePending) {
+		t.Error("after the upgrade devices cannot be pending")
+	}
+	for _, f := range []string{"platform", "approved_at", "first_approved_by"} {
+		if c.Fields.GetByName(f) == nil {
+			t.Errorf("after the upgrade devices have no %s", f)
+		}
+	}
+	if c.GetIndex("idx_devices_sign_public_key") == "" || *c.ListRule != schema.DevicesRead {
+		t.Error("after the upgrade device keys are not unique or the read rule is old")
 	}
 }
 
