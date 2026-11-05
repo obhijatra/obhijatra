@@ -24,7 +24,12 @@ Each device makes two key pairs and keeps the private keys in the platform's sec
 - **Ed25519 signing key.** Signs requests ([RFC 8032](https://www.rfc-editor.org/rfc/rfc8032)).
 - **X25519 encryption key.** Registered now, for the end-to-end encryption planned in the blueprint.
 
-Public keys are sent as 32 bytes in standard base64 with padding, written the one canonical way.
+Public keys are sent as 32 bytes in standard base64 with padding, written the one canonical way. The server refuses keys that are not real keys:
+
+- an Ed25519 key that is not a valid curve point, or has "small order";
+- an X25519 key of low order.
+
+A small-order signing key would accept one fixed signature for every message. Whoever enrolled it would then need no private key at all.
 
 ### Enrolment
 
@@ -66,6 +71,8 @@ How the code is used:
 - **Nobody approves their own device.**
 - **An org admin's device** needs two different org admins. The first approval leaves it pending with `needs_second_approval: true`.
 - **The server's command line**, `obhijatra-server device approve <id> "<code>"`, counts as a full approval. Whoever can run the server program already holds all the data. This is how the first org admin's first device is approved.
+- **A first approval counts only while its approver is still an active org admin.** If that admin has left or been demoted, the next approval counts as the first.
+- **Promotion to org admin** puts the person's approved devices back to waiting for two org admins. Otherwise one admin could approve a supervisor's phone alone and then promote the supervisor.
 
 An approval lasts 365 days. After that, the device can only read its own status until someone approves it again with the same code.
 
@@ -108,8 +115,19 @@ The server refuses a request when:
 The server then checks the device:
 
 - An **active** device within its approval works normally.
-- A **pending** or **expired** device may only read its own status (`GET /api/obhijatra/v1/devices/me`). It may also do what changing a one-time password needs.
+- A **pending** or **expired** device may only:
+  - read its own status (`GET /api/obhijatra/v1/devices/me`);
+  - refresh its session;
+  - for a person who must replace a one-time password, and nobody else, do what choosing the new password needs.
+
+  It cannot read or change the account. Otherwise a thief with a password could change it from their own waiting phone.
 - A **revoked** device is refused.
+
+A refused request never takes a session for its device.
+
+**File downloads.** A download with a person's file token (`/api/files/…?token=`) must also be signed by an approved device of that person. A download link that leaks, for example from a log, is then of no use to anyone.
+
+**Live updates.** The server checks the device and session again before each live update (realtime). After a device is switched off, its approval runs out or its session ends, updates stop at once and the connection carries on signed out.
 
 Every refusal gives a reason code in `data.reason.code`, so the apps can show the right screen:
 
@@ -123,6 +141,10 @@ Every refusal gives a reason code in `data.reason.code`, so the apps can show th
 - `session_other_device`
 
 Requests without a signed-in person need no device: sign-in, the public `meta` and sign-in-method checks.
+
+The signature does not cover other headers, such as the session token or the content type. TLS protects them on the way. A signature still cannot be used twice, nor moved to another request.
+
+**Superusers** are not device-checked. These are the installation and recovery accounts that `obhijatra-server init` makes. They are used rarely, for the server's own maintenance, and every write they make is in the audit chain.
 
 ### Sessions
 
@@ -165,8 +187,24 @@ The server and both apps check these values in their tests.
 - Every organisation runs a one-time bootstrap: the first org admin approves their own first device from the server's command line (`docs/setup/devices.md`). After that, approvals happen in the manager app.
 - Org admins are never locked out entirely, because the server's command line can always approve or switch off a device.
 - Each device's clock must be within 5 minutes of the server's. The app shows a clear message when it is not.
-- The replay memory is kept in the server's memory. Signatures made before a restart are refused after it, so a restart costs at most one retry.
+- The replay memory is kept in the server's memory, in three time buckets. Dropping old nonces costs nothing, however busy the server is.
+- After a restart, the server starts answering only once the second it started in has passed. Signatures made in that second or before are refused, so a restart costs at most one retry.
+- A request body is hashed as it streams in. PocketBase keeps it on disk beyond 16 MB, so a large body is never held in memory before its signature is checked.
 - A person promoted to org admin keeps the devices approved before the promotion. The promotion itself needs an org admin.
+
+An independent security review on 6 November 2026 found the issues below. All were fixed, with tests, before the apps were built:
+
+- a waiting device could change the account's password;
+- live updates continued after a device was switched off;
+- small-order keys were accepted;
+- the replay memory slowed down under load;
+- the two-admin rule could be bypassed by promotion;
+- a first approval by a former admin still counted;
+- file links worked without a device;
+- a refused request could take a session;
+- one second of slack was allowed after a restart;
+- "bearer" in lower case was not recognised;
+- line separators, invisible characters and bidirectional marks were allowed in device and place names.
 
 **Deferred**, as the blueprint plans:
 

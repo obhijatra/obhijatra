@@ -93,8 +93,13 @@ func NormaliseCode(typed string) string {
 // "?" and the query.
 func Message(method, target, unixTime, nonce string, body []byte) []byte {
 	sum := sha256.Sum256(body)
+	return MessageWithBodyHash(method, target, unixTime, nonce, sum[:])
+}
+
+// MessageWithBodyHash is Message for a body whose SHA-256 is bodyHash.
+func MessageWithBodyHash(method, target, unixTime, nonce string, bodyHash []byte) []byte {
 	return []byte("OBHIJATRA-REQUEST-V1\n" + strings.ToUpper(method) + "\n" + target + "\n" +
-		unixTime + "\n" + nonce + "\n" + hex.EncodeToString(sum[:]))
+		unixTime + "\n" + nonce + "\n" + hex.EncodeToString(bodyHash))
 }
 
 // Verify checks a base64url (no padding) signature over message with an

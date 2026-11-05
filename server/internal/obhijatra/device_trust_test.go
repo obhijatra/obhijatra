@@ -1,7 +1,9 @@
 package obhijatra_test
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
@@ -535,5 +537,286 @@ func TestOnlyAFreshSessionEnrolsADevice(t *testing.T) {
 	}
 	if n, _ := app.CountRecords(schema.Devices, dbx.HashExp{"field_user": o.Field1.Id, "status": schema.DevicePending}); n != 1 {
 		t.Errorf("%d waiting devices, want 1", n)
+	}
+}
+
+// Review finding 1: a waiting device may read its status and refresh its
+// session, nothing else, unless its person must replace a one-time
+// password.
+func TestAWaitingDeviceCannotTouchTheAccount(t *testing.T) {
+	o, mux, app, done := strictApp(t)
+	defer done()
+	phone := freshPhone()
+	token, id := phone.enrol(t, mux, schema.FieldUsers, "field1@example.org")
+	account := "/api/collections/field_users/records/" + o.Field1.Id
+
+	if status, body := signed(mux, http.MethodGet, account, token, id, phone.key, nil); status != http.StatusForbidden ||
+		!reasonIs(body, schema.ReasonDeviceNotApproved) {
+		t.Errorf("read the account: %d %s", status, body)
+	}
+	if status, body := signed(mux, http.MethodPatch, account, token, id, phone.key,
+		map[string]any{"oldPassword": testutil.Password, "password": "chosen-by-a-thief-1", "passwordConfirm": "chosen-by-a-thief-1"}); status != http.StatusForbidden {
+		t.Errorf("change the password: %d %s", status, body)
+	}
+	if status, _ := signIn(mux, schema.FieldUsers, "field1@example.org", testutil.Password); status != http.StatusOK {
+		t.Error("the password changed")
+	}
+	status, body := signed(mux, http.MethodPost, "/api/collections/field_users/auth-refresh", token, id, phone.key, nil)
+	if status != http.StatusOK {
+		t.Fatalf("refresh from a waiting device: %d %s", status, body)
+	}
+	// The refreshed session belongs to the same device.
+	s, err := app.FindFirstRecordByData(schema.Sessions, "token_hash", testutil.TokenHash(tokenOf(t, body)))
+	if err != nil || s.GetString("device") != id {
+		t.Errorf("refreshed session: %q %v", s.GetString("device"), err)
+	}
+	if status, _ := signed(mux, http.MethodPost, "/api/collections/field_users/auth-refresh?expand=location", token, id, phone.key, nil); status != http.StatusForbidden {
+		t.Error("a refresh with expand was allowed")
+	}
+}
+
+// Review finding 2: live updates stop when the device is switched off.
+func TestLiveUpdatesStopWhenTheDeviceIsSwitchedOff(t *testing.T) {
+	o, mux, app, done := strictApp(t)
+	defer done()
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	field := asApprover(t, app, o.Field1)
+	admin := asApprover(t, app, o.Admin)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/api/realtime", nil)
+	resp, err := srv.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	events := make(chan string, 16)
+	go func() {
+		defer close(events)
+		scanner := bufio.NewScanner(resp.Body)
+		var name, data string
+		for scanner.Scan() {
+			line := scanner.Text()
+			switch {
+			case strings.HasPrefix(line, "event:"):
+				name = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
+			case strings.HasPrefix(line, "data:"):
+				data = strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+			case line == "":
+				if name != "" {
+					events <- name + " " + data
+				}
+				name, data = "", ""
+			}
+		}
+	}()
+	next := func(wait time.Duration) string {
+		select {
+		case m := <-events:
+			return m
+		case <-time.After(wait):
+			return ""
+		}
+	}
+	connect := next(5 * time.Second)
+	var hello struct {
+		ClientID string `json:"clientId"`
+	}
+	if !strings.HasPrefix(connect, "PB_CONNECT ") || json.Unmarshal([]byte(strings.TrimPrefix(connect, "PB_CONNECT ")), &hello) != nil {
+		t.Fatalf("connect: %q", connect)
+	}
+	// Subscribe over the same network path, signed by the approved device.
+	raw, _ := json.Marshal(map[string]any{"clientId": hello.ClientID, "subscriptions": []string{"forms"}})
+	sub, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/realtime", bytes.NewReader(raw))
+	sub.Header.Set("Content-Type", "application/json")
+	sub.Header.Set("Authorization", field.token)
+	testutil.Sign(sub, field.dev.ID, field.dev.Key, raw)
+	subResp, err := srv.Client().Do(sub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	subResp.Body.Close()
+	if subResp.StatusCode != http.StatusNoContent {
+		t.Fatalf("subscribe: %d", subResp.StatusCode)
+	}
+	retitle := func(title string) {
+		f, _ := app.FindRecordById(schema.Forms, o.Form.Id)
+		f.Set("title", title)
+		if err := app.Save(f); err != nil {
+			t.Fatal(err)
+		}
+	}
+	retitle("Seen while approved")
+	if m := next(5 * time.Second); !strings.Contains(m, "Seen while approved") {
+		t.Fatalf("no live update while approved: %q", m)
+	}
+	if status, body := admin.call(mux, http.MethodPost, revokeURL(field.dev.ID), nil); status != http.StatusOK {
+		t.Fatalf("revoke: %d %s", status, body)
+	}
+	retitle("Sent after switching off")
+	if m := next(1500 * time.Millisecond); m != "" {
+		t.Errorf("a switched-off device still gets live updates: %.200s", m)
+	}
+}
+
+// Review finding 3: a key that is not a real key is refused, and so is a
+// signature that would fit every message.
+func TestWeakKeysCannotEnrol(t *testing.T) {
+	_, mux, app, done := strictApp(t)
+	defer done()
+	identity := make([]byte, 32)
+	identity[0] = 1
+	universal := make([]byte, 64)
+	universal[0] = 1
+	_, body := signIn(mux, schema.FieldUsers, "field1@example.org", testutil.Password)
+	token := tokenOf(t, body)
+	good := freshPhone()
+	for name, keys := range map[string][2][]byte{
+		"small-order signing key":  {identity, good.enc},
+		"low-order encryption key": {good.key.Public().(ed25519.PublicKey), make([]byte, 32)},
+	} {
+		raw, _ := json.Marshal(map[string]any{"label": "x", "platform": "android",
+			"sign_public_key": base64.StdEncoding.EncodeToString(keys[0]), "enc_public_key": base64.StdEncoding.EncodeToString(keys[1])})
+		r := httptest.NewRequest(http.MethodPost, enrolURL, bytes.NewReader(raw))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("Authorization", token)
+		r.RemoteAddr = defaultIP + ":40000"
+		testutil.Sign(r, api.EnrolDeviceID, good.key, raw)
+		if bytes.Equal(keys[0], identity) {
+			r.Header.Set(devicetrust.HeaderSignature, base64.RawURLEncoding.EncodeToString(universal))
+		}
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, r)
+		if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "validation_invalid_key") {
+			t.Errorf("%s: %d %s", name, w.Code, w.Body.String())
+		}
+	}
+	if n, _ := app.CountRecords(schema.Devices, dbx.Not(dbx.HashExp{"label": "Test device"})); n != 0 {
+		t.Errorf("%d devices enrolled", n)
+	}
+}
+
+// Review finding 5: promoting someone to org admin puts their devices back
+// to waiting for two org admins.
+func TestPromotionToOrgAdminNeedsTwoAdminsAgain(t *testing.T) {
+	o, mux, app, done := strictApp(t)
+	defer done()
+	admin2 := testutil.User(t, app, schema.StaffUsers, "admin2@example.org", schema.RoleOrgAdmin, o.Root, true)
+	phone := freshPhone()
+	_, id := phone.enrol(t, mux, schema.StaffUsers, "sup1@example.org")
+	a := asApprover(t, app, o.Admin)
+	if status, body := a.call(mux, http.MethodPost, approveURL(id), map[string]any{"code": phone.code()}); status != http.StatusOK ||
+		!strings.Contains(body, `"status":"active"`) {
+		t.Fatalf("approve the supervisor's phone: %d %s", status, body)
+	}
+	if status, body := a.call(mux, http.MethodPatch, "/api/collections/staff_users/records/"+o.Sup1.Id,
+		map[string]any{"role": schema.RoleOrgAdmin}); status != http.StatusOK {
+		t.Fatalf("promote: %d %s", status, body)
+	}
+	dev, _ := app.FindRecordById(schema.Devices, id)
+	if dev.GetString("status") != schema.DevicePending {
+		t.Fatalf("after promotion the device is %q", dev.GetString("status"))
+	}
+	// One more admin is not enough: the promoting admin's earlier approval
+	// does not count.
+	if status, body := a.call(mux, http.MethodPost, approveURL(id), map[string]any{"code": phone.code()}); status != http.StatusOK ||
+		!strings.Contains(body, `"needs_second_approval":true`) {
+		t.Fatalf("first approval after promotion: %d %s", status, body)
+	}
+	if status, body := asApprover(t, app, admin2).call(mux, http.MethodPost, approveURL(id), map[string]any{"code": phone.code()}); status != http.StatusOK ||
+		!strings.Contains(body, `"status":"active"`) {
+		t.Errorf("second approval: %d %s", status, body)
+	}
+}
+
+// Review finding 6: a first approval by someone who is no longer an org
+// admin does not count.
+func TestAFirstApprovalByAFormerAdminDoesNotCount(t *testing.T) {
+	o, mux, app, done := strictApp(t)
+	defer done()
+	admin2 := testutil.User(t, app, schema.StaffUsers, "admin2@example.org", schema.RoleOrgAdmin, o.Root, true)
+	admin3 := testutil.User(t, app, schema.StaffUsers, "admin3@example.org", schema.RoleOrgAdmin, o.Root, true)
+	phone := freshPhone()
+	_, id := phone.enrol(t, mux, schema.StaffUsers, "admin@example.org")
+	if status, body := asApprover(t, app, admin2).call(mux, http.MethodPost, approveURL(id), map[string]any{"code": phone.code()}); status != http.StatusOK {
+		t.Fatalf("first approval: %d %s", status, body)
+	}
+	a2, _ := app.FindRecordById(schema.StaffUsers, admin2.Id)
+	a2.Set("active", false)
+	if err := app.Save(a2); err != nil {
+		t.Fatal(err)
+	}
+	status, body := asApprover(t, app, admin3).call(mux, http.MethodPost, approveURL(id), map[string]any{"code": phone.code()})
+	if status != http.StatusOK || !strings.Contains(body, `"needs_second_approval":true`) {
+		t.Errorf("approval after the first approver left: %d %s", status, body)
+	}
+}
+
+// Review finding 7: a file token works only from an approved device of its
+// person.
+func TestFileDownloadsNeedTheDevice(t *testing.T) {
+	o, mux, app, done := strictApp(t)
+	defer done()
+	f := asApprover(t, app, o.Field1)
+	status, body := f.call(mux, http.MethodPost, "/api/files/token", nil)
+	if status != http.StatusOK {
+		t.Fatalf("file token: %d %s", status, body)
+	}
+	var tok struct {
+		Token string `json:"token"`
+	}
+	_ = json.Unmarshal([]byte(body), &tok)
+	v := o.Version
+	url := "/api/files/" + schema.FormVersions + "/" + v.Id + "/" + v.GetString("xform") + "?token=" + tok.Token
+
+	if status, _ := call(mux, http.MethodGet, url, "", nil); status != http.StatusForbidden {
+		t.Errorf("unsigned download with the token: %d", status)
+	}
+	if status, body := signed(mux, http.MethodGet, url, "", f.dev.ID, f.dev.Key, nil); status != http.StatusOK {
+		t.Errorf("signed download: %d %.200s", status, body)
+	}
+	if status, _ := signed(mux, http.MethodGet, url, "", testutil.Device(t, app, o.Field2).ID, testutil.Device(t, app, o.Field2).Key, nil); status == http.StatusOK {
+		t.Error("another person's device used the token")
+	}
+	if err := app.RunInTransaction(func(tx core.App) error {
+		d, _ := tx.FindRecordById(schema.Devices, f.dev.ID)
+		return api.RevokeDevice(tx, d)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if status, _ := signed(mux, http.MethodGet, url, "", f.dev.ID, f.dev.Key, nil); status != http.StatusForbidden {
+		t.Errorf("download from a switched-off device: %d", status)
+	}
+}
+
+// Review finding 8: a refused request does not take the session.
+func TestARefusedRequestDoesNotTakeTheSession(t *testing.T) {
+	_, mux, app, done := strictApp(t)
+	defer done()
+	thief := freshPhone()
+	_, thiefDevice := thief.enrol(t, mux, schema.FieldUsers, "field1@example.org")
+	// An unused session of the owner, stolen.
+	_, body := signIn(mux, schema.FieldUsers, "field1@example.org", testutil.Password)
+	stolen := tokenOf(t, body)
+	if status, _ := signed(mux, http.MethodGet, formsURL, stolen, thiefDevice, thief.key, nil); status != http.StatusForbidden {
+		t.Fatalf("the waiting device read forms: %d", status)
+	}
+	s, _ := app.FindFirstRecordByData(schema.Sessions, "token_hash", testutil.TokenHash(stolen))
+	if s.GetString("device") != "" {
+		t.Errorf("the refused request took the session for %s", s.GetString("device"))
+	}
+}
+
+// Review finding 11: "bearer" in any case.
+func TestBearerInAnyCase(t *testing.T) {
+	o, mux, app, done := strictApp(t)
+	defer done()
+	f := asApprover(t, app, o.Field1)
+	for _, prefix := range []string{"", "Bearer ", "bearer ", "BEARER "} {
+		if status, body := signed(mux, http.MethodGet, formsURL, prefix+f.token, f.dev.ID, f.dev.Key, nil); status != http.StatusOK {
+			t.Errorf("%q: %d %s", prefix, status, body)
+		}
 	}
 }

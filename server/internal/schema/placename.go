@@ -63,10 +63,20 @@ func foldRune(r rune) rune {
 }
 
 // UnsafeTextRune reports whether r has no place in a name or code: control
-// characters (line breaks, tabs) and the bidirectional override and
-// isolate characters, which can make text display in a misleading order.
+// characters and line or paragraph separators (which break a line), the
+// bidirectional marks, overrides and isolates (which can make text display
+// in a misleading order), and invisible spaces and joiners other than the
+// zero-width joiner and non-joiner, which Bangla spelling needs.
 func UnsafeTextRune(r rune) bool {
-	return unicode.IsControl(r) || (r >= '\u202a' && r <= '\u202e') || (r >= '\u2066' && r <= '\u2069')
+	switch {
+	case unicode.IsControl(r),
+		r >= '\u202a' && r <= '\u202e', r >= '\u2066' && r <= '\u2069',
+		r == '\u2028', r == '\u2029',
+		r == '\u200e', r == '\u200f', r == '\u061c',
+		r == '\u200b', r == '\u2060', r == '\ufeff':
+		return true
+	}
+	return false
 }
 
 // TextLength is the length of s in characters, as the record fields count

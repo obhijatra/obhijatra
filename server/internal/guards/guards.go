@@ -131,6 +131,14 @@ func Register(app core.App) {
 				if err := keepAnOrgAdmin(e.App, old, e.Record); err != nil {
 					return err
 				}
+				// An org admin's devices need two org admins' approval
+				// (docs/decisions/0008-device-trust.md), so one admin
+				// cannot approve a phone alone and then promote its owner.
+				if e.Record.GetString("role") == schema.RoleOrgAdmin && old.GetString("role") != schema.RoleOrgAdmin {
+					if err := devicesNeedTwoAdmins(e.App, e.Record.Id); err != nil {
+						return err
+					}
+				}
 			}
 			// A change to how someone signs in, or to what they may do,
 			// ends every session they have: a session started by SMS must
@@ -459,6 +467,23 @@ func keepAnOrgAdmin(app core.App, old, r *core.Record) error {
 // stored in the database now. The guards compare against that, not against
 // Record.Original(), which is blank for a record created in the same
 // process and so cannot be trusted to describe what is stored.
+// devicesNeedTwoAdmins puts the approved devices of a new org admin back
+// to waiting for approval by two org admins.
+func devicesNeedTwoAdmins(app core.App, staffID string) error {
+	devices, err := app.FindAllRecords(schema.Devices, dbx.HashExp{"staff_user": staffID, "status": schema.DeviceActive})
+	if err != nil {
+		return err
+	}
+	for _, d := range devices {
+		d.Set("status", schema.DevicePending)
+		d.Set("first_approved_by", "")
+		if err := app.Save(d); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func onUpdate(app core.App, collection string, fn func(e *core.RecordEvent, old *core.Record) error) {
 	app.OnRecordUpdate(collection).BindFunc(func(e *core.RecordEvent) error {
 		old, err := stored(e)

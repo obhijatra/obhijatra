@@ -48,33 +48,46 @@ const (
 	DeviceRevokePath  = "/devices/{id}/revoke"
 )
 
-// started is when this server process started; a signature older than
-// that may have been used already (the replay memory starts empty).
+// started is when this server process started; a signature from that
+// second or before may have been used already (the replay memory starts
+// empty).
 var started = time.Now().UTC()
 
-// nonces remembers the nonces seen within the signature window.
-var nonces = struct {
+// nonces remembers the device nonces seen recently, in three buckets of
+// schema.SignatureWindow each: a nonce is kept for more than twice the
+// window (a signature is accepted while the server's clock is within the
+// window either side of its time), and dropping the oldest bucket costs
+// nothing however many requests arrive.
+var nonces struct {
 	sync.Mutex
-	seen map[string]time.Time
-}{seen: map[string]time.Time{}}
+	buckets [3]map[string]struct{}
+	start   time.Time // when buckets[0], the newest, began
+}
 
-// useNonce records device+nonce and reports false if it was seen within
-// the window.
+// useNonce records device+nonce and reports false if it was seen already.
 func useNonce(device, nonce string, now time.Time) bool {
 	nonces.Lock()
 	defer nonces.Unlock()
-	if len(nonces.seen) > 100_000 {
-		for k, at := range nonces.seen {
-			if now.Sub(at) > 2*schema.SignatureWindow {
-				delete(nonces.seen, k)
-			}
+	w := schema.SignatureWindow
+	switch {
+	case nonces.buckets[0] == nil || now.Sub(nonces.start) >= 3*w:
+		for i := range nonces.buckets {
+			nonces.buckets[i] = map[string]struct{}{}
+		}
+		nonces.start = now
+	default:
+		for now.Sub(nonces.start) >= w {
+			nonces.buckets[2], nonces.buckets[1], nonces.buckets[0] = nonces.buckets[1], nonces.buckets[0], map[string]struct{}{}
+			nonces.start = nonces.start.Add(w)
 		}
 	}
 	key := device + "\x00" + nonce
-	if at, ok := nonces.seen[key]; ok && now.Sub(at) <= 2*schema.SignatureWindow {
-		return false
+	for _, b := range nonces.buckets {
+		if _, seen := b[key]; seen {
+			return false
+		}
 	}
-	nonces.seen[key] = now
+	nonces.buckets[0][key] = struct{}{}
 	return true
 }
 
@@ -120,22 +133,28 @@ func ownsDevice(person, device *core.Record) bool {
 	return person != nil && device.GetString(ownerField(person)) == person.Id
 }
 
-// readBody reads the whole request body and rewinds it for the handlers
-// (PocketBase's body readers rewind only when asked).
-func readBody(e *core.RequestEvent) ([]byte, error) {
-	if e.Request.Body == nil {
-		return nil, nil
+// hashBody returns the SHA-256 of the request body and leaves the body
+// readable again for the handlers. PocketBase's router keeps what is read
+// in memory up to 16 MB and in a temporary file beyond, so a large body is
+// never held in memory before its signature is checked.
+func hashBody(e *core.RequestEvent) ([]byte, error) {
+	h := sha256.New()
+	if e.Request.Body == nil || e.Request.Body == http.NoBody {
+		return h.Sum(nil), nil
 	}
+	if rr, ok := e.Request.Body.(router.Rereader); ok {
+		_, err := io.Copy(h, e.Request.Body)
+		rr.Reread()
+		return h.Sum(nil), err
+	}
+	// Outside PocketBase's router (tests): keep a copy in memory.
 	body, err := io.ReadAll(e.Request.Body)
 	if err != nil {
 		return nil, err
 	}
-	if rr, ok := e.Request.Body.(router.Rereader); ok {
-		rr.Reread()
-	} else {
-		e.Request.Body = &router.RereadableReadCloser{ReadCloser: io.NopCloser(bytes.NewReader(body))}
-	}
-	return body, nil
+	e.Request.Body = &router.RereadableReadCloser{ReadCloser: io.NopCloser(bytes.NewReader(body))}
+	h.Write(body)
+	return h.Sum(nil), nil
 }
 
 // checkSignature verifies the request's signature headers with signKey for
@@ -156,14 +175,14 @@ func checkSignature(e *core.RequestEvent, deviceID string, signKey []byte) error
 	if at.Before(now.Add(-schema.SignatureWindow)) || at.After(now.Add(schema.SignatureWindow)) {
 		return errDeviceClock
 	}
-	if at.Before(started.Add(-time.Second)) {
-		return errSignatureInvalid // possibly seen before this process started
+	if secs <= started.Unix() {
+		return errSignatureInvalid // possibly used before this process started
 	}
-	body, err := readBody(e)
+	bodyHash, err := hashBody(e)
 	if err != nil {
 		return e.BadRequestError("The request could not be read.", err)
 	}
-	if !devicetrust.Verify(signKey, devicetrust.Message(e.Request.Method, e.Request.RequestURI, unix, nonce, body), sig) {
+	if !devicetrust.Verify(signKey, devicetrust.MessageWithBodyHash(e.Request.Method, e.Request.RequestURI, unix, nonce, bodyHash), sig) {
 		return errSignatureInvalid
 	}
 	if !useNonce(deviceID, nonce, now) {
@@ -207,7 +226,11 @@ func deviceUsable(device *core.Record) bool {
 
 // tokenHash is the SHA-256 (hex) of the request's session token.
 func tokenHash(e *core.RequestEvent) string {
-	token := strings.TrimSpace(strings.TrimPrefix(e.Request.Header.Get("Authorization"), "Bearer "))
+	// As PocketBase reads it: "Bearer " in any case, or no prefix.
+	token := e.Request.Header.Get("Authorization")
+	if len(token) > 7 && strings.EqualFold(token[:7], "Bearer ") {
+		token = token[7:]
+	}
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
 }
@@ -231,26 +254,44 @@ func checkSession(e *core.RequestEvent, device *core.Record) error {
 }
 
 // mayUseUnapproved reports whether a request may come from a device that
-// is waiting for approval (or whose approval ran out): what enrolment and
-// choosing a password need, and the device's own status.
+// is waiting for approval (or whose approval ran out): its own status, a
+// session refresh, and, only for a person who must replace a one-time
+// password, what choosing the new one needs.
 func mayUseUnapproved(e *core.RequestEvent) (bool, error) {
 	p := cleanPath(e.Request.URL.Path)
 	if p == Prefix+DeviceMePath && e.Request.Method == http.MethodGet {
 		return true, nil
+	}
+	c := e.Auth.Collection()
+	if e.Request.Method == http.MethodPost &&
+		(p == "/api/collections/"+c.Name+"/auth-refresh" || p == "/api/collections/"+c.Id+"/auth-refresh") &&
+		!e.Request.URL.Query().Has("expand") {
+		return true, nil
+	}
+	if !e.Auth.GetBool(schema.MustChangePassword) {
+		return false, nil
 	}
 	return mayPassGate(e)
 }
 
 // deviceGate checks every request by a signed-in field or staff user:
 // signed by a device of theirs that is approved (or, for the few requests
-// mayUseUnapproved allows, waiting), within its session.
+// mayUseUnapproved allows, waiting), within its session. A file download
+// with a file token of such a person must be signed by an approved device
+// of theirs too.
 func deviceGate() *hook.Handler[*core.RequestEvent] {
 	return &hook.Handler[*core.RequestEvent]{
 		Id:       "obhijatraDeviceGate",
 		Priority: apis.DefaultLoadAuthTokenMiddlewarePriority + 105, // after the fence, before the password gate
 		Func: func(e *core.RequestEvent) error {
-			if e.Auth == nil || !isPersonRecord(e.Auth) {
-				return e.Next() // strangers and superusers
+			if e.Auth == nil {
+				if err := checkFileToken(e); err != nil {
+					return err
+				}
+				return e.Next() // strangers, sign-in
+			}
+			if !isPersonRecord(e.Auth) {
+				return e.Next() // superusers (docs/decisions/0008-device-trust.md)
 			}
 			if e.Request.Method == http.MethodPost && cleanPath(e.Request.URL.Path) == schema.DeviceEnrolPath {
 				return e.Next() // signed with the key it enrols; checked by enrolDevice
@@ -259,11 +300,6 @@ func deviceGate() *hook.Handler[*core.RequestEvent] {
 			if err != nil {
 				return err
 			}
-			if err := checkSession(e, device); err != nil {
-				return err
-			}
-			e.Set(audit.DeviceStoreKey, device.Id)
-			e.Set(deviceRecordKey, device)
 			if !deviceUsable(device) {
 				ok, err := mayUseUnapproved(e)
 				if err != nil {
@@ -276,9 +312,43 @@ func deviceGate() *hook.Handler[*core.RequestEvent] {
 					return errDeviceNotApproved
 				}
 			}
+			if err := checkSession(e, device); err != nil {
+				return err
+			}
+			e.Set(audit.DeviceStoreKey, device.Id)
+			e.Set(deviceRecordKey, device)
 			return e.Next()
 		},
 	}
+}
+
+// checkFileToken refuses a file download with a field or staff user's file
+// token unless an approved device of theirs signed it, so a download link
+// that leaks (from a log or a browser's history) is of no use to anyone.
+func checkFileToken(e *core.RequestEvent) error {
+	if !strings.HasPrefix(cleanPath(e.Request.URL.Path), "/api/files/") {
+		return nil
+	}
+	token := e.Request.URL.Query().Get("token")
+	if token == "" {
+		return nil
+	}
+	person, err := e.App.FindAuthRecordByToken(token, core.TokenTypeFile)
+	if err != nil || !isPersonRecord(person) {
+		return nil // PocketBase refuses a bad token; superusers' own tokens
+	}
+	device, err := verifiedDevice(e, person)
+	if err != nil {
+		return err
+	}
+	if !deviceUsable(device) {
+		if device.GetString("status") == schema.DeviceActive {
+			return errDeviceExpired
+		}
+		return errDeviceNotApproved
+	}
+	e.Set(audit.DeviceStoreKey, device.Id)
+	return nil
 }
 
 // recordSession writes a session for every sign-in and refresh of a field
@@ -384,7 +454,7 @@ func enrolDevice(e *core.RequestEvent) error {
 		SignKey  string `json:"sign_public_key"`
 		EncKey   string `json:"enc_public_key"`
 	}
-	if _, err := readBody(e); err != nil { // makes the body readable twice
+	if _, err := hashBody(e); err != nil { // leaves the body readable for the signature check
 		return e.BadRequestError("The request could not be read.", err)
 	}
 	if err := e.BindBody(&body); err != nil {
@@ -392,10 +462,17 @@ func enrolDevice(e *core.RequestEvent) error {
 	}
 
 	signKey, err := devicetrust.DecodeKey(body.SignKey)
+	if err == nil {
+		err = devicetrust.CheckSignKey(signKey)
+	}
 	if err != nil {
 		return deviceFieldError("sign_public_key", "validation_invalid_key", err.Error())
 	}
-	if _, err := devicetrust.DecodeKey(body.EncKey); err != nil {
+	encKey, err := devicetrust.DecodeKey(body.EncKey)
+	if err == nil {
+		err = devicetrust.CheckEncKey(encKey)
+	}
+	if err != nil {
 		return deviceFieldError("enc_public_key", "validation_invalid_key", err.Error())
 	}
 	label := strings.TrimSpace(body.Label)
@@ -407,6 +484,11 @@ func enrolDevice(e *core.RequestEvent) error {
 	}
 	if e.Request.Header.Get(devicetrust.HeaderDevice) != EnrolDeviceID {
 		return errSignatureRequired
+	}
+	// Check the session before the signature, so an ended session cannot
+	// fill the nonce memory; checked again, and bound, below.
+	if err := enrolSessionUsable(e.App, e, body.SignKey); err != nil {
+		return err
 	}
 	if err := checkSignature(e, "enrol:"+body.SignKey, signKey); err != nil {
 		return err
@@ -478,6 +560,23 @@ func enrolDevice(e *core.RequestEvent) error {
 		return err
 	}
 	return e.JSON(http.StatusOK, viewOf(device))
+}
+
+// enrolSessionUsable reports errSessionRevoked for an ended session or one
+// of someone else, and errSessionOtherDevice for a session already used
+// by a device other than the one with signKey.
+func enrolSessionUsable(app core.App, e *core.RequestEvent, signKey string) error {
+	session, err := app.FindFirstRecordByData(schema.Sessions, "token_hash", tokenHash(e))
+	if err != nil || session.GetBool("revoked") || session.GetString(ownerField(e.Auth)) != e.Auth.Id {
+		return errSessionRevoked
+	}
+	if id := session.GetString("device"); id != "" {
+		d, err := app.FindRecordById(schema.Devices, id)
+		if err != nil || d.GetString("sign_public_key") != signKey {
+			return errSessionOtherDevice
+		}
+	}
+	return nil
 }
 
 // deviceMe answers GET /devices/me with the requesting device's status.
@@ -570,6 +669,15 @@ func approveDevice(e *core.RequestEvent) error {
 			case first == e.Auth.Id:
 				return router.NewApiError(http.StatusConflict,
 					"An organisation admin's device needs a second approval from a different organisation admin.", nil)
+			case !isActiveOrgAdmin(txApp, first):
+				// The first approver is no longer an org admin: this
+				// approval counts as the first one.
+				device.Set("first_approved_by", e.Auth.Id)
+				if err := txApp.Save(device); err != nil {
+					return err
+				}
+				view = viewOf(device)
+				return nil
 			}
 		}
 		activate(device, e.Auth.Id)
@@ -583,6 +691,11 @@ func approveDevice(e *core.RequestEvent) error {
 		return err
 	}
 	return e.JSON(http.StatusOK, view)
+}
+
+func isActiveOrgAdmin(app core.App, staffID string) bool {
+	r, err := app.FindRecordById(schema.StaffUsers, staffID)
+	return err == nil && r.GetBool("active") && r.GetString("role") == schema.RoleOrgAdmin
 }
 
 // activate marks device approved by approverID ("" for the server's
@@ -681,6 +794,12 @@ func RevokeDevice(txApp core.App, device *core.Record) error {
 // registerDevices binds the device gate, the session hook and the device
 // routes.
 func registerDevices(app core.App, se *core.ServeEvent) {
+	// A signature from the second this process started may have been used
+	// by the process before it (the nonce memory starts empty), so such
+	// signatures are refused; serving starts once that second has passed.
+	if d := time.Until(time.Unix(started.Unix()+1, 0)); d > 0 {
+		time.Sleep(d)
+	}
 	se.Router.Bind(deviceGate())
 	persons := apis.RequireAuth(schema.FieldUsers, schema.StaffUsers)
 	se.Router.POST(schema.DeviceEnrolPath, enrolDevice).Bind(persons, apis.BodyLimit(16<<10))
@@ -689,10 +808,73 @@ func registerDevices(app core.App, se *core.ServeEvent) {
 	se.Router.POST(Prefix+DeviceRevokePath, revokeDevice).Bind(persons, apis.BodyLimit(4<<10))
 }
 
-// bindSessions writes a session row for every sign-in and refresh.
+// bindSessions writes a session row for every sign-in and refresh, and
+// keeps live updates (realtime) within device trust.
 func bindSessions(app core.App) {
 	app.OnRecordAuthRequest(schema.FieldUsers, schema.StaffUsers).Bind(&hook.Handler[*core.RecordAuthRequestEvent]{
 		Id:   "obhijatraRecordSession",
 		Func: recordSession,
 	})
+	app.OnRealtimeSubscribeRequest().Bind(&hook.Handler[*core.RealtimeSubscribeRequestEvent]{
+		Id:   "obhijatraRealtimeDevice",
+		Func: rememberRealtimeDevice,
+	})
+	app.OnRealtimeMessageSend().Bind(&hook.Handler[*core.RealtimeMessageEvent]{
+		Id:   "obhijatraRealtimeTrust",
+		Func: checkRealtimeTrust,
+	})
+}
+
+// Where a realtime client keeps the device and session it subscribed with.
+const (
+	realtimeDeviceKey  = "obhijatra.device"
+	realtimeSessionKey = "obhijatra.session"
+)
+
+// rememberRealtimeDevice keeps, on the realtime connection, the device and
+// session that subscribed (the device gate has checked both).
+func rememberRealtimeDevice(e *core.RealtimeSubscribeRequestEvent) error {
+	e.Client.Unset(realtimeDeviceKey)
+	e.Client.Unset(realtimeSessionKey)
+	if e.Auth != nil && isPersonRecord(e.Auth) {
+		device, ok := e.Get(deviceRecordKey).(*core.Record)
+		if !ok {
+			return errSignatureRequired
+		}
+		e.Client.Set(realtimeDeviceKey, device.Id)
+		e.Client.Set(realtimeSessionKey, tokenHash(e.RequestEvent))
+	}
+	return e.Next()
+}
+
+// checkRealtimeTrust stops live updates to a person's connection as soon
+// as its device is switched off or runs out, or its session ends: the
+// message is dropped and the connection carries on signed out, as
+// PocketBase does when a password changes.
+func checkRealtimeTrust(e *core.RealtimeMessageEvent) error {
+	auth, _ := e.Client.Get(apis.RealtimeClientAuthKey).(*core.Record)
+	if auth == nil || !isPersonRecord(auth) {
+		return e.Next()
+	}
+	deviceID, _ := e.Client.Get(realtimeDeviceKey).(string)
+	session, _ := e.Client.Get(realtimeSessionKey).(string)
+	if !stillTrusted(e.App, auth, deviceID, session) {
+		e.Client.Unset(apis.RealtimeClientAuthKey)
+		e.Client.Unset(realtimeDeviceKey)
+		e.Client.Unset(realtimeSessionKey)
+		return nil
+	}
+	return e.Next()
+}
+
+func stillTrusted(app core.App, person *core.Record, deviceID, sessionHash string) bool {
+	if deviceID == "" || sessionHash == "" {
+		return false
+	}
+	device, err := app.FindRecordById(schema.Devices, deviceID)
+	if err != nil || !ownsDevice(person, device) || !deviceUsable(device) {
+		return false
+	}
+	s, err := app.FindFirstRecordByData(schema.Sessions, "token_hash", sessionHash)
+	return err == nil && !s.GetBool("revoked") && s.GetString("device") == deviceID
 }

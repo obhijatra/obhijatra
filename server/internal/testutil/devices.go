@@ -155,8 +155,9 @@ func Sign(r *http.Request, deviceID string, key ed25519.PrivateKey, body []byte)
 	r.Header.Set(devicetrust.HeaderSignature, base64.RawURLEncoding.EncodeToString(ed25519.Sign(key, msg)))
 }
 
-// autoSign plays an approved device for every signed-in request that does
-// not carry device headers, so tests written before device trust keep
+// autoSign plays an approved device for every signed-in request, and every
+// file download with a person's file token, that does not carry device
+// headers, so tests written before device trust keep
 // testing what they were written for. Tests of device trust switch it off
 // with NoAutoSignKey.
 func autoSign() *hook.Handler[*core.RequestEvent] {
@@ -164,8 +165,25 @@ func autoSign() *hook.Handler[*core.RequestEvent] {
 		Id:       "obhijatraTestAutoSign",
 		Priority: apis.DefaultLoadAuthTokenMiddlewarePriority + 104, // just before the device gate
 		Func: func(e *core.RequestEvent) error {
-			if off, _ := e.App.Store().Get(NoAutoSignKey).(bool); off || e.Auth == nil ||
+			if off, _ := e.App.Store().Get(NoAutoSignKey).(bool); off ||
 				e.Request.Header.Get(devicetrust.HeaderDevice) != "" {
+				return e.Next()
+			}
+			if e.Auth == nil {
+				// A file download with a person's file token.
+				token := e.Request.URL.Query().Get("token")
+				if !strings.HasPrefix(e.Request.URL.Path, "/api/files/") || token == "" {
+					return e.Next()
+				}
+				person, err := e.App.FindAuthRecordByToken(token, core.TokenTypeFile)
+				if err != nil || (person.Collection().Name != schema.FieldUsers && person.Collection().Name != schema.StaffUsers) {
+					return e.Next()
+				}
+				d, err := deviceFor(e.App, person)
+				if err != nil {
+					return err
+				}
+				Sign(e.Request, d.ID, d.Key, nil)
 				return e.Next()
 			}
 			name := e.Auth.Collection().Name
