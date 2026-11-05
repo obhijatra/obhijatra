@@ -7,11 +7,13 @@ package guards
 import (
 	"bytes"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"slices"
 
 	"ganigeorgiev.com/pocketbase/dbx"
@@ -50,11 +52,27 @@ func Register(app core.App) {
 		})
 		onUpdate(app, name, func(e *core.RecordEvent, old *core.Record) error {
 			actor := audit.ActorOf(e.App)
-			if anyChanged(old, e.Record, "role", "location", "location_path", "active", schema.MustChangePassword) && !mayAdminister(actor) {
-				return errors.New("only an organisation admin can change a user's role, location, active status or one-time password")
+			self := actor.Collection == name && actor.ID == e.Record.Id
+			if anyChanged(old, e.Record, "role", "location", "location_path", "active", schema.MustChangePassword) {
+				ok, err := mayAdministerNow(e.App, actor)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return errors.New("only an organisation admin can change a user's role, location, active status or one-time password")
+				}
 			}
-			// Choosing your own password ends a one-time password.
-			if settingPassword(e.Record) && actor.Collection == name && actor.ID == e.Record.Id {
+			if self && e.Record.GetBool(schema.MustChangePassword) && !old.GetBool(schema.MustChangePassword) {
+				return validation.Errors{schema.MustChangePassword: validation.NewError("validation_one_time_password_for_self",
+					"You cannot give yourself a one-time password. Ask another organisation admin.")}
+			}
+			// Choosing your own password ends a one-time password; it must
+			// really be new, or the admin who gave it would still know it.
+			if settingPassword(e.Record) && self {
+				if old.GetBool(schema.MustChangePassword) && old.ValidatePassword(plainPassword(e.Record)) {
+					return validation.Errors{"password": validation.NewError("validation_password_unchanged",
+						"Choose a new password, not the one-time password.")}
+				}
 				e.Record.Set(schema.MustChangePassword, false)
 			}
 			if err := checkUserSignIn(e.Record); err != nil {
@@ -69,12 +87,61 @@ func Register(app core.App) {
 			// ends every session they have: a session started by SMS must
 			// not carry on as an org admin, nor outlive a changed number
 			// or email address.
-			if anyChanged(old, e.Record, "phone", "email", "verified", "role", "active") {
+			if anyChanged(old, e.Record, "phone", "email", "verified", "role", "active") ||
+				(e.Record.GetBool(schema.MustChangePassword) && !old.GetBool(schema.MustChangePassword)) {
 				e.Record.RefreshTokenKey()
 			}
 			return syncUserLocationPath(e)
 		})
 	}
+
+	// Users, through the records API (the Dashboard included): a write based
+	// on a copy that someone else has changed since is refused, so a
+	// request already under way cannot undo an admin's reset, demotion or
+	// deactivation; and people changing their own password prove the
+	// current one, admins included (PocketBase skips that check for
+	// anyone with manage access).
+	app.OnRecordUpdateRequest(schema.FieldUsers, schema.StaffUsers).BindFunc(func(e *core.RecordRequestEvent) error {
+		stored, err := e.App.FindRecordById(e.Record.Collection(), e.Record.Id)
+		if err != nil {
+			return err
+		}
+		if stored.GetString("updated") != e.Record.Original().GetString("updated") {
+			return router.NewApiError(http.StatusConflict,
+				"Someone changed this person a moment ago. Reload, then make your change again.", nil)
+		}
+		isSelf := e.Auth != nil && e.Auth.Collection().Id == e.Record.Collection().Id && e.Auth.Id == e.Record.Id
+		if isSelf && settingPassword(e.Record) {
+			info, err := e.RequestInfo()
+			if err != nil {
+				return err
+			}
+			current, _ := info.Body["oldPassword"].(string)
+			if current == "" || !stored.ValidatePassword(current) {
+				return router.NewBadRequestError("The current password is wrong.", map[string]validation.Error{
+					"oldPassword": validation.NewError("validation_invalid_old_password", "The current password is wrong."),
+				})
+			}
+		}
+		return e.Next()
+	})
+
+	// Never delete the last active org admin (the API cannot delete users
+	// at all; this binds superusers and Go code).
+	app.OnRecordDelete(schema.StaffUsers).BindFunc(func(e *core.RecordEvent) error {
+		old, err := stored(e)
+		if err != nil {
+			return err
+		}
+		retired := core.NewRecord(e.Record.Collection())
+		retired.Id = old.Id
+		retired.Set("role", old.GetString("role"))
+		retired.Set("active", false)
+		if err := keepAnOrgAdmin(e.App, old, retired); err != nil {
+			return err
+		}
+		return e.Next()
+	})
 
 	// Settings: exactly one record, never deleted.
 	app.OnRecordCreate(schema.Settings).BindFunc(func(e *core.RecordEvent) error {
@@ -283,8 +350,36 @@ func checkUserSignIn(r *core.Record) error {
 
 // settingPassword reports whether r's password is being set in this write.
 func settingPassword(r *core.Record) bool {
-	pv, ok := r.GetRaw(core.FieldNamePassword).(*core.PasswordFieldValue)
-	return ok && pv.Plain != ""
+	return plainPassword(r) != ""
+}
+
+// plainPassword is the password being set on r in this write, or "".
+func plainPassword(r *core.Record) string {
+	if pv, ok := r.GetRaw(core.FieldNamePassword).(*core.PasswordFieldValue); ok {
+		return pv.Plain
+	}
+	return ""
+}
+
+// mayAdministerNow is mayAdminister with an org admin's account read again
+// inside the write: still an active org admin, still on the session the
+// request started with, and not waiting to change a one-time password.
+func mayAdministerNow(app core.App, a audit.Actor) (bool, error) {
+	if !mayAdminister(a) {
+		return false, nil
+	}
+	if a.Collection != schema.StaffUsers {
+		return true, nil
+	}
+	r, err := app.FindRecordById(schema.StaffUsers, a.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return r.GetString("role") == schema.RoleOrgAdmin && r.GetBool("active") &&
+		!r.GetBool(schema.MustChangePassword) && (a.TokenKey == "" || r.TokenKey() == a.TokenKey), nil
 }
 
 // keepAnOrgAdmin refuses a change that would leave the organisation with no

@@ -29,8 +29,8 @@ var passwordFields = []string{"oldPassword", "password", "passwordConfirm"}
 // passwordGate lets a person whose account has a one-time password do only
 // what choosing a new one needs: read their own account, change their own
 // password, sign in or refresh the session, and the public version and
-// sign-in-method checks. Everything else is refused, whatever the API
-// rules would allow.
+// sign-in-method checks, never with related records expanded. Everything
+// else is refused, whatever the API rules would allow.
 func passwordGate() *hook.Handler[*core.RequestEvent] {
 	return &hook.Handler[*core.RequestEvent]{
 		Id:       "obhijatraPasswordGate",
@@ -54,6 +54,11 @@ func passwordGate() *hook.Handler[*core.RequestEvent] {
 }
 
 func mayPassGate(e *core.RequestEvent) (bool, error) {
+	// "expand" would read related records (submissions, the people in the
+	// same place) through the routes allowed below.
+	if e.Request.URL.Query().Has("expand") {
+		return false, nil
+	}
 	p := path.Clean("/" + e.Request.URL.Path)
 	switch p {
 	case Prefix + "/meta", Prefix + "/signin/methods":

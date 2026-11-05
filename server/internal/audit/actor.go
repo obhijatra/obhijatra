@@ -20,6 +20,11 @@ type Actor struct {
 	ID         string // record id, or the command name for "_cli"
 	Role       string // the role field of field_users and staff_users
 	Device     string // verified device id, when known
+	// TokenKey is the account's token key when the request was
+	// authenticated; a guard compares it with the stored one, so a request
+	// already under way when the account was reset or demoted cannot act
+	// on the strength of the old session.
+	TokenKey string
 }
 
 // SystemActor is used for writes that no authenticated request or command
@@ -43,6 +48,7 @@ func ActorFromRequest(e *core.RequestEvent) Actor {
 			Collection: e.Auth.Collection().Name,
 			ID:         e.Auth.Id,
 			Role:       e.Auth.GetString("role"),
+			TokenKey:   e.Auth.TokenKey(),
 		}
 	}
 	if device, ok := e.Get(DeviceStoreKey).(string); ok {
