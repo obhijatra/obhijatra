@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:obhijatra_core/src/problem.dart';
 import 'package:obhijatra_core/src/server/semver.dart';
 
@@ -87,6 +89,87 @@ final class ServerMeta {
       return ProblemCode.serverIncompatible;
     }
     return null;
+  }
+}
+
+/// The ways to sign in a server offers (`GET /api/obhijatra/v1/signin/methods`).
+final class SignInMethods {
+  /// Creates the answer.
+  const SignInMethods({
+    required this.password,
+    required this.google,
+    required this.phone,
+  });
+
+  /// Reads the JSON body of the methods route. A missing `password` counts
+  /// as offered (every server offers it); a missing `google` or `phone` as
+  /// not offered.
+  factory SignInMethods.fromJson(Map<String, Object?> json) => SignInMethods(
+    password: json['password'] != false,
+    google: json['google'] == true,
+    phone: json['phone'] == true,
+  );
+
+  /// What a server from before these methods offers: email and password.
+  static const SignInMethods passwordOnly = SignInMethods(
+    password: true,
+    google: false,
+    phone: false,
+  );
+
+  /// Email address and password.
+  final bool password;
+
+  /// Google, in a secure browser tab.
+  final bool google;
+
+  /// A 6-digit code sent by SMS to the account's mobile number.
+  final bool phone;
+}
+
+/// The number of digits in an SMS sign-in code.
+const int phoneCodeLength = 6;
+
+/// The server's answer to a request for an SMS sign-in code. It is the same
+/// whether or not the number belongs to an account (then no SMS is sent).
+final class PhoneCodeRequest {
+  /// Creates the answer.
+  const PhoneCodeRequest({
+    required this.codeId,
+    required this.phone,
+    required this.expiresIn,
+    required this.resendAfter,
+  });
+
+  /// Names the code when it is checked.
+  final String codeId;
+
+  /// The number the code was asked for, in international form.
+  final String phone;
+
+  /// How long the code works.
+  final Duration expiresIn;
+
+  /// How long to wait before offering to send a new code.
+  final Duration resendAfter;
+}
+
+/// Lets the person stop a sign-in that waits for them, such as Google's page
+/// in the browser: pass it to `ObhijatraServer.signInWithGoogle` and call
+/// [cancel] when they tap Cancel. A sign-in that finishes after [cancel] is
+/// thrown away.
+final class SignInCancellation {
+  final Completer<void> _cancelled = Completer<void>();
+
+  /// Whether [cancel] was called.
+  bool get isCancelled => _cancelled.isCompleted;
+
+  /// Completes when [cancel] is called.
+  Future<void> get whenCancelled => _cancelled.future;
+
+  /// Stops the sign-in; calling it again does nothing.
+  void cancel() {
+    if (!_cancelled.isCompleted) _cancelled.complete();
   }
 }
 

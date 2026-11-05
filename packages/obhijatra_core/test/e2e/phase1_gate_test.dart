@@ -16,6 +16,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:obhijatra_core/obhijatra_core.dart';
+import 'package:obhijatra_core/src/server/realtime_channel.dart';
 import 'package:test/test.dart';
 
 import '../support/test_support.dart';
@@ -145,6 +146,65 @@ void main() {
     expect(status.problems, 0);
     expect(status.isOffline, isFalse);
     expect(status.lastSyncedAt, isNotNull);
+  });
+
+  test('sign-in methods: a new server offers the password only, and says '
+      'so plainly', () async {
+    final client = ObhijatraServer(
+      baseUrl: server.baseUrl,
+      appVersion: obhijatraCoreVersion,
+      timeout: const Duration(seconds: 10),
+    );
+    addTearDown(client.close);
+    Matcher problem(ProblemCode code) =>
+        throwsA(isA<ObhijatraException>().having((e) => e.code, 'code', code));
+
+    final methods = await client.fetchSignInMethods();
+    expect(
+      [methods.password, methods.google, methods.phone],
+      [true, false, false],
+    );
+    // SMS sign-in is off until an admin connects an SMS provider.
+    await expectLater(
+      client.requestPhoneCode('+8801712345678'),
+      problem(ProblemCode.signInMethodOff),
+    );
+    await expectLater(
+      client.signInWithPhoneCode(codeId: 'abcdefghijklmno', code: '123456'),
+      problem(ProblemCode.signInMethodOff),
+    );
+    // Google is off until an admin sets up the organisation's Google client:
+    // no browser opens.
+    final opened = <Uri>[];
+    await expectLater(
+      client.signInWithGoogle((url) async => opened.add(url)),
+      problem(ProblemCode.signInMethodOff),
+    );
+    expect(opened, isEmpty);
+    expect(client.hasValidSession, isFalse);
+  });
+
+  test('the realtime connection of Google sign-in outlives the request '
+      'time limit', () async {
+    final channel = await RealtimeChannel.connect(
+      SigningHttpClient(http.Client(), timeout: const Duration(seconds: 1)),
+      server.baseUrl.resolve('/api/realtime'),
+    );
+    addTearDown(channel.close);
+    expect(channel.clientId, isNotEmpty);
+    await Future<void>.delayed(const Duration(milliseconds: 2500));
+    expect(channel.isClosed, isFalse);
+    // The server still holds the connection: it accepts a subscription for
+    // it (an unknown client id gets 404).
+    final response = await http.post(
+      server.baseUrl.resolve('/api/realtime'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'clientId': channel.clientId,
+        'subscriptions': ['@oauth2'],
+      }),
+    );
+    expect(response.statusCode, 204, reason: response.body);
   });
 }
 

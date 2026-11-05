@@ -86,6 +86,39 @@ enum ProblemCode {
   /// later.
   redirected,
 
+  /// The mobile number is not one the server can send a sign-in code to
+  /// (not in international form, or not a mobile number).
+  phoneNumberInvalid,
+
+  /// Too many sign-in codes were asked for this number (3 in 15 minutes,
+  /// 10 a day) or from this connection; waiting helps.
+  tooManySignInCodes,
+
+  /// The SMS sign-in code is wrong, has expired, was already used, or had
+  /// too many wrong tries. The same answer covers every case, so nobody
+  /// learns which numbers have accounts.
+  signInCodeWrong,
+
+  /// Too many sign-in codes were checked from this connection; waiting
+  /// helps.
+  tooManyCodeTries,
+
+  /// This way to sign in (SMS code or Google) is switched off on the
+  /// server, or the server does not offer it.
+  signInMethodOff,
+
+  /// The server refused a Google sign-in: no account here uses that Google
+  /// email, the admin has not confirmed it, the account is not active, or
+  /// Google shared no confirmed email.
+  googleSignInRefused,
+
+  /// The person stopped a sign-in that was waiting for them (for example,
+  /// on Google's page). Not an error to show.
+  signInCancelled,
+
+  /// The phone could not open a web page for signing in (no browser).
+  browserUnavailable,
+
   /// Something unexpected happened inside the app.
   unknown;
 
