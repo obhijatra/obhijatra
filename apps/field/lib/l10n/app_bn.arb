@@ -129,6 +129,98 @@
   "@signInChangeServer": {
     "x-translation-status": "draft: owner to check"
   },
+  "signInWithGoogle": "Google দিয়ে চালিয়ে যান",
+  "@signInWithGoogle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInUsePhone": "মোবাইল নম্বর ব্যবহার করুন",
+  "@signInUsePhone": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInUseEmail": "ইমেইল ও পাসওয়ার্ড ব্যবহার করুন",
+  "@signInUseEmail": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInOtherWays": "সাইন ইন করার অন্য উপায়",
+  "@signInOtherWays": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInCheckingMethods": "কীভাবে সাইন ইন করতে পারবেন, তা দেখা হচ্ছে…",
+  "@signInCheckingMethods": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInMethodsFailed": "কীভাবে সাইন ইন করতে পারবেন, তার সব উপায় দেখা যায়নি।",
+  "@signInMethodsFailed": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInPhone": "মোবাইল নম্বর",
+  "@signInPhone": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInPhoneHelp": "এই নম্বরে SMS-এ ৬ অঙ্কের একটি কোড পাঠানো হবে।",
+  "@signInPhoneHelp": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInPhoneEmpty": "আপনার মোবাইল নম্বর লিখুন।",
+  "@signInPhoneEmpty": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInPhoneInvalid": "নম্বরটি দেখে নিন। মোবাইল নম্বরে ১১টি অঙ্ক থাকে এবং শুরু হয় ০১ দিয়ে, যেমন ০১৭১২-৩৪৫৬৭৮।",
+  "@signInPhoneInvalid": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInSendCode": "কোড পাঠান",
+  "@signInSendCode": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInSendingCode": "কোড পাঠানো হচ্ছে…",
+  "@signInSendingCode": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInCodeTitle": "SMS-এ পাওয়া কোডটি লিখুন",
+  "@signInCodeTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInCodeSent": "{phone} যদি আপনার অ্যাকাউন্টের মোবাইল নম্বর হয়, তাহলে ৬ অঙ্কের কোডসহ একটি SMS আসছে। আসতে এক মিনিট লাগতে পারে।",
+  "@signInCodeSent": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInCodeFrom": "এই SMS আপনার প্রতিষ্ঠান পাঠায়। কোডটি কখনো কাউকে বলবেন না।",
+  "@signInCodeFrom": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInCodeNew": "নতুন কোড পাঠানো হয়েছে। সবচেয়ে নতুন SMS-এর কোডটি লিখুন।",
+  "@signInCodeNew": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInCode": "৬ অঙ্কের কোড",
+  "@signInCode": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInCodeIncomplete": "কোডের ৬টি অঙ্কই লিখুন।",
+  "@signInCodeIncomplete": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInNewCodeIn": "{seconds} সেকেন্ড পরে নতুন কোড চাইতে পারবেন।",
+  "@signInNewCodeIn": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInNewCode": "নতুন কোড পাঠান",
+  "@signInNewCode": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInChangeNumber": "নম্বর বদলান",
+  "@signInChangeNumber": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInGoogleWaiting": "Google-এর জন্য অপেক্ষা করা হচ্ছে…",
+  "@signInGoogleWaiting": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "signInGoogleWaitingHelp": "Google-এর পেজ খুলেছে। সেখানে সাইন ইন করুন, তারপর এই অ্যাপে ফিরে আসুন।",
+  "@signInGoogleWaitingHelp": {
+    "x-translation-status": "draft: owner to check"
+  },
   "navToday": "আজ",
   "@navToday": {
     "x-translation-status": "draft: owner to check"
@@ -771,6 +863,38 @@
   },
   "problem_redirected": "সার্ভারের ঠিকানা অ্যাপটিকে অন্য একটি ঠিকানায় পাঠিয়ে দিয়েছে, তাই কিছু পাঠানো হয়নি। পাবলিক ওয়াই-ফাই ব্যবহার করলে আগে তার সাইন-ইন পেজ খুলুন। না হলে আপনার প্রতিষ্ঠানের কাছ থেকে সার্ভারের ঠিকানা মিলিয়ে নিন। আমরা পরে আবার চেষ্টা করব।",
   "@problem_redirected": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_phoneNumberInvalid": "মোবাইল নম্বরটি সঠিক আকারে নেই। দেখে আবার চেষ্টা করুন।",
+  "@problem_phoneNumberInvalid": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_tooManySignInCodes": "অনেকবার কোড চাওয়া হয়েছে। ১৫ মিনিট অপেক্ষা করুন, অথবা অন্য উপায়ে সাইন ইন করুন।",
+  "@problem_tooManySignInCodes": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_signInCodeWrong": "কোডটি ভুল, অথবা এর মেয়াদ শেষ হয়ে গেছে। SMS দেখে নিন, অথবা নতুন কোড চান। ১০ বার ভুল হলে ১৫ মিনিটের জন্য সাইন ইন বন্ধ থাকবে।",
+  "@problem_signInCodeWrong": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_tooManyCodeTries": "অনেকবার চেষ্টা করা হয়েছে। ১৫ মিনিট অপেক্ষা করুন, তারপর নতুন কোড চান।",
+  "@problem_tooManyCodeTries": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_signInMethodOff": "আপনার প্রতিষ্ঠানের সার্ভারে সাইন ইনের এই উপায়টি বন্ধ আছে। অন্য উপায়ে সাইন ইন করুন।",
+  "@problem_signInMethodOff": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_googleSignInRefused": "আপনার প্রতিষ্ঠানের অ্যাডমিনকে আপনার অ্যাকাউন্টে আপনার Google ইমেইল ঠিকানা যোগ করতে বলুন, অথবা অন্য উপায়ে সাইন ইন করুন।",
+  "@problem_googleSignInRefused": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_signInCancelled": "সাইন ইন থামানো হয়েছে। আপনি আবার চেষ্টা করতে পারেন।",
+  "@problem_signInCancelled": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_browserUnavailable": "সাইন ইনের জন্য এই ফোনে ওয়েব পেজ খোলা যায়নি। অন্য উপায়ে সাইন ইন করুন।",
+  "@problem_browserUnavailable": {
     "x-translation-status": "draft: owner to check"
   },
   "problem_unknown": "কিছু একটা ভুল হয়েছে। আপনার কাজ এই ফোনে নিরাপদ আছে। আবার চেষ্টা করুন।",

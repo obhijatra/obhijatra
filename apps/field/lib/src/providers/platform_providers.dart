@@ -8,6 +8,7 @@ import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/src/platform/file_attachment_store.dart';
 import 'package:obhijatra_field/src/platform/multiple_ciphers_opener.dart';
 import 'package:obhijatra_field/src/platform/secure_storage_key_store.dart';
+import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
 import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -68,6 +69,11 @@ final httpClientFactoryProvider = Provider<http.Client Function()?>(
 
 /// The current time; tests fix it.
 final nowProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// The secure browser tab for Google sign-in; tests put a fake here.
+final signInBrowserProvider = Provider<SignInBrowser>(
+  (ref) => SecureBrowserTab(),
+);
 
 /// Opens a web address outside the app; returns whether it opened.
 final urlLauncherProvider = Provider<Future<bool> Function(Uri)>(

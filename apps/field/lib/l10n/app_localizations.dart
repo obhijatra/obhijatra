@@ -290,6 +290,144 @@ abstract class AppLocalizations {
   /// **'Use a different server'**
   String get signInChangeServer;
 
+  /// Button that opens Google's sign-in page in a secure browser tab. Plain text only: never Google's logo.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get signInWithGoogle;
+
+  /// Button that switches the sign-in screen to signing in with a code sent by SMS.
+  ///
+  /// In en, this message translates to:
+  /// **'Use mobile number'**
+  String get signInUsePhone;
+
+  /// Button that switches the sign-in screen to email and password.
+  ///
+  /// In en, this message translates to:
+  /// **'Use email and password'**
+  String get signInUseEmail;
+
+  /// Small heading above the other ways to sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'Other ways to sign in'**
+  String get signInOtherWays;
+
+  /// Shown while the app asks the server which ways to sign in it offers.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking how you can sign in…'**
+  String get signInCheckingMethods;
+
+  /// Shown above the reason when the app could not ask the server which ways to sign in it offers; a Try again button follows.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not check all the ways you can sign in.'**
+  String get signInMethodsFailed;
+
+  /// Label of the mobile number field (the country code +880 is shown in the field).
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number'**
+  String get signInPhone;
+
+  /// Help under the mobile number label.
+  ///
+  /// In en, this message translates to:
+  /// **'We will send a 6-digit code to this number by SMS.'**
+  String get signInPhoneHelp;
+
+  /// Shown when the mobile number field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your mobile number.'**
+  String get signInPhoneEmpty;
+
+  /// Shown when the typed mobile number cannot be a Bangladeshi mobile number.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the number. A mobile number has 11 digits and starts with 01, for example 01712-345678.'**
+  String get signInPhoneInvalid;
+
+  /// Button that asks the server to send a sign-in code by SMS.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code'**
+  String get signInSendCode;
+
+  /// Shown on the Send code button while it works.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending the code…'**
+  String get signInSendingCode;
+
+  /// Heading of the step where the person types the code from the SMS.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code from the SMS'**
+  String get signInCodeTitle;
+
+  /// Says where the code was sent. Worded so it never reveals whether the number has an account.
+  ///
+  /// In en, this message translates to:
+  /// **'If {phone} is the mobile number on your account, an SMS with a 6-digit code is on its way. It can take a minute.'**
+  String signInCodeSent(String phone);
+
+  /// Says who sends the SMS, and warns never to share the code.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation sends this SMS. Never share the code with anyone.'**
+  String get signInCodeFrom;
+
+  /// Shown after a new code was sent: only the newest code works.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a new code. Use the code in the newest SMS.'**
+  String get signInCodeNew;
+
+  /// Label of the code field.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get signInCode;
+
+  /// Shown when fewer than 6 digits were typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Type all 6 digits of the code.'**
+  String get signInCodeIncomplete;
+
+  /// Countdown under the Send a new code button.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds, plural, =1{You can ask for a new code in 1 second.} other{You can ask for a new code in {seconds} seconds.}}'**
+  String signInNewCodeIn(int seconds);
+
+  /// Button that sends a new code by SMS; it works after the countdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new code'**
+  String get signInNewCode;
+
+  /// Button that goes back to typing the mobile number.
+  ///
+  /// In en, this message translates to:
+  /// **'Change number'**
+  String get signInChangeNumber;
+
+  /// Heading while Google's sign-in page is open in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Google…'**
+  String get signInGoogleWaiting;
+
+  /// Text while Google's sign-in page is open in the browser; a Cancel button follows.
+  ///
+  /// In en, this message translates to:
+  /// **'Google\'s page has opened. Sign in there, then come back to this app.'**
+  String get signInGoogleWaitingHelp;
+
   /// Bottom navigation: today.
   ///
   /// In en, this message translates to:
@@ -1255,6 +1393,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server address sent the app to a different address, so nothing was sent. If you use public Wi-Fi, open its sign-in page first. Otherwise, check the server address with your organisation. We will try again later.'**
   String get problem_redirected;
+
+  /// Plain-language explanation of the problem code "phoneNumberInvalid". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This mobile number is not in the right form. Check it and try again.'**
+  String get problem_phoneNumberInvalid;
+
+  /// Plain-language explanation of the problem code "tooManySignInCodes". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many codes were asked for. Wait 15 minutes, or use another way to sign in.'**
+  String get problem_tooManySignInCodes;
+
+  /// Plain-language explanation of the problem code "signInCodeWrong". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'That code is wrong or has expired. Check the SMS, or ask for a new code. After 10 wrong tries, sign-in is locked for 15 minutes.'**
+  String get problem_signInCodeWrong;
+
+  /// Plain-language explanation of the problem code "tooManyCodeTries". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries. Wait 15 minutes, then ask for a new code.'**
+  String get problem_tooManyCodeTries;
+
+  /// Plain-language explanation of the problem code "signInMethodOff". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This way to sign in is switched off on your organisation\'s server. Use another way to sign in.'**
+  String get problem_signInMethodOff;
+
+  /// Plain-language explanation of the problem code "googleSignInRefused". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask your organisation admin to add your Google email address to your account, or use another way to sign in.'**
+  String get problem_googleSignInRefused;
+
+  /// Plain-language explanation of the problem code "signInCancelled". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in was stopped. You can try again.'**
+  String get problem_signInCancelled;
+
+  /// Plain-language explanation of the problem code "browserUnavailable". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone could not open a web page to sign in. Use another way to sign in.'**
+  String get problem_browserUnavailable;
 
   /// Plain-language explanation of the problem code "unknown". Shown to a field officer.
   ///

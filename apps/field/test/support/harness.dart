@@ -19,6 +19,7 @@ import 'package:obhijatra_field/l10n/app_localizations_en.dart';
 import 'package:obhijatra_field/src/app.dart';
 import 'package:obhijatra_field/src/app_info.dart';
 import 'package:obhijatra_field/src/platform/device_authenticator.dart';
+import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
 import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/sync_providers.dart';
@@ -124,6 +125,9 @@ class TestEnv {
   /// The phone's own screen lock.
   final FakeDeviceAuth deviceAuth = FakeDeviceAuth();
 
+  /// The browser tab Google's sign-in page opens in.
+  final FakeBrowser browser = FakeBrowser();
+
   /// The overrides every test shares: the app lock is open from the start
   /// (lock tests use [lockedOverrides] instead) and the database is [db].
   late final List<Override> overrides = <Override>[
@@ -175,6 +179,7 @@ class TestEnv {
       yield startOnline;
       yield* online.stream;
     }),
+    signInBrowserProvider.overrideWithValue(browser),
     urlLauncherProvider.overrideWithValue((uri) async {
       opened.add(uri);
       return canOpenLinks;
@@ -281,6 +286,29 @@ class FakeDeviceAuth implements DeviceAuthenticator {
     lastText = text;
     return answers.isNotEmpty ? answers.removeAt(0) : answer;
   }
+}
+
+/// The browser tab for Google sign-in, scripted by the test: it records
+/// what the app opened; the test then plays the person's part with
+/// `FakeObhijatraServer.finishGoogleSignIn`.
+class FakeBrowser implements SignInBrowser {
+  /// The addresses the app opened.
+  final List<Uri> opened = <Uri>[];
+
+  /// How many times the app closed the tab.
+  int closes = 0;
+
+  /// Whether the phone can open a browser.
+  bool works = true;
+
+  @override
+  Future<void> open(Uri url) async {
+    if (!works) throw const ObhijatraException(ProblemCode.browserUnavailable);
+    opened.add(url);
+  }
+
+  @override
+  Future<void> close() async => closes++;
 }
 
 /// A database key kept in memory.

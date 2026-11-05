@@ -248,15 +248,46 @@ class AppLockController extends AsyncNotifier<AppLockState> {
     state = AsyncData<AppLockState>(await _afterOnlineSignIn(newPin: false));
   }
 
-  /// Signs in with the server while the database is still closed (see
+  /// Signs in with [email] and [password] while the database is still
+  /// closed (see [signInOnlineWith]).
+  Future<void> signInOnline({
+    required String email,
+    required String password,
+  }) => signInOnlineWith(
+    (server) => server.signIn(email: email, password: password),
+  );
+
+  /// Runs [body] with a connection to the remembered server that holds no
+  /// session, for what comes before a sign-in (which ways to sign in, an
+  /// SMS code), while the database is still closed.
+  Future<T> withServer<T>(
+    Future<T> Function(ObhijatraServer server) body,
+  ) async {
+    final address = await _lock.serverAddress();
+    if (address == null) {
+      throw const ObhijatraException(ProblemCode.unknown);
+    }
+    final server = ObhijatraServer(
+      baseUrl: address,
+      appVersion: appReleaseVersion,
+      httpClientFactory: ref.read(httpClientFactoryProvider),
+    );
+    try {
+      return await body(server);
+    } finally {
+      server.close();
+    }
+  }
+
+  /// Signs in by [method] (email and password, SMS code or Google) with
+  /// the server while the database is still closed (see
   /// [OnlineSignInReason]). Only the account that last signed in on this
   /// phone is accepted ([WrongAccount] otherwise); failures throw an
   /// [ObhijatraException]. The new session is saved into the database once
   /// it opens.
-  Future<void> signInOnline({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signInOnlineWith(
+    Future<SignedInUser> Function(ObhijatraServer server) method,
+  ) async {
     final reason = switch (state.value) {
       LockNeedsSignIn(:final reason) => reason,
       _ => null,
@@ -276,7 +307,7 @@ class AppLockController extends AsyncNotifier<AppLockState> {
       httpClientFactory: ref.read(httpClientFactoryProvider),
     );
     try {
-      final user = await server.signIn(email: email, password: password);
+      final user = await method(server);
       final last = await _lock.lastOnlineSignIn();
       if (last != null && last.userId != user.id) {
         server.signOut();

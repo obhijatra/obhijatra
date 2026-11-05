@@ -8,6 +8,7 @@ import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/l10n/app_localizations.dart';
 import 'package:obhijatra_field/src/l10n/problem_text.dart';
 import 'package:obhijatra_field/src/platform/device_authenticator.dart';
+import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
 import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/screens/sign_in_screen.dart';
@@ -532,6 +533,7 @@ class _OnlineSignInState extends ConsumerState<OnlineSignInScreen> {
     final forgot = widget.reason == OnlineSignInReason.forgotPin;
     return SignInForm(
       host: _host,
+      actions: _LockSignIn(ref),
       notice: switch (widget.reason) {
         OnlineSignInReason.expired => l.reSignInExpired,
         OnlineSignInReason.noUnlockMethod => l.reSignInNoLock,
@@ -541,20 +543,45 @@ class _OnlineSignInState extends ConsumerState<OnlineSignInScreen> {
       onSecondary: forgot
           ? () => ref.read(appLockProvider.notifier).backToPin()
           : null,
-      onSignIn: (email, password) async {
-        try {
-          await ref
-              .read(appLockProvider.notifier)
-              .signInOnline(email: email, password: password);
-          return null;
-        } on WrongAccount {
-          return SignInProblem(l.reSignInWrongAccount);
-        } on ObhijatraException catch (e) {
-          return SignInProblem.of(l, e.code);
-        } on Object {
-          return SignInProblem.of(l, ProblemCode.unknown);
-        }
-      },
+    );
+  }
+}
+
+/// The app lock's online sign-in, with the remembered server while the
+/// data stays closed: every way ends in
+/// [AppLockController.signInOnlineWith], which accepts only the account
+/// that last used this phone.
+class _LockSignIn implements SignInActions {
+  _LockSignIn(this._ref);
+
+  final WidgetRef _ref;
+
+  AppLockController get _lock => _ref.read(appLockProvider.notifier);
+
+  @override
+  Future<SignInMethods> methods() =>
+      _lock.withServer((server) => server.fetchSignInMethods());
+
+  @override
+  Future<void> withPassword(String email, String password) =>
+      _lock.signInOnline(email: email, password: password);
+
+  @override
+  Future<PhoneCodeRequest> requestPhoneCode(String phone) =>
+      _lock.withServer((server) => server.requestPhoneCode(phone));
+
+  @override
+  Future<void> withPhoneCode(PhoneCodeRequest request, String code) =>
+      _lock.signInOnlineWith(
+        (server) =>
+            server.signInWithPhoneCode(codeId: request.codeId, code: code),
+      );
+
+  @override
+  Future<void> withGoogle(SignInCancellation cancellation) {
+    final browser = _ref.read(signInBrowserProvider);
+    return _lock.signInOnlineWith(
+      (server) => signInWithGoogleIn(server, browser, cancellation),
     );
   }
 }

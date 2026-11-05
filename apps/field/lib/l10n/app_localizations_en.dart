@@ -114,6 +114,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signInChangeServer => 'Use a different server';
 
   @override
+  String get signInWithGoogle => 'Continue with Google';
+
+  @override
+  String get signInUsePhone => 'Use mobile number';
+
+  @override
+  String get signInUseEmail => 'Use email and password';
+
+  @override
+  String get signInOtherWays => 'Other ways to sign in';
+
+  @override
+  String get signInCheckingMethods => 'Checking how you can sign in…';
+
+  @override
+  String get signInMethodsFailed =>
+      'We could not check all the ways you can sign in.';
+
+  @override
+  String get signInPhone => 'Mobile number';
+
+  @override
+  String get signInPhoneHelp =>
+      'We will send a 6-digit code to this number by SMS.';
+
+  @override
+  String get signInPhoneEmpty => 'Type your mobile number.';
+
+  @override
+  String get signInPhoneInvalid =>
+      'Check the number. A mobile number has 11 digits and starts with 01, for example 01712-345678.';
+
+  @override
+  String get signInSendCode => 'Send code';
+
+  @override
+  String get signInSendingCode => 'Sending the code…';
+
+  @override
+  String get signInCodeTitle => 'Enter the code from the SMS';
+
+  @override
+  String signInCodeSent(String phone) {
+    return 'If $phone is the mobile number on your account, an SMS with a 6-digit code is on its way. It can take a minute.';
+  }
+
+  @override
+  String get signInCodeFrom =>
+      'Your organisation sends this SMS. Never share the code with anyone.';
+
+  @override
+  String get signInCodeNew =>
+      'We sent a new code. Use the code in the newest SMS.';
+
+  @override
+  String get signInCode => '6-digit code';
+
+  @override
+  String get signInCodeIncomplete => 'Type all 6 digits of the code.';
+
+  @override
+  String signInNewCodeIn(int seconds) {
+    final intl.NumberFormat secondsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String secondsString = secondsNumberFormat.format(seconds);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: 'You can ask for a new code in $secondsString seconds.',
+      one: 'You can ask for a new code in 1 second.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get signInNewCode => 'Send a new code';
+
+  @override
+  String get signInChangeNumber => 'Change number';
+
+  @override
+  String get signInGoogleWaiting => 'Waiting for Google…';
+
+  @override
+  String get signInGoogleWaitingHelp =>
+      'Google\'s page has opened. Sign in there, then come back to this app.';
+
+  @override
   String get navToday => 'Today';
 
   @override
@@ -783,6 +872,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get problem_redirected =>
       'The server address sent the app to a different address, so nothing was sent. If you use public Wi-Fi, open its sign-in page first. Otherwise, check the server address with your organisation. We will try again later.';
+
+  @override
+  String get problem_phoneNumberInvalid =>
+      'This mobile number is not in the right form. Check it and try again.';
+
+  @override
+  String get problem_tooManySignInCodes =>
+      'Too many codes were asked for. Wait 15 minutes, or use another way to sign in.';
+
+  @override
+  String get problem_signInCodeWrong =>
+      'That code is wrong or has expired. Check the SMS, or ask for a new code. After 10 wrong tries, sign-in is locked for 15 minutes.';
+
+  @override
+  String get problem_tooManyCodeTries =>
+      'Too many tries. Wait 15 minutes, then ask for a new code.';
+
+  @override
+  String get problem_signInMethodOff =>
+      'This way to sign in is switched off on your organisation\'s server. Use another way to sign in.';
+
+  @override
+  String get problem_googleSignInRefused =>
+      'Ask your organisation admin to add your Google email address to your account, or use another way to sign in.';
+
+  @override
+  String get problem_signInCancelled =>
+      'Sign-in was stopped. You can try again.';
+
+  @override
+  String get problem_browserUnavailable =>
+      'This phone could not open a web page to sign in. Use another way to sign in.';
 
   @override
   String get problem_unknown =>

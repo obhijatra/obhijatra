@@ -21,6 +21,11 @@ class LabeledField extends StatelessWidget {
     this.autocorrect = false,
     this.inputFormatters,
     this.fieldKey,
+    this.prefix,
+    this.textAlign = TextAlign.start,
+    this.style,
+    this.focusNode,
+    this.autofocus = false,
     super.key,
   });
 
@@ -66,9 +71,27 @@ class LabeledField extends StatelessWidget {
   /// A key for the text field itself, for tests.
   final Key? fieldKey;
 
+  /// Fixed words before the typed text, always shown (for example the
+  /// country code "+880" of a mobile number).
+  final String? prefix;
+
+  /// How the typed text is aligned.
+  final TextAlign textAlign;
+
+  /// The style of the typed text; body text when `null`.
+  final TextStyle? style;
+
+  /// Controls the field's focus.
+  final FocusNode? focusNode;
+
+  /// Whether the field takes the focus when it appears.
+  final bool autofocus;
+
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    final textStyle = style ?? Theme.of(context).textTheme.bodyLarge!;
+    final fixed = prefix;
     return QuestionFrame(
       label: label,
       help: help,
@@ -88,8 +111,30 @@ class LabeledField extends StatelessWidget {
           autocorrect: autocorrect,
           inputFormatters: inputFormatters,
           enableSuggestions: !obscureText,
-          style: Theme.of(context).textTheme.bodyLarge,
+          focusNode: focusNode,
+          autofocus: autofocus,
+          textAlign: textAlign,
+          style: textStyle,
           decoration: InputDecoration(
+            prefixIcon: fixed == null
+                ? null
+                : Center(
+                    widthFactor: 1,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: Spacing.space3,
+                        end: Spacing.space2,
+                      ),
+                      child: Text(
+                        fixed,
+                        style: textStyle.copyWith(
+                          color: p.text,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+            prefixIconConstraints: const BoxConstraints(minHeight: Sizes.touch),
             suffixIcon: suffix,
             enabledBorder: errorText != null
                 ? OutlineInputBorder(

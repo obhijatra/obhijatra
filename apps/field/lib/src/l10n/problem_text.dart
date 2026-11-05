@@ -34,6 +34,14 @@ String problemText(AppLocalizations l10n, ProblemCode code) => switch (code) {
   ProblemCode.databaseUnavailable => l10n.problem_databaseUnavailable,
   ProblemCode.unexpectedResponse => l10n.problem_unexpectedResponse,
   ProblemCode.redirected => l10n.problem_redirected,
+  ProblemCode.phoneNumberInvalid => l10n.problem_phoneNumberInvalid,
+  ProblemCode.tooManySignInCodes => l10n.problem_tooManySignInCodes,
+  ProblemCode.signInCodeWrong => l10n.problem_signInCodeWrong,
+  ProblemCode.tooManyCodeTries => l10n.problem_tooManyCodeTries,
+  ProblemCode.signInMethodOff => l10n.problem_signInMethodOff,
+  ProblemCode.googleSignInRefused => l10n.problem_googleSignInRefused,
+  ProblemCode.signInCancelled => l10n.problem_signInCancelled,
+  ProblemCode.browserUnavailable => l10n.problem_browserUnavailable,
   ProblemCode.unknown => l10n.problem_unknown,
 };
 

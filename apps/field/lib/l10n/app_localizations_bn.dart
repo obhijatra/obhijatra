@@ -114,6 +114,89 @@ class AppLocalizationsBn extends AppLocalizations {
   String get signInChangeServer => 'অন্য সার্ভার ব্যবহার করুন';
 
   @override
+  String get signInWithGoogle => 'Google দিয়ে চালিয়ে যান';
+
+  @override
+  String get signInUsePhone => 'মোবাইল নম্বর ব্যবহার করুন';
+
+  @override
+  String get signInUseEmail => 'ইমেইল ও পাসওয়ার্ড ব্যবহার করুন';
+
+  @override
+  String get signInOtherWays => 'সাইন ইন করার অন্য উপায়';
+
+  @override
+  String get signInCheckingMethods =>
+      'কীভাবে সাইন ইন করতে পারবেন, তা দেখা হচ্ছে…';
+
+  @override
+  String get signInMethodsFailed =>
+      'কীভাবে সাইন ইন করতে পারবেন, তার সব উপায় দেখা যায়নি।';
+
+  @override
+  String get signInPhone => 'মোবাইল নম্বর';
+
+  @override
+  String get signInPhoneHelp => 'এই নম্বরে SMS-এ ৬ অঙ্কের একটি কোড পাঠানো হবে।';
+
+  @override
+  String get signInPhoneEmpty => 'আপনার মোবাইল নম্বর লিখুন।';
+
+  @override
+  String get signInPhoneInvalid =>
+      'নম্বরটি দেখে নিন। মোবাইল নম্বরে ১১টি অঙ্ক থাকে এবং শুরু হয় ০১ দিয়ে, যেমন ০১৭১২-৩৪৫৬৭৮।';
+
+  @override
+  String get signInSendCode => 'কোড পাঠান';
+
+  @override
+  String get signInSendingCode => 'কোড পাঠানো হচ্ছে…';
+
+  @override
+  String get signInCodeTitle => 'SMS-এ পাওয়া কোডটি লিখুন';
+
+  @override
+  String signInCodeSent(String phone) {
+    return '$phone যদি আপনার অ্যাকাউন্টের মোবাইল নম্বর হয়, তাহলে ৬ অঙ্কের কোডসহ একটি SMS আসছে। আসতে এক মিনিট লাগতে পারে।';
+  }
+
+  @override
+  String get signInCodeFrom =>
+      'এই SMS আপনার প্রতিষ্ঠান পাঠায়। কোডটি কখনো কাউকে বলবেন না।';
+
+  @override
+  String get signInCodeNew =>
+      'নতুন কোড পাঠানো হয়েছে। সবচেয়ে নতুন SMS-এর কোডটি লিখুন।';
+
+  @override
+  String get signInCode => '৬ অঙ্কের কোড';
+
+  @override
+  String get signInCodeIncomplete => 'কোডের ৬টি অঙ্কই লিখুন।';
+
+  @override
+  String signInNewCodeIn(int seconds) {
+    final intl.NumberFormat secondsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String secondsString = secondsNumberFormat.format(seconds);
+
+    return '$secondsString সেকেন্ড পরে নতুন কোড চাইতে পারবেন।';
+  }
+
+  @override
+  String get signInNewCode => 'নতুন কোড পাঠান';
+
+  @override
+  String get signInChangeNumber => 'নম্বর বদলান';
+
+  @override
+  String get signInGoogleWaiting => 'Google-এর জন্য অপেক্ষা করা হচ্ছে…';
+
+  @override
+  String get signInGoogleWaitingHelp =>
+      'Google-এর পেজ খুলেছে। সেখানে সাইন ইন করুন, তারপর এই অ্যাপে ফিরে আসুন।';
+
+  @override
   String get navToday => 'আজ';
 
   @override
@@ -743,6 +826,38 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get problem_redirected =>
       'সার্ভারের ঠিকানা অ্যাপটিকে অন্য একটি ঠিকানায় পাঠিয়ে দিয়েছে, তাই কিছু পাঠানো হয়নি। পাবলিক ওয়াই-ফাই ব্যবহার করলে আগে তার সাইন-ইন পেজ খুলুন। না হলে আপনার প্রতিষ্ঠানের কাছ থেকে সার্ভারের ঠিকানা মিলিয়ে নিন। আমরা পরে আবার চেষ্টা করব।';
+
+  @override
+  String get problem_phoneNumberInvalid =>
+      'মোবাইল নম্বরটি সঠিক আকারে নেই। দেখে আবার চেষ্টা করুন।';
+
+  @override
+  String get problem_tooManySignInCodes =>
+      'অনেকবার কোড চাওয়া হয়েছে। ১৫ মিনিট অপেক্ষা করুন, অথবা অন্য উপায়ে সাইন ইন করুন।';
+
+  @override
+  String get problem_signInCodeWrong =>
+      'কোডটি ভুল, অথবা এর মেয়াদ শেষ হয়ে গেছে। SMS দেখে নিন, অথবা নতুন কোড চান। ১০ বার ভুল হলে ১৫ মিনিটের জন্য সাইন ইন বন্ধ থাকবে।';
+
+  @override
+  String get problem_tooManyCodeTries =>
+      'অনেকবার চেষ্টা করা হয়েছে। ১৫ মিনিট অপেক্ষা করুন, তারপর নতুন কোড চান।';
+
+  @override
+  String get problem_signInMethodOff =>
+      'আপনার প্রতিষ্ঠানের সার্ভারে সাইন ইনের এই উপায়টি বন্ধ আছে। অন্য উপায়ে সাইন ইন করুন।';
+
+  @override
+  String get problem_googleSignInRefused =>
+      'আপনার প্রতিষ্ঠানের অ্যাডমিনকে আপনার অ্যাকাউন্টে আপনার Google ইমেইল ঠিকানা যোগ করতে বলুন, অথবা অন্য উপায়ে সাইন ইন করুন।';
+
+  @override
+  String get problem_signInCancelled =>
+      'সাইন ইন থামানো হয়েছে। আপনি আবার চেষ্টা করতে পারেন।';
+
+  @override
+  String get problem_browserUnavailable =>
+      'সাইন ইনের জন্য এই ফোনে ওয়েব পেজ খোলা যায়নি। অন্য উপায়ে সাইন ইন করুন।';
 
   @override
   String get problem_unknown =>

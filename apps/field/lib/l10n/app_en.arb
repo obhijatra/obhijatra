@@ -133,6 +133,110 @@
   "@signInChangeServer": {
     "description": "Link that goes back to the connect screen."
   },
+  "signInWithGoogle": "Continue with Google",
+  "@signInWithGoogle": {
+    "description": "Button that opens Google's sign-in page in a secure browser tab. Plain text only: never Google's logo."
+  },
+  "signInUsePhone": "Use mobile number",
+  "@signInUsePhone": {
+    "description": "Button that switches the sign-in screen to signing in with a code sent by SMS."
+  },
+  "signInUseEmail": "Use email and password",
+  "@signInUseEmail": {
+    "description": "Button that switches the sign-in screen to email and password."
+  },
+  "signInOtherWays": "Other ways to sign in",
+  "@signInOtherWays": {
+    "description": "Small heading above the other ways to sign in."
+  },
+  "signInCheckingMethods": "Checking how you can sign in…",
+  "@signInCheckingMethods": {
+    "description": "Shown while the app asks the server which ways to sign in it offers."
+  },
+  "signInMethodsFailed": "We could not check all the ways you can sign in.",
+  "@signInMethodsFailed": {
+    "description": "Shown above the reason when the app could not ask the server which ways to sign in it offers; a Try again button follows."
+  },
+  "signInPhone": "Mobile number",
+  "@signInPhone": {
+    "description": "Label of the mobile number field (the country code +880 is shown in the field)."
+  },
+  "signInPhoneHelp": "We will send a 6-digit code to this number by SMS.",
+  "@signInPhoneHelp": {
+    "description": "Help under the mobile number label."
+  },
+  "signInPhoneEmpty": "Type your mobile number.",
+  "@signInPhoneEmpty": {
+    "description": "Shown when the mobile number field is empty."
+  },
+  "signInPhoneInvalid": "Check the number. A mobile number has 11 digits and starts with 01, for example 01712-345678.",
+  "@signInPhoneInvalid": {
+    "description": "Shown when the typed mobile number cannot be a Bangladeshi mobile number."
+  },
+  "signInSendCode": "Send code",
+  "@signInSendCode": {
+    "description": "Button that asks the server to send a sign-in code by SMS."
+  },
+  "signInSendingCode": "Sending the code…",
+  "@signInSendingCode": {
+    "description": "Shown on the Send code button while it works."
+  },
+  "signInCodeTitle": "Enter the code from the SMS",
+  "@signInCodeTitle": {
+    "description": "Heading of the step where the person types the code from the SMS."
+  },
+  "signInCodeSent": "If {phone} is the mobile number on your account, an SMS with a 6-digit code is on its way. It can take a minute.",
+  "@signInCodeSent": {
+    "description": "Says where the code was sent. Worded so it never reveals whether the number has an account.",
+    "placeholders": {
+      "phone": {
+        "type": "String",
+        "example": "+880 1712-345678"
+      }
+    }
+  },
+  "signInCodeFrom": "Your organisation sends this SMS. Never share the code with anyone.",
+  "@signInCodeFrom": {
+    "description": "Says who sends the SMS, and warns never to share the code."
+  },
+  "signInCodeNew": "We sent a new code. Use the code in the newest SMS.",
+  "@signInCodeNew": {
+    "description": "Shown after a new code was sent: only the newest code works."
+  },
+  "signInCode": "6-digit code",
+  "@signInCode": {
+    "description": "Label of the code field."
+  },
+  "signInCodeIncomplete": "Type all 6 digits of the code.",
+  "@signInCodeIncomplete": {
+    "description": "Shown when fewer than 6 digits were typed."
+  },
+  "signInNewCodeIn": "{seconds, plural, =1{You can ask for a new code in 1 second.} other{You can ask for a new code in {seconds} seconds.}}",
+  "@signInNewCodeIn": {
+    "description": "Countdown under the Send a new code button.",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "signInNewCode": "Send a new code",
+  "@signInNewCode": {
+    "description": "Button that sends a new code by SMS; it works after the countdown."
+  },
+  "signInChangeNumber": "Change number",
+  "@signInChangeNumber": {
+    "description": "Button that goes back to typing the mobile number."
+  },
+  "signInGoogleWaiting": "Waiting for Google…",
+  "@signInGoogleWaiting": {
+    "description": "Heading while Google's sign-in page is open in the browser."
+  },
+  "signInGoogleWaitingHelp": "Google's page has opened. Sign in there, then come back to this app.",
+  "@signInGoogleWaitingHelp": {
+    "description": "Text while Google's sign-in page is open in the browser; a Cancel button follows."
+  },
   "navToday": "Today",
   "@navToday": {
     "description": "Bottom navigation: today."
@@ -902,6 +1006,38 @@
   "problem_redirected": "The server address sent the app to a different address, so nothing was sent. If you use public Wi-Fi, open its sign-in page first. Otherwise, check the server address with your organisation. We will try again later.",
   "@problem_redirected": {
     "description": "Plain-language explanation of the problem code \"redirected\": the server answered with a redirect, which the app never follows (often a public Wi-Fi sign-in page). Shown to a field officer."
+  },
+  "problem_phoneNumberInvalid": "This mobile number is not in the right form. Check it and try again.",
+  "@problem_phoneNumberInvalid": {
+    "description": "Plain-language explanation of the problem code \"phoneNumberInvalid\". Shown to a field officer."
+  },
+  "problem_tooManySignInCodes": "Too many codes were asked for. Wait 15 minutes, or use another way to sign in.",
+  "@problem_tooManySignInCodes": {
+    "description": "Plain-language explanation of the problem code \"tooManySignInCodes\". Shown to a field officer."
+  },
+  "problem_signInCodeWrong": "That code is wrong or has expired. Check the SMS, or ask for a new code. After 10 wrong tries, sign-in is locked for 15 minutes.",
+  "@problem_signInCodeWrong": {
+    "description": "Plain-language explanation of the problem code \"signInCodeWrong\". Shown to a field officer."
+  },
+  "problem_tooManyCodeTries": "Too many tries. Wait 15 minutes, then ask for a new code.",
+  "@problem_tooManyCodeTries": {
+    "description": "Plain-language explanation of the problem code \"tooManyCodeTries\". Shown to a field officer."
+  },
+  "problem_signInMethodOff": "This way to sign in is switched off on your organisation's server. Use another way to sign in.",
+  "@problem_signInMethodOff": {
+    "description": "Plain-language explanation of the problem code \"signInMethodOff\". Shown to a field officer."
+  },
+  "problem_googleSignInRefused": "Ask your organisation admin to add your Google email address to your account, or use another way to sign in.",
+  "@problem_googleSignInRefused": {
+    "description": "Plain-language explanation of the problem code \"googleSignInRefused\". Shown to a field officer."
+  },
+  "problem_signInCancelled": "Sign-in was stopped. You can try again.",
+  "@problem_signInCancelled": {
+    "description": "Plain-language explanation of the problem code \"signInCancelled\". Shown to a field officer."
+  },
+  "problem_browserUnavailable": "This phone could not open a web page to sign in. Use another way to sign in.",
+  "@problem_browserUnavailable": {
+    "description": "Plain-language explanation of the problem code \"browserUnavailable\". Shown to a field officer."
   },
   "problem_unknown": "Something went wrong. Your work is safe on this phone. Please try again.",
   "@problem_unknown": {

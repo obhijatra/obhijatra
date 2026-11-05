@@ -93,11 +93,19 @@ class SessionNotifier extends Notifier<SignedInUser?> {
   @override
   SignedInUser? build() => ref.watch(serverProvider).value?.server.currentUser;
 
-  /// Signs in. Throws an [ObhijatraException] with a plain-language code.
-  /// The app lock records the online sign-in (and may ask for an app PIN).
-  Future<void> signIn({required String email, required String password}) async {
+  /// Signs in with [email] and [password] (see [signInWith]).
+  Future<void> signIn({required String email, required String password}) =>
+      signInWith((server) => server.signIn(email: email, password: password));
+
+  /// Signs in by [method] (email and password, SMS code or Google) on the
+  /// saved server. Throws an [ObhijatraException] with a plain-language
+  /// code. Every method ends the same way: the app lock records the online
+  /// sign-in (and may ask for an app PIN).
+  Future<void> signInWith(
+    Future<SignedInUser> Function(ObhijatraServer server) method,
+  ) async {
     final server = ref.read(serverProvider).requireValue!.server;
-    final user = await server.signIn(email: email, password: password);
+    final user = await method(server);
     state = user;
     await ref.read(appLockProvider.notifier).signedInOnline(user);
   }
