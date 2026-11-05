@@ -29,6 +29,7 @@ func Register(app core.App) {
 		Id: "obhijatraRoutes",
 		Func: func(se *core.ServeEvent) error {
 			se.Router.Bind(fence())
+			se.Router.Bind(passwordGate())
 
 			g := se.Router.Group(Prefix)
 			g.GET("/meta", meta)

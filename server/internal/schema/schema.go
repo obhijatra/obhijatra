@@ -193,6 +193,12 @@ const (
 // other account.
 var PhoneSignInCollections = []string{FieldUsers, StaffUsers}
 
+// MustChangePassword is the user field an org admin sets with a one-time
+// password. While it is set, the server answers only the requests needed
+// to choose a new password (package api); the person's own password change
+// clears it (package guards). Nobody can set it on themselves.
+const MustChangePassword = "must_change_password"
+
 // PhoneRegex is PhonePattern compiled.
 var PhoneRegex = regexp.MustCompile(PhonePattern)
 
@@ -310,7 +316,8 @@ func userSelfUpdate(collection string) string {
 		` && @request.body.active:isset = false` +
 		` && @request.body.email:isset = false` +
 		` && @request.body.phone:isset = false` +
-		` && @request.body.verified:isset = false)`
+		` && @request.body.verified:isset = false` +
+		` && @request.body.must_change_password:isset = false)`
 }
 
 // Field user rules.

@@ -258,7 +258,8 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			}
 			windBackSchemaVersion4(t, app)
 			windBackSchemaVersion5(t, app)
-			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%'").Execute(); err != nil {
+			windBackSchemaVersion6(t, app)
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%' OR file LIKE '1793836800_%'").Execute(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -267,6 +268,7 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			}
 			checkSchemaVersion4(t, app)
 			checkSchemaVersion5(t, app)
+			checkSchemaVersion6(t, app)
 
 			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
 			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
@@ -349,6 +351,31 @@ func windBackSchemaVersion5(t *testing.T, app core.App) {
 	} {
 		if _, err := app.DB().NewQuery(q).Execute(); err != nil {
 			t.Fatalf("%s: %v", q, err)
+		}
+	}
+}
+
+// windBackSchemaVersion6 undoes schema version 6: no must_change_password.
+func windBackSchemaVersion6(t *testing.T, app core.App) {
+	t.Helper()
+	for _, name := range []string{schema.FieldUsers, schema.StaffUsers} {
+		c, _ := app.FindCollectionByNameOrId(name)
+		c.Fields.RemoveByName(schema.MustChangePassword)
+		if err := app.Save(c); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func checkSchemaVersion6(t *testing.T, app core.App) {
+	t.Helper()
+	for _, name := range []string{schema.FieldUsers, schema.StaffUsers} {
+		c, _ := app.FindCollectionByNameOrId(name)
+		if c.Fields.GetByName(schema.MustChangePassword) == nil {
+			t.Errorf("after the upgrade %s has no %s field", name, schema.MustChangePassword)
+		}
+		if !strings.Contains(*c.UpdateRule, schema.MustChangePassword+":isset = false") {
+			t.Errorf("after the upgrade people can set %s on themselves in %s", schema.MustChangePassword, name)
 		}
 	}
 }

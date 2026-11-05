@@ -49,11 +49,21 @@ func Register(app core.App) {
 			return syncUserLocationPath(e)
 		})
 		onUpdate(app, name, func(e *core.RecordEvent, old *core.Record) error {
-			if anyChanged(old, e.Record, "role", "location", "location_path", "active") && !mayAdminister(audit.ActorOf(e.App)) {
-				return errors.New("only an organisation admin can change a user's role, location or active status")
+			actor := audit.ActorOf(e.App)
+			if anyChanged(old, e.Record, "role", "location", "location_path", "active", schema.MustChangePassword) && !mayAdminister(actor) {
+				return errors.New("only an organisation admin can change a user's role, location, active status or one-time password")
+			}
+			// Choosing your own password ends a one-time password.
+			if settingPassword(e.Record) && actor.Collection == name && actor.ID == e.Record.Id {
+				e.Record.Set(schema.MustChangePassword, false)
 			}
 			if err := checkUserSignIn(e.Record); err != nil {
 				return err
+			}
+			if name == schema.StaffUsers {
+				if err := keepAnOrgAdmin(e.App, old, e.Record); err != nil {
+					return err
+				}
 			}
 			// A change to how someone signs in, or to what they may do,
 			// ends every session they have: a session started by SMS must
@@ -250,18 +260,50 @@ func Register(app core.App) {
 // ---------------------------------------------------------------------
 
 // checkUserSignIn refuses a user with neither an email address nor a phone
-// number (they could not sign in), and an org admin without an email
-// address (SMS sign-in is not available to org admins, so a swapped SIM
-// card cannot take over the accounts that control all the others).
+// number (they could not sign in), a one-time password without an email
+// address (nobody could sign in with it), and an org admin without an
+// email address (SMS sign-in is not available to org admins, so a swapped
+// SIM card cannot take over the accounts that control all the others).
 func checkUserSignIn(r *core.Record) error {
 	email, phone := r.Email(), r.GetString("phone")
 	if email == "" && phone == "" {
 		return validation.Errors{"email": validation.NewError("validation_email_or_phone_required",
 			"Give an email address or a phone number, so this person can sign in.")}
 	}
+	if email == "" && r.GetBool(schema.MustChangePassword) {
+		return validation.Errors{"email": validation.NewError("validation_one_time_password_needs_email",
+			"A one-time password needs an email address to sign in with.")}
+	}
 	if email == "" && r.Collection().Name == schema.StaffUsers && r.GetString("role") == schema.RoleOrgAdmin {
 		return validation.Errors{"email": validation.NewError("validation_org_admin_email_required",
 			"An organisation admin needs an email address. SMS sign-in is not available to organisation admins.")}
+	}
+	return nil
+}
+
+// settingPassword reports whether r's password is being set in this write.
+func settingPassword(r *core.Record) bool {
+	pv, ok := r.GetRaw(core.FieldNamePassword).(*core.PasswordFieldValue)
+	return ok && pv.Plain != ""
+}
+
+// keepAnOrgAdmin refuses a change that would leave the organisation with no
+// active org admin: nobody could then manage people, unlock accounts or
+// change settings without the server's command line.
+func keepAnOrgAdmin(app core.App, old, r *core.Record) error {
+	wasAdmin := old.GetString("role") == schema.RoleOrgAdmin && old.GetBool("active")
+	isAdmin := r.GetString("role") == schema.RoleOrgAdmin && r.GetBool("active")
+	if !wasAdmin || isAdmin {
+		return nil
+	}
+	others, err := app.CountRecords(schema.StaffUsers, dbx.HashExp{"role": schema.RoleOrgAdmin, "active": true},
+		dbx.Not(dbx.HashExp{"id": r.Id}))
+	if err != nil {
+		return err
+	}
+	if others == 0 {
+		return validation.Errors{"role": validation.NewError("validation_last_org_admin",
+			"This is the only active organisation admin. Make someone else an organisation admin first.")}
 	}
 	return nil
 }
