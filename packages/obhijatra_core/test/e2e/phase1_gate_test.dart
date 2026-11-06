@@ -5,7 +5,10 @@
 // and device trust (docs/decisions/0008-device-trust.md): every device,
 // the organisation admin's included, makes its keys, enrols, is approved
 // with `obhijatra-server device approve` and signs every request; an
-// unsigned request is refused.
+// unsigned request is refused. And the blueprint's Phase 1 acceptance point
+// (docs/decisions/0009-data-export.md): a Bangla name with conjuncts and a
+// zero-width joiner, typed into the form on the phone, comes out of the
+// organisation admin's download byte for byte.
 //
 // Runs the server binary from server/dist (or OBHIJATRA_SERVER_BIN).
 // Run only this test with:  dart test -t e2e
@@ -18,7 +21,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:http/http.dart' as http;
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_core/src/server/realtime_channel.dart';
@@ -34,6 +39,10 @@ const _adminEmail = 'admin@example.org';
 const _adminPassword = 'e2e-admin-password-1';
 const _fieldEmail = 'field.officer@example.org';
 const _fieldPassword = 'e2e-field-password-1';
+
+/// The acceptance name: conjuncts (ন্ত, ক্ষ, ্য) and a zero-width joiner
+/// (U+200D, in র‍্যাব, so the র is not drawn as a reph).
+const _banglaName = 'অন্তরা ক্ষমা র\u200D্যাব';
 
 void main() {
   late Directory work;
@@ -147,11 +156,14 @@ void main() {
     expect(refresh.added.single.version, sampleFormVersion);
     expect(refresh.failed, isEmpty);
 
-    // Fill the form headlessly from the cached copy, as offline work does.
-    final first = await phone.fill(head: 'Rahima Begum', size: '5');
+    // Fill the form headlessly from the cached copy, as offline work does:
+    // the Bangla name is typed as the household head.
+    expect(_banglaName, contains('\u200D'));
+    final first = await phone.fill(head: _banglaName, size: '5');
     final queued = (await phone.outbox.find(first))!;
     expect(queued.state, OutboxState.queued);
     final sentXml = queued.instanceXml;
+    expect(sentXml, contains('<household_head>$_banglaName</household_head>'));
     final report = await phone.sync.syncNow();
     expect(report.sent, 1, reason: 'report: ${report.stoppedBy}');
     final receipt = (await phone.outbox.find(first))!;
@@ -208,6 +220,76 @@ void main() {
     expect(status.problems, 0);
     expect(status.isOffline, isFalse);
     expect(status.lastSyncedAt, isNotNull);
+
+    // ---- The organisation admin downloads the form's submissions
+    // ---- (docs/decisions/0009-data-export.md): the Bangla name comes out
+    // ---- byte for byte.
+    final formRecordId = form['id']! as String;
+    // A session that a refresh made does not count as a recent sign-in.
+    final refreshed = await admin.refresh(admin.token);
+    final refused = await admin.exportSubmissions(refreshed, formRecordId);
+    expect(refused.statusCode, 403, reason: refused.body);
+    expect(_reasonCode(refused), 'recent_sign_in_required');
+    // A sign-in with the password, from the approved computer, does.
+    final recent = await admin.signInAgain();
+    final download = await admin.exportSubmissions(recent, formRecordId);
+    expect(download.statusCode, 200, reason: download.body);
+    expect(download.headers['content-type'], startsWith('application/zip'));
+    final files = _unzip(download.bodyBytes);
+
+    // The table: Central's layout, UTF-8 with a byte-order mark, CRLF.
+    final csvBytes = files['$sampleFormId.csv']!;
+    expect(csvBytes.take(3), [0xEF, 0xBB, 0xBF]);
+    final rows = _csvRows(utf8.decode(csvBytes.sublist(3)));
+    final header = rows.first;
+    expect(header.first, 'SubmissionDate');
+    expect(header, contains('household_head'));
+    expect(header.sublist(header.length - 10), [
+      'KEY',
+      'SubmitterID',
+      'SubmitterName',
+      'AttachmentsPresent',
+      'AttachmentsExpected',
+      'Status',
+      'ReviewState',
+      'DeviceID',
+      'Edits',
+      'FormVersion',
+    ]);
+    expect(rows, hasLength(3)); // the header and two submissions
+    final row = rows.singleWhere((r) => r[header.indexOf('KEY')] == first);
+    expect(row[header.indexOf('household_head')], _banglaName);
+    expect(row[header.indexOf('FormVersion')], sampleFormVersion);
+    // The exact UTF-8 bytes of the name, in the file as written.
+    expect(_indexOfBytes(csvBytes, utf8.encode(_banglaName)), isNonNegative);
+
+    // The submission exactly as the phone sent it.
+    final xmlName = 'submissions/${first.replaceAll(':', '_')}.xml';
+    expect(files[xmlName], utf8.encode(sentXml));
+    expect(
+      files.keys,
+      contains('forms/${sampleFormId}_$sampleFormVersion.xml'),
+    );
+
+    // The manifest lists every other file, each with its size and SHA-256.
+    final manifest = jsonDecode(
+      utf8.decode(files['manifest.json']!),
+    ) as Map<String, Object?>;
+    final listed = {
+      for (final entry
+          in (manifest['files']! as List<Object?>).cast<Map<String, Object?>>())
+        entry['path']! as String: entry,
+    };
+    expect(listed.keys.toSet(), files.keys.toSet()..remove('manifest.json'));
+    for (final MapEntry(key: path, value: entry) in listed.entries) {
+      expect(entry['bytes'], files[path]!.length, reason: path);
+      expect(
+        entry['sha256'],
+        sha256.convert(files[path]!).toString(),
+        reason: path,
+      );
+    }
+    expect(manifest['submissions'], 2);
   });
 
   test('sign-in methods: a new server offers the password only, and says '
@@ -724,6 +806,48 @@ final class _Admin {
 
   Map<String, String> get _auth => {'Authorization': token};
 
+  /// Signs in again with the password, from the approved computer (signed
+  /// by its device), and returns the new session's token: a recent
+  /// sign-in, as downloads need.
+  Future<String> signInAgain() async {
+    late http.Response response;
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      response = await client.post(
+        base.resolve('/api/collections/staff_users/auth-with-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'identity': _adminEmail, 'password': _adminPassword}),
+      );
+      if (response.statusCode != 429) break;
+      await Future<void>.delayed(const Duration(milliseconds: 3500));
+    }
+    expect(response.statusCode, 200, reason: response.body);
+    return (jsonDecode(response.body) as Map<String, Object?>)['token']!
+        as String;
+  }
+
+  /// Refreshes the session of [session] and returns the new token: a
+  /// session a refresh made, not a sign-in.
+  Future<String> refresh(String session) async {
+    final response = await client.post(
+      base.resolve('/api/collections/staff_users/auth-refresh'),
+      headers: {'Authorization': session},
+    );
+    expect(response.statusCode, 200, reason: response.body);
+    return (jsonDecode(response.body) as Map<String, Object?>)['token']!
+        as String;
+  }
+
+  /// Asks for the zip of [formRecordId]'s submissions, without media, with
+  /// the session [session].
+  Future<http.Response> exportSubmissions(
+    String session,
+    String formRecordId,
+  ) => client.post(
+    base.resolve('/api/obhijatra/v1/exports/submissions'),
+    headers: {'Authorization': session, 'Content-Type': 'application/json'},
+    body: jsonEncode({'form': formRecordId, 'include_media': false}),
+  );
+
   Future<Map<String, Object?>> create(
     String collection,
     Map<String, Object?> body,
@@ -830,4 +954,119 @@ String _serverBinary() {
   }
   matches.sort((a, b) => a.path.compareTo(b.path));
   return matches.last.absolute.path;
+}
+
+/// The reason code of an error answer (`data.reason.code`), if any.
+String? _reasonCode(http.Response response) {
+  final json = jsonDecode(response.body);
+  if (json is! Map<String, Object?>) return null;
+  final data = json['data'];
+  if (data is! Map<String, Object?>) return null;
+  final reason = data['reason'];
+  return reason is Map<String, Object?> ? reason['code'] as String? : null;
+}
+
+/// The files of a zip archive by name, read through its central directory
+/// (sizes are there even when the archive was streamed). Stored and
+/// deflated entries are supported; each one's CRC-32 is checked.
+Map<String, Uint8List> _unzip(Uint8List bytes) {
+  final data = ByteData.sublistView(bytes);
+  int u16(int at) => data.getUint16(at, Endian.little);
+  int u32(int at) => data.getUint32(at, Endian.little);
+  var end = bytes.length - 22;
+  while (end >= 0 && u32(end) != 0x06054b50) {
+    end--;
+  }
+  expect(end, isNonNegative, reason: 'no end of central directory');
+  final count = u16(end + 10);
+  var at = u32(end + 16);
+  final files = <String, Uint8List>{};
+  for (var i = 0; i < count; i++) {
+    expect(u32(at), 0x02014b50, reason: 'central directory entry $i');
+    final method = u16(at + 10);
+    final crc = u32(at + 16);
+    final compressed = u32(at + 20);
+    final size = u32(at + 24);
+    final nameLength = u16(at + 28);
+    final extraLength = u16(at + 30);
+    final commentLength = u16(at + 32);
+    final local = u32(at + 42);
+    final name = utf8.decode(bytes.sublist(at + 46, at + 46 + nameLength));
+    expect(u32(local), 0x04034b50, reason: name);
+    final start = local + 30 + u16(local + 26) + u16(local + 28);
+    final raw = bytes.sublist(start, start + compressed);
+    final content = switch (method) {
+      0 => raw,
+      8 => Uint8List.fromList(ZLibDecoder(raw: true).convert(raw)),
+      _ => fail('$name: compression method $method'),
+    };
+    expect(content.length, size, reason: name);
+    expect(_crc32(content), crc, reason: name);
+    expect(files.containsKey(name), isFalse, reason: 'twice: $name');
+    files[name] = content;
+    at += 46 + nameLength + extraLength + commentLength;
+  }
+  return files;
+}
+
+/// The CRC-32 (IEEE) of [bytes], as zip archives record it.
+int _crc32(List<int> bytes) {
+  var crc = 0xFFFFFFFF;
+  for (final b in bytes) {
+    crc ^= b;
+    for (var k = 0; k < 8; k++) {
+      crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320 : crc >> 1;
+    }
+  }
+  return crc ^ 0xFFFFFFFF;
+}
+
+/// The rows of CSV [text] (RFC 4180: CRLF between records, quoted fields
+/// with doubled quotes). Every record must end with CRLF.
+List<List<String>> _csvRows(String text) {
+  final rows = <List<String>>[];
+  var row = <String>[];
+  final field = StringBuffer();
+  var quoted = false;
+  for (var i = 0; i < text.length; i++) {
+    final c = text[i];
+    if (quoted) {
+      if (c == '"' && i + 1 < text.length && text[i + 1] == '"') {
+        field.write('"');
+        i++;
+      } else if (c == '"') {
+        quoted = false;
+      } else {
+        field.write(c);
+      }
+    } else if (c == '"') {
+      quoted = true;
+    } else if (c == ',') {
+      row.add(field.toString());
+      field.clear();
+    } else if (c == '\r' && i + 1 < text.length && text[i + 1] == '\n') {
+      row.add(field.toString());
+      field.clear();
+      rows.add(row);
+      row = <String>[];
+      i++;
+    } else {
+      expect(c, isNot('\n'), reason: 'a line must end with CRLF');
+      field.write(c);
+    }
+  }
+  expect(row.isEmpty && field.isEmpty, isTrue, reason: 'last line ends CRLF');
+  return rows;
+}
+
+/// Where [needle] first occurs in [haystack], or -1.
+int _indexOfBytes(List<int> haystack, List<int> needle) {
+  outer:
+  for (var i = 0; i + needle.length <= haystack.length; i++) {
+    for (var j = 0; j < needle.length; j++) {
+      if (haystack[i + j] != needle[j]) continue outer;
+    }
+    return i;
+  }
+  return -1;
 }
