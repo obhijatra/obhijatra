@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:obhijatra_device/obhijatra_device.dart';
+import 'package:obhijatra_manager/src/data/devices.dart';
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
@@ -1003,5 +1006,192 @@ class FakeManagerApi implements ManagerApi {
     // The real server ends every session; the app signs in again.
     signIns.add((me.email, newPassword));
     return user = me.copyWith(mustChangePassword: false);
+  }
+
+  // ----------------------------------------------------------- devices
+  //
+  // The device check (enrol and status) ignores [gate] and [failWith], so
+  // tests of other screens reach them; it fails only when told to.
+
+  /// What enrolment answers. A real server always answers "pending"; most
+  /// tests want an approved device so that the app opens.
+  DeviceView enrolAnswer = DeviceView(
+    id: 'thisdevice00001',
+    status: DeviceStatus.active,
+    label: 'Web browser (Chrome on Windows)',
+    platform: DevicePlatform.web,
+    expires: DateTime(2027, 11, 6),
+  );
+
+  /// Every enrolment, in order.
+  final List<({String label, String platform, String code})> enrolments =
+      <({String label, String platform, String code})>[];
+
+  /// Set to make enrolment fail.
+  AppProblem? enrolFailure;
+
+  /// What the status check answers; by default the device enrolled last.
+  DeviceView? meAnswer;
+
+  /// Set to make the status check fail.
+  AppProblem? meFailure;
+
+  /// How many times the device's status was asked for.
+  int meChecks = 0;
+
+  /// While not null, the status check waits for it.
+  Completer<void>? meGate;
+
+  /// While true, the server does not know the device (`device_unknown`),
+  /// as after a restore from an older backup; enrolling again ends it.
+  bool deviceUnknown = false;
+
+  DeviceView? _enrolled;
+
+  @override
+  Future<DeviceView> enrolDevice({
+    required DeviceKeys keys,
+    required String label,
+    required String platform,
+  }) async {
+    final failure = enrolFailure;
+    if (failure != null) throw failure;
+    deviceUnknown = false;
+    enrolments.add((
+      label: label,
+      platform: platform,
+      code: deviceCheckCode(keys.signPublicKey, keys.encPublicKey),
+    ));
+    return _enrolled = enrolAnswer;
+  }
+
+  @override
+  Future<DeviceView> myDevice() async {
+    meChecks++;
+    final waitFor = meGate;
+    if (waitFor != null) await waitFor.future;
+    if (deviceUnknown) {
+      throw const AppProblem(ProblemKind.deviceUnknown, statusCode: 403);
+    }
+    final failure = meFailure;
+    if (failure != null) throw failure;
+    return meAnswer ?? _enrolled ?? enrolAnswer;
+  }
+
+  /// The devices the signed-in person may see.
+  List<DeviceRecord> devices = <DeviceRecord>[];
+
+  /// Every approval, as (device id, code typed).
+  final List<(String, String)> approvals = <(String, String)>[];
+
+  /// Set to make the next approval fail; it is then cleared.
+  AppProblem? approveFailure;
+
+  /// When an approval runs out (a real server: a year from now).
+  DateTime approvedUntil = DateTime(2027, 11, 6);
+
+  /// Every device switched off, in order.
+  final List<String> revocations = <String>[];
+
+  /// Set to make the next switch-off fail; it is then cleared.
+  AppProblem? revokeFailure;
+
+  @override
+  Future<List<DeviceRecord>> listDevices() async {
+    await _enter();
+    return devices;
+  }
+
+  DeviceRecord _replace(DeviceRecord device, DeviceRecord Function() make) {
+    final next = make();
+    devices = <DeviceRecord>[
+      for (final d in devices) d.id == device.id ? next : d,
+    ];
+    return next;
+  }
+
+  @override
+  Future<DeviceView> approveDevice(String deviceId, String code) async {
+    final failure = approveFailure;
+    if (failure != null) {
+      approveFailure = null;
+      throw failure;
+    }
+    approvals.add((deviceId, code));
+    final device = devices.firstWhere((d) => d.id == deviceId);
+    if (normaliseCheckCode(code) !=
+        deviceCheckCode(
+          base64.decode(device.signPublicKey),
+          base64.decode(device.encPublicKey),
+        )) {
+      throw const AppProblem(ProblemKind.deviceCodeMismatch, statusCode: 400);
+    }
+    final me = user!.id;
+    final first = device.ownerIsOrgAdmin && device.firstApprovedBy.isEmpty;
+    final saved = _replace(
+      device,
+      () => DeviceRecord(
+        id: device.id,
+        ownerKind: device.ownerKind,
+        ownerId: device.ownerId,
+        ownerName: device.ownerName,
+        ownerContact: device.ownerContact,
+        ownerRole: device.ownerRole,
+        label: device.label,
+        platform: device.platform,
+        status: first ? DeviceStatus.pending : DeviceStatus.active,
+        signPublicKey: device.signPublicKey,
+        encPublicKey: device.encPublicKey,
+        created: device.created,
+        expires: first ? null : approvedUntil,
+        firstApprovedBy: first ? me : '',
+      ),
+    );
+    return DeviceView(
+      id: saved.id,
+      status: saved.status,
+      label: saved.label,
+      platform: saved.platform,
+      expires: saved.expires,
+      needsSecondApproval: saved.needsSecondApproval,
+    );
+  }
+
+  @override
+  Future<DeviceView> revokeDevice(String deviceId) async {
+    final failure = revokeFailure;
+    if (failure != null) {
+      revokeFailure = null;
+      throw failure;
+    }
+    revocations.add(deviceId);
+    final device = devices.firstWhere((d) => d.id == deviceId);
+    _replace(
+      device,
+      () => DeviceRecord(
+        id: device.id,
+        ownerKind: device.ownerKind,
+        ownerId: device.ownerId,
+        ownerName: device.ownerName,
+        ownerContact: device.ownerContact,
+        ownerRole: device.ownerRole,
+        label: device.label,
+        platform: device.platform,
+        status: DeviceStatus.revoked,
+        signPublicKey: device.signPublicKey,
+        encPublicKey: device.encPublicKey,
+        created: device.created,
+        expires: device.expires,
+      ),
+    );
+    if (deviceId == _enrolled?.id) {
+      meFailure = const AppProblem(ProblemKind.deviceRevoked, statusCode: 403);
+    }
+    return DeviceView(
+      id: device.id,
+      status: DeviceStatus.revoked,
+      label: device.label,
+      platform: device.platform,
+    );
   }
 }

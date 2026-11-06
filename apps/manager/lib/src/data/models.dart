@@ -102,6 +102,11 @@ class StaffUser {
   /// Only an active organisation admin adds and manages people.
   bool get canManagePeople => isOrgAdmin && active && !mustChangePassword;
 
+  /// Organisation admins approve devices, and branch managers approve the
+  /// field staff phones in their part of the organisation.
+  bool get canApproveDevices =>
+      active && !mustChangePassword && (isOrgAdmin || role == 'branch_manager');
+
   /// Whether the server lets this role change a submission's review state.
   bool get canReview =>
       role == 'org_admin' || role == 'supervisor' || role == 'branch_manager';

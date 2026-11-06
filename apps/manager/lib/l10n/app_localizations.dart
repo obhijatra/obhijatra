@@ -3451,6 +3451,618 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The code {code} has a line break or a hidden control character.'**
   String importServerUnsafeCode(String code);
+
+  /// Menu item: devices (for organisation admins and branch managers).
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get navDevices;
+
+  /// Menu item and tab: the signed-in person's own devices.
+  ///
+  /// In en, this message translates to:
+  /// **'My devices'**
+  String get navMyDevices;
+
+  /// Problem: the session is tied to a different device.
+  ///
+  /// In en, this message translates to:
+  /// **'This session belongs to another device. Sign in again on this one.'**
+  String get problemSessionOtherDevice;
+
+  /// Problem: a request was not signed by a device.
+  ///
+  /// In en, this message translates to:
+  /// **'This device is not set up for this server yet. Sign in again on this device.'**
+  String get problemDeviceNotSetUp;
+
+  /// Problem: the device's signature could not be checked.
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not check this device. Try again. If it keeps happening, sign out and sign in again.'**
+  String get problemDeviceCheckFailed;
+
+  /// Problem: the computer's clock is too far from the server's.
+  ///
+  /// In en, this message translates to:
+  /// **'This computer’s date or time is wrong. Set the correct date, time and time zone, then try again.'**
+  String get problemDeviceClock;
+
+  /// Problem: the device is not approved yet.
+  ///
+  /// In en, this message translates to:
+  /// **'This device is waiting for approval.'**
+  String get problemDeviceNotApproved;
+
+  /// Problem: the device was switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'This device has been switched off for Obhijatra.'**
+  String get problemDeviceRevoked;
+
+  /// Problem: the device's yearly approval ran out.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s approval has run out. Ask an organisation admin to approve it again.'**
+  String get problemDeviceExpired;
+
+  /// Problem: the device keys could not be stored.
+  ///
+  /// In en, this message translates to:
+  /// **'This computer or browser could not keep the device’s security keys. If this is a private window, open a normal one, then try again.'**
+  String get problemDeviceKeysUnavailable;
+
+  /// Problem: enrolment refused because the keys belong to another device.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s keys are already in use. Set this device up again.'**
+  String get problemDeviceKeyInUse;
+
+  /// Problem: the person already has 3 devices waiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Three of your devices are already waiting for approval. Ask an organisation admin to approve them or switch them off, then try again.'**
+  String get problemTooManyWaitingDevices;
+
+  /// Problem: the server says the typed numbers are not the device's.
+  ///
+  /// In en, this message translates to:
+  /// **'These numbers do not match this device. Check them with the person again.'**
+  String get problemDeviceCodeMismatch;
+
+  /// Problem: the device can no longer be approved by this person.
+  ///
+  /// In en, this message translates to:
+  /// **'This device is no longer waiting for your approval. It may be approved already, or need a different organisation admin. Reload the list.'**
+  String get problemDeviceNotWaiting;
+
+  /// Shown while the app checks this device with the server after sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking this device…'**
+  String get deviceChecking;
+
+  /// Who is signed in, on the device screens.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String deviceSignedInAs(String name);
+
+  /// Title: this device waits for approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get deviceWaitingTitle;
+
+  /// Why the device must be approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you can use Obhijatra here, someone must check that this device is really yours.'**
+  String get deviceWaitingIntro;
+
+  /// Title: this device's yearly approval ran out.
+  ///
+  /// In en, this message translates to:
+  /// **'Your approval has run out'**
+  String get deviceRenewTitle;
+
+  /// Why the device must be approved again.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals last one year. To keep using Obhijatra here, someone must check this device again.'**
+  String get deviceRenewIntro;
+
+  /// Label above the 18-digit check code.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s numbers'**
+  String get deviceCodeLabel;
+
+  /// The name of this device on the waiting screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This device: {label}'**
+  String deviceThisDevice(String label);
+
+  /// Who approves an office staff member's device.
+  ///
+  /// In en, this message translates to:
+  /// **'Show these numbers to an organisation admin, in person or on a phone call. They type them into their manager app to approve this device.'**
+  String get deviceWhoStaff;
+
+  /// Who approves an organisation admin's device.
+  ///
+  /// In en, this message translates to:
+  /// **'You are an organisation admin, so two other organisation admins must each check these numbers and approve this device, in person or on a phone call.'**
+  String get deviceWhoAdmin;
+
+  /// An organisation admin's device has its first approval.
+  ///
+  /// In en, this message translates to:
+  /// **'One organisation admin has approved it. A second, different organisation admin must approve it too.'**
+  String get deviceWhoAdminSecond;
+
+  /// Heading above the server command for the very first admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you the first organisation admin?'**
+  String get deviceFirstAdminTitle;
+
+  /// Explains the server command for the very first admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Then nobody can approve you in the app yet. Ask the person who runs the server to type this command on it:'**
+  String get deviceFirstAdminBody;
+
+  /// Message after copying the server command.
+  ///
+  /// In en, this message translates to:
+  /// **'Command copied.'**
+  String get deviceCommandCopied;
+
+  /// Tells the person how to pass the numbers on.
+  ///
+  /// In en, this message translates to:
+  /// **'Your approver will not accept these numbers by text message, email or chat: read them out or show your screen.'**
+  String get deviceNoMessages;
+
+  /// Explains the automatic check on the waiting screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This page checks every 15 seconds and opens Obhijatra as soon as the device is approved.'**
+  String get deviceAutoCheck;
+
+  /// Button: ask the server about this device again.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get deviceCheckAgain;
+
+  /// Button while the device is being checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get deviceCheckingNow;
+
+  /// Title: this device was switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'This device has been switched off'**
+  String get deviceRevokedTitle;
+
+  /// What switching off means and what to do.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone switched off this device for Obhijatra, for example because it was reported lost. To use Obhijatra here again, set it up as a new device. Someone will then need to approve it.'**
+  String get deviceRevokedBody;
+
+  /// Button: make new keys and enrol this device again.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up this device again'**
+  String get deviceSetUpAgain;
+
+  /// Confirmation title before making new keys.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up this device again?'**
+  String get deviceSetUpAgainTitle;
+
+  /// Confirmation text before making new keys.
+  ///
+  /// In en, this message translates to:
+  /// **'This makes new security keys for this device. You cannot use Obhijatra here until someone approves it.'**
+  String get deviceSetUpAgainBody;
+
+  /// Confirmation button: make new keys.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up again'**
+  String get deviceSetUpAgainConfirm;
+
+  /// Title: the server does not recognise the device's keys.
+  ///
+  /// In en, this message translates to:
+  /// **'This device could not be checked'**
+  String get deviceNotRecognisedTitle;
+
+  /// What to do when the device is not recognised.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not recognise this device’s keys. This can happen after the server was set up again. Check again; if that does not help, set this device up again.'**
+  String get deviceNotRecognisedBody;
+
+  /// Title: the computer's clock is wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Check this computer’s date and time'**
+  String get deviceClockTitle;
+
+  /// What to do about a wrong clock.
+  ///
+  /// In en, this message translates to:
+  /// **'This computer’s clock is more than 5 minutes away from the server’s. Set the correct date, time and time zone, then check again.'**
+  String get deviceClockBody;
+
+  /// Title: the browser cannot keep device keys.
+  ///
+  /// In en, this message translates to:
+  /// **'Please update your browser'**
+  String get deviceUpdateBrowserTitle;
+
+  /// Which browsers work.
+  ///
+  /// In en, this message translates to:
+  /// **'This browser cannot keep Obhijatra’s security keys safely. Use an up-to-date browser: Chrome or Edge 137 or later, Firefox 130 or later, or Safari 17 or later. You can also use the Obhijatra desktop app.'**
+  String get deviceUpdateBrowserBody;
+
+  /// Title: the page was not opened over https.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the secure address'**
+  String get deviceSecureAddressTitle;
+
+  /// What to do on a page opened over plain http.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsers keep security keys only for pages opened at a secure address, which starts with https://. Ask your organisation admin for the manager’s https address.'**
+  String get deviceSecureAddressBody;
+
+  /// Subtitle of Devices for organisation admins.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve new computers, browsers and phones, and switch off lost ones.'**
+  String get devicesSummaryAdmin;
+
+  /// Subtitle of Devices for branch managers.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the phones of field staff in your part of the organisation, and switch off lost ones.'**
+  String get devicesSummaryBranch;
+
+  /// Subtitle of My devices.
+  ///
+  /// In en, this message translates to:
+  /// **'The computers and browsers you use Obhijatra on. Switch one off if it is lost.'**
+  String get devicesSummaryMine;
+
+  /// Tab: devices of other people.
+  ///
+  /// In en, this message translates to:
+  /// **'Other people’s devices'**
+  String get devicesTabOthers;
+
+  /// Spoken name of the tabs on Devices.
+  ///
+  /// In en, this message translates to:
+  /// **'Whose devices'**
+  String get devicesTabsLabel;
+
+  /// Section heading: devices to approve.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get devicesWaiting;
+
+  /// Section heading: approved devices.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get devicesApproved;
+
+  /// Section heading: devices switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched off'**
+  String get devicesSwitchedOff;
+
+  /// Shown when nothing waits.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices are waiting for approval.'**
+  String get devicesWaitingNone;
+
+  /// Empty Devices list title.
+  ///
+  /// In en, this message translates to:
+  /// **'No devices yet'**
+  String get devicesEmptyTitle;
+
+  /// Empty Devices list text.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone signs in on a new computer, browser or phone, it appears here for approval.'**
+  String get devicesEmptyBody;
+
+  /// Empty My devices text.
+  ///
+  /// In en, this message translates to:
+  /// **'The devices you sign in on appear here.'**
+  String get devicesMineEmptyBody;
+
+  /// When the device was enrolled.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {date}'**
+  String deviceAdded(String date);
+
+  /// When the approval runs out.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved until {date}'**
+  String deviceApprovedUntil(String date);
+
+  /// When the approval ran out.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval ran out {date}'**
+  String deviceApprovalRanOut(String date);
+
+  /// Badge: waiting for approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get deviceStatusWaiting;
+
+  /// Badge: approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get deviceStatusApproved;
+
+  /// Badge: switched off.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched off'**
+  String get deviceStatusOff;
+
+  /// Badge: the approval ran out.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval ran out'**
+  String get deviceStatusRanOut;
+
+  /// Badge: an admin's device approved once.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a second approval'**
+  String get deviceNeedsSecond;
+
+  /// Badge: the device in use now.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get deviceThisOne;
+
+  /// Shown to the admin who gave the first approval.
+  ///
+  /// In en, this message translates to:
+  /// **'You approved it once. A different organisation admin must approve it too.'**
+  String get deviceYouApprovedFirst;
+
+  /// Button: switch a device off.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch off'**
+  String get deviceSwitchOff;
+
+  /// Device platform: a web browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Web browser'**
+  String get platformWeb;
+
+  /// Device platform: Windows.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows computer'**
+  String get platformWindows;
+
+  /// Device platform: macOS.
+  ///
+  /// In en, this message translates to:
+  /// **'Mac'**
+  String get platformMac;
+
+  /// Device platform: Linux.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux computer'**
+  String get platformLinux;
+
+  /// Device platform: Android.
+  ///
+  /// In en, this message translates to:
+  /// **'Android phone'**
+  String get platformAndroid;
+
+  /// Device platform: iOS.
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone or iPad'**
+  String get platformIos;
+
+  /// Approve dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve {name}’s device'**
+  String approveTitle(String name);
+
+  /// How to get the numbers safely.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {name} to read out the 18 numbers on their own screen, in person or on a phone call with someone you know. Never accept numbers sent by text message, email or chat.'**
+  String approveHow(String name);
+
+  /// Label of the field for the check code.
+  ///
+  /// In en, this message translates to:
+  /// **'The 18 numbers'**
+  String get approveCodeLabel;
+
+  /// Help under the check code field.
+  ///
+  /// In en, this message translates to:
+  /// **'Type them as you hear them. Bangla or English digits both work.'**
+  String get approveCodeHelp;
+
+  /// Problem: fewer than 18 digits.
+  ///
+  /// In en, this message translates to:
+  /// **'Type all 18 numbers.'**
+  String get approveCodeIncomplete;
+
+  /// Problem: the typed numbers are not the device's.
+  ///
+  /// In en, this message translates to:
+  /// **'These numbers do not match this device. Check them with {name} again. If they still do not match, do not approve it: someone else may be trying to get in.'**
+  String approveMismatch(String name);
+
+  /// Problem: the device's keys are unreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s details cannot be read, so it cannot be approved. Ask {name} to set the device up again.'**
+  String approveUnreadable(String name);
+
+  /// Note on an admin's device.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an organisation admin’s device. A second organisation admin must also approve it before it works.'**
+  String get approveAdminDevice;
+
+  /// Note on an admin's device with one approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Another organisation admin has approved it once. Yours will be the second approval.'**
+  String get approveAdminSecond;
+
+  /// Note on a device whose approval ran out.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s approval has run out. Approving it again keeps it working for another year.'**
+  String get approveRenewal;
+
+  /// Button: approve the device.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve device'**
+  String get approveButton;
+
+  /// Button while approving.
+  ///
+  /// In en, this message translates to:
+  /// **'Approving…'**
+  String get approveWorking;
+
+  /// Approve dialog result text after a full approval.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can use Obhijatra on this device now.'**
+  String approveDone(String name);
+
+  /// Approve dialog result text after the first of two approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'You have approved it once. A second, different organisation admin must also check the 18 numbers with {name} and approve it before it works.'**
+  String approveDoneFirst(String name);
+
+  /// Switch-off confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch off this device?'**
+  String get switchOffTitle;
+
+  /// What switching off another person's device does.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}’s {device} will stop working for Obhijatra at once, and whoever uses it will be signed out straight away. To use it again, it must be set up again and approved.'**
+  String switchOffBody(String name, String device);
+
+  /// What switching off your own device does.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this if your {device} is lost or you no longer use it. It stops working for Obhijatra at once, and whoever uses it is signed out straight away.'**
+  String switchOffMine(String device);
+
+  /// Warning when switching off the device in use.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the device you are using now. You will be signed out at once, and must set it up again and have it approved before you can carry on.'**
+  String get switchOffCurrent;
+
+  /// Button while switching off.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching off…'**
+  String get switchOffWorking;
+
+  /// Message after switching off.
+  ///
+  /// In en, this message translates to:
+  /// **'Device switched off.'**
+  String get switchOffDone;
+
+  /// Button: close a dialog after it has finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get actionDone;
+
+  /// Approve dialog result title when no end date is known.
+  ///
+  /// In en, this message translates to:
+  /// **'Device approved'**
+  String get approveDoneTitle;
+
+  /// Approve dialog result title: when the approval runs out.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved until {date}'**
+  String approveDoneUntil(String date);
+
+  /// Approve dialog result title after the first of two approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs one more organisation admin'**
+  String get approveDoneFirstTitle;
+
+  /// When the waiting screen last asked the server, for example "Last checked at 14:32."
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked at {time}.'**
+  String deviceLastChecked(String time);
+
+  /// Problem: the server does not know this device (for example after it was restored from a backup).
+  ///
+  /// In en, this message translates to:
+  /// **'The server no longer knows this device. It is being set up again and will need approval again.'**
+  String get problemDeviceUnknown;
+
+  /// Waiting screen note: the device was enrolled again because the server no longer knew it.
+  ///
+  /// In en, this message translates to:
+  /// **'The server no longer knew this device, so it needs approval again.'**
+  String get deviceServerForgot;
 }
 
 class _AppLocalizationsDelegate

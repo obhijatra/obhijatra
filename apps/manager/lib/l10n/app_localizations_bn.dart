@@ -2273,4 +2273,379 @@ class AppLocalizationsBn extends AppLocalizations {
   String importServerUnsafeCode(String code) {
     return '$code কোডে একটি লাইন ব্রেক বা লুকানো বিশেষ চিহ্ন আছে।';
   }
+
+  @override
+  String get navDevices => 'ডিভাইস';
+
+  @override
+  String get navMyDevices => 'আমার ডিভাইস';
+
+  @override
+  String get problemSessionOtherDevice =>
+      'এই সেশনটি অন্য একটি ডিভাইসের। এই ডিভাইসে আবার সাইন ইন করুন।';
+
+  @override
+  String get problemDeviceNotSetUp =>
+      'এই ডিভাইসটি এখনও এই সার্ভারের জন্য প্রস্তুত করা হয়নি। এই ডিভাইসে আবার সাইন ইন করুন।';
+
+  @override
+  String get problemDeviceCheckFailed =>
+      'সার্ভার এই ডিভাইসটি যাচাই করতে পারেনি। আবার চেষ্টা করুন। বারবার হলে সাইন আউট করে আবার সাইন ইন করুন।';
+
+  @override
+  String get problemDeviceClock =>
+      'এই কম্পিউটারের তারিখ বা সময় ভুল। সঠিক তারিখ, সময় ও টাইম জোন ঠিক করে আবার চেষ্টা করুন।';
+
+  @override
+  String get problemDeviceNotApproved => 'এই ডিভাইসটি অনুমোদনের অপেক্ষায় আছে।';
+
+  @override
+  String get problemDeviceRevoked =>
+      'অভিযাত্রার জন্য এই ডিভাইসটি বন্ধ করে দেওয়া হয়েছে।';
+
+  @override
+  String get problemDeviceExpired =>
+      'এই ডিভাইসের অনুমোদনের মেয়াদ শেষ হয়ে গেছে। আবার অনুমোদন দিতে সংস্থার একজন অ্যাডমিনকে বলুন।';
+
+  @override
+  String get problemDeviceKeysUnavailable =>
+      'এই কম্পিউটার বা ব্রাউজার ডিভাইসের নিরাপত্তা চাবি রাখতে পারেনি। এটি প্রাইভেট উইন্ডো হলে একটি সাধারণ উইন্ডো খুলে আবার চেষ্টা করুন।';
+
+  @override
+  String get problemDeviceKeyInUse =>
+      'এই ডিভাইসের চাবি আগে থেকেই ব্যবহৃত হচ্ছে। ডিভাইসটি আবার প্রস্তুত করুন।';
+
+  @override
+  String get problemTooManyWaitingDevices =>
+      'আপনার তিনটি ডিভাইস আগে থেকেই অনুমোদনের অপেক্ষায় আছে। সেগুলো অনুমোদন করতে বা বন্ধ করতে সংস্থার একজন অ্যাডমিনকে বলুন, তারপর আবার চেষ্টা করুন।';
+
+  @override
+  String get problemDeviceCodeMismatch =>
+      'এই নম্বরগুলো এই ডিভাইসের সাথে মেলে না। ব্যক্তির সাথে আবার মিলিয়ে দেখুন।';
+
+  @override
+  String get problemDeviceNotWaiting =>
+      'এই ডিভাইসটি আর আপনার অনুমোদনের অপেক্ষায় নেই। এটি হয়তো আগেই অনুমোদিত হয়েছে, অথবা অন্য একজন অ্যাডমিনের অনুমোদন দরকার। তালিকাটি আবার লোড করুন।';
+
+  @override
+  String get deviceChecking => 'এই ডিভাইসটি যাচাই করা হচ্ছে…';
+
+  @override
+  String deviceSignedInAs(String name) {
+    return '$name হিসেবে সাইন ইন করা আছে';
+  }
+
+  @override
+  String get deviceWaitingTitle => 'অনুমোদনের অপেক্ষায়';
+
+  @override
+  String get deviceWaitingIntro =>
+      'এখানে অভিযাত্রা ব্যবহারের আগে কাউকে যাচাই করতে হবে যে এই ডিভাইসটি সত্যিই আপনার।';
+
+  @override
+  String get deviceRenewTitle => 'আপনার অনুমোদনের মেয়াদ শেষ';
+
+  @override
+  String get deviceRenewIntro =>
+      'অনুমোদন এক বছর থাকে। এখানে অভিযাত্রা ব্যবহার চালিয়ে যেতে কাউকে আবার এই ডিভাইসটি যাচাই করতে হবে।';
+
+  @override
+  String get deviceCodeLabel => 'এই ডিভাইসের নম্বর';
+
+  @override
+  String deviceThisDevice(String label) {
+    return 'এই ডিভাইস: $label';
+  }
+
+  @override
+  String get deviceWhoStaff =>
+      'এই নম্বরগুলো সংস্থার একজন অ্যাডমিনকে দেখান, সামনাসামনি বা ফোনে। এই ডিভাইস অনুমোদন করতে তিনি নম্বরগুলো তাঁর ম্যানেজার অ্যাপে টাইপ করবেন।';
+
+  @override
+  String get deviceWhoAdmin =>
+      'আপনি সংস্থার একজন অ্যাডমিন, তাই অন্য দুজন অ্যাডমিনকে আলাদাভাবে এই নম্বরগুলো যাচাই করে ডিভাইসটি অনুমোদন করতে হবে, সামনাসামনি বা ফোনে।';
+
+  @override
+  String get deviceWhoAdminSecond =>
+      'সংস্থার একজন অ্যাডমিন এটি অনুমোদন করেছেন। আরেকজন, ভিন্ন একজন অ্যাডমিনকেও এটি অনুমোদন করতে হবে।';
+
+  @override
+  String get deviceFirstAdminTitle => 'আপনি কি সংস্থার প্রথম অ্যাডমিন?';
+
+  @override
+  String get deviceFirstAdminBody =>
+      'তাহলে এখনও কেউ অ্যাপে আপনাকে অনুমোদন দিতে পারবেন না। যিনি সার্ভার চালান, তাঁকে সার্ভারে এই কমান্ডটি টাইপ করতে বলুন:';
+
+  @override
+  String get deviceCommandCopied => 'কমান্ড কপি হয়েছে।';
+
+  @override
+  String get deviceNoMessages =>
+      'আপনার অনুমোদনকারী টেক্সট মেসেজ, ইমেইল বা চ্যাটে পাঠানো নম্বর গ্রহণ করবেন না: নম্বরগুলো পড়ে শোনান বা স্ক্রিন দেখান।';
+
+  @override
+  String get deviceAutoCheck =>
+      'এই পাতাটি প্রতি ১৫ সেকেন্ডে দেখে, এবং ডিভাইস অনুমোদিত হলেই অভিযাত্রা খুলে যায়।';
+
+  @override
+  String get deviceCheckAgain => 'আবার দেখুন';
+
+  @override
+  String get deviceCheckingNow => 'দেখা হচ্ছে…';
+
+  @override
+  String get deviceRevokedTitle => 'এই ডিভাইসটি বন্ধ করা হয়েছে';
+
+  @override
+  String get deviceRevokedBody =>
+      'কেউ অভিযাত্রার জন্য এই ডিভাইসটি বন্ধ করেছেন, যেমন হারিয়ে গেছে বলে জানানো হলে। এখানে আবার অভিযাত্রা ব্যবহার করতে এটিকে নতুন ডিভাইস হিসেবে প্রস্তুত করুন। তারপর কাউকে এটি অনুমোদন করতে হবে।';
+
+  @override
+  String get deviceSetUpAgain => 'ডিভাইসটি আবার প্রস্তুত করুন';
+
+  @override
+  String get deviceSetUpAgainTitle => 'ডিভাইসটি আবার প্রস্তুত করবেন?';
+
+  @override
+  String get deviceSetUpAgainBody =>
+      'এতে এই ডিভাইসের জন্য নতুন নিরাপত্তা চাবি তৈরি হবে। কেউ অনুমোদন না দেওয়া পর্যন্ত আপনি এখানে অভিযাত্রা ব্যবহার করতে পারবেন না।';
+
+  @override
+  String get deviceSetUpAgainConfirm => 'আবার প্রস্তুত করুন';
+
+  @override
+  String get deviceNotRecognisedTitle => 'এই ডিভাইসটি যাচাই করা যায়নি';
+
+  @override
+  String get deviceNotRecognisedBody =>
+      'সার্ভার এই ডিভাইসের চাবি চিনতে পারছে না। সার্ভার নতুন করে প্রস্তুত করা হলে এমন হতে পারে। আবার দেখুন; তাতে কাজ না হলে ডিভাইসটি আবার প্রস্তুত করুন।';
+
+  @override
+  String get deviceClockTitle => 'এই কম্পিউটারের তারিখ ও সময় দেখুন';
+
+  @override
+  String get deviceClockBody =>
+      'এই কম্পিউটারের ঘড়ি সার্ভারের ঘড়ি থেকে ৫ মিনিটের বেশি আলাদা। সঠিক তারিখ, সময় ও টাইম জোন ঠিক করে আবার দেখুন।';
+
+  @override
+  String get deviceUpdateBrowserTitle =>
+      'অনুগ্রহ করে আপনার ব্রাউজার হালনাগাদ করুন';
+
+  @override
+  String get deviceUpdateBrowserBody =>
+      'এই ব্রাউজার অভিযাত্রার নিরাপত্তা চাবি নিরাপদে রাখতে পারে না। একটি হালনাগাদ ব্রাউজার ব্যবহার করুন: ক্রোম বা এজ ১৩৭ বা পরের সংস্করণ, ফায়ারফক্স ১৩০ বা পরের সংস্করণ, অথবা সাফারি ১৭ বা পরের সংস্করণ। আপনি অভিযাত্রার ডেস্কটপ অ্যাপও ব্যবহার করতে পারেন।';
+
+  @override
+  String get deviceSecureAddressTitle => 'নিরাপদ ঠিকানাটি খুলুন';
+
+  @override
+  String get deviceSecureAddressBody =>
+      'ব্রাউজার শুধু নিরাপদ ঠিকানায় (https:// দিয়ে শুরু) খোলা পাতার জন্য নিরাপত্তা চাবি রাখে। ম্যানেজারের https ঠিকানা আপনার সংস্থার অ্যাডমিনের কাছে চেয়ে নিন।';
+
+  @override
+  String get devicesSummaryAdmin =>
+      'নতুন কম্পিউটার, ব্রাউজার ও ফোন অনুমোদন করুন, এবং হারানো ডিভাইস বন্ধ করুন।';
+
+  @override
+  String get devicesSummaryBranch =>
+      'সংস্থায় আপনার অংশের মাঠকর্মীদের ফোন অনুমোদন করুন, এবং হারানো ফোন বন্ধ করুন।';
+
+  @override
+  String get devicesSummaryMine =>
+      'যেসব কম্পিউটার ও ব্রাউজারে আপনি অভিযাত্রা ব্যবহার করেন। কোনোটি হারালে সেটি বন্ধ করুন।';
+
+  @override
+  String get devicesTabOthers => 'অন্যদের ডিভাইস';
+
+  @override
+  String get devicesTabsLabel => 'কার ডিভাইস';
+
+  @override
+  String get devicesWaiting => 'অনুমোদনের অপেক্ষায়';
+
+  @override
+  String get devicesApproved => 'অনুমোদিত';
+
+  @override
+  String get devicesSwitchedOff => 'বন্ধ';
+
+  @override
+  String get devicesWaitingNone => 'অনুমোদনের অপেক্ষায় কোনো ডিভাইস নেই।';
+
+  @override
+  String get devicesEmptyTitle => 'এখনও কোনো ডিভাইস নেই';
+
+  @override
+  String get devicesEmptyBody =>
+      'কেউ নতুন কম্পিউটার, ব্রাউজার বা ফোনে সাইন ইন করলে সেটি অনুমোদনের জন্য এখানে দেখা যাবে।';
+
+  @override
+  String get devicesMineEmptyBody =>
+      'আপনি যেসব ডিভাইসে সাইন ইন করেন সেগুলো এখানে দেখা যাবে।';
+
+  @override
+  String deviceAdded(String date) {
+    return 'যোগ হয়েছে $date';
+  }
+
+  @override
+  String deviceApprovedUntil(String date) {
+    return '$date পর্যন্ত অনুমোদিত';
+  }
+
+  @override
+  String deviceApprovalRanOut(String date) {
+    return 'অনুমোদনের মেয়াদ শেষ হয়েছে $date';
+  }
+
+  @override
+  String get deviceStatusWaiting => 'অপেক্ষায়';
+
+  @override
+  String get deviceStatusApproved => 'অনুমোদিত';
+
+  @override
+  String get deviceStatusOff => 'বন্ধ';
+
+  @override
+  String get deviceStatusRanOut => 'মেয়াদ শেষ';
+
+  @override
+  String get deviceNeedsSecond => 'দ্বিতীয় অনুমোদন দরকার';
+
+  @override
+  String get deviceThisOne => 'এই ডিভাইস';
+
+  @override
+  String get deviceYouApprovedFirst =>
+      'আপনি একবার অনুমোদন করেছেন। ভিন্ন একজন অ্যাডমিনকেও এটি অনুমোদন করতে হবে।';
+
+  @override
+  String get deviceSwitchOff => 'বন্ধ করুন';
+
+  @override
+  String get platformWeb => 'ওয়েব ব্রাউজার';
+
+  @override
+  String get platformWindows => 'উইন্ডোজ কম্পিউটার';
+
+  @override
+  String get platformMac => 'ম্যাক';
+
+  @override
+  String get platformLinux => 'লিনাক্স কম্পিউটার';
+
+  @override
+  String get platformAndroid => 'অ্যান্ড্রয়েড ফোন';
+
+  @override
+  String get platformIos => 'আইফোন বা আইপ্যাড';
+
+  @override
+  String approveTitle(String name) {
+    return '$name-এর ডিভাইস অনুমোদন';
+  }
+
+  @override
+  String approveHow(String name) {
+    return '$name-কে তাঁর নিজের স্ক্রিনে থাকা ১৮টি নম্বর পড়ে শোনাতে বলুন, সামনাসামনি বা আপনার চেনা কারও সাথে ফোনে। টেক্সট মেসেজ, ইমেইল বা চ্যাটে পাঠানো নম্বর কখনো গ্রহণ করবেন না।';
+  }
+
+  @override
+  String get approveCodeLabel => '১৮টি নম্বর';
+
+  @override
+  String get approveCodeHelp =>
+      'যেভাবে শুনছেন সেভাবে টাইপ করুন। বাংলা বা ইংরেজি, দুই ধরনের অঙ্কই চলবে।';
+
+  @override
+  String get approveCodeIncomplete => '১৮টি নম্বরই টাইপ করুন।';
+
+  @override
+  String approveMismatch(String name) {
+    return 'এই নম্বরগুলো এই ডিভাইসের সাথে মেলে না। $name-এর সাথে আবার মিলিয়ে দেখুন। তারপরও না মিললে অনুমোদন করবেন না: অন্য কেউ ঢোকার চেষ্টা করতে পারে।';
+  }
+
+  @override
+  String approveUnreadable(String name) {
+    return 'এই ডিভাইসের তথ্য পড়া যাচ্ছে না, তাই এটি অনুমোদন করা যাবে না। $name-কে ডিভাইসটি আবার প্রস্তুত করতে বলুন।';
+  }
+
+  @override
+  String get approveAdminDevice =>
+      'এটি সংস্থার একজন অ্যাডমিনের ডিভাইস। কাজ শুরুর আগে আরেকজন অ্যাডমিনকেও এটি অনুমোদন করতে হবে।';
+
+  @override
+  String get approveAdminSecond =>
+      'আরেকজন অ্যাডমিন এটি একবার অনুমোদন করেছেন। আপনারটি হবে দ্বিতীয় অনুমোদন।';
+
+  @override
+  String get approveRenewal =>
+      'এই ডিভাইসের অনুমোদনের মেয়াদ শেষ। আবার অনুমোদন করলে এটি আরও এক বছর কাজ করবে।';
+
+  @override
+  String get approveButton => 'ডিভাইস অনুমোদন করুন';
+
+  @override
+  String get approveWorking => 'অনুমোদন করা হচ্ছে…';
+
+  @override
+  String approveDone(String name) {
+    return '$name এখন এই ডিভাইসে অভিযাত্রা ব্যবহার করতে পারবেন।';
+  }
+
+  @override
+  String approveDoneFirst(String name) {
+    return 'আপনি একবার অনুমোদন করেছেন। কাজ শুরুর আগে ভিন্ন আরেকজন অ্যাডমিনকেও $name-এর সাথে ১৮টি নম্বর মিলিয়ে এটি অনুমোদন করতে হবে।';
+  }
+
+  @override
+  String get switchOffTitle => 'ডিভাইসটি বন্ধ করবেন?';
+
+  @override
+  String switchOffBody(String name, String device) {
+    return '$name-এর $device অভিযাত্রার জন্য সঙ্গে সঙ্গে কাজ করা বন্ধ করবে, আর যিনি এটি ব্যবহার করছেন তিনি তখনই সাইন আউট হয়ে যাবেন। আবার ব্যবহার করতে হলে এটি নতুন করে প্রস্তুত ও অনুমোদন করতে হবে।';
+  }
+
+  @override
+  String switchOffMine(String device) {
+    return 'আপনার $device হারিয়ে গেলে বা আর ব্যবহার না করলে এটি ব্যবহার করুন। এটি সঙ্গে সঙ্গে অভিযাত্রার জন্য কাজ করা বন্ধ করবে, আর যিনি এটি ব্যবহার করছেন তিনি তখনই সাইন আউট হবেন।';
+  }
+
+  @override
+  String get switchOffCurrent =>
+      'এটিই সেই ডিভাইস যা আপনি এখন ব্যবহার করছেন। আপনি সঙ্গে সঙ্গে সাইন আউট হবেন, এবং চালিয়ে যেতে ডিভাইসটি আবার প্রস্তুত ও অনুমোদন করাতে হবে।';
+
+  @override
+  String get switchOffWorking => 'বন্ধ করা হচ্ছে…';
+
+  @override
+  String get switchOffDone => 'ডিভাইস বন্ধ করা হয়েছে।';
+
+  @override
+  String get actionDone => 'হয়ে গেছে';
+
+  @override
+  String get approveDoneTitle => 'ডিভাইস অনুমোদিত';
+
+  @override
+  String approveDoneUntil(String date) {
+    return '$date পর্যন্ত অনুমোদিত';
+  }
+
+  @override
+  String get approveDoneFirstTitle => 'আরও একজন অ্যাডমিনের অনুমোদন দরকার';
+
+  @override
+  String deviceLastChecked(String time) {
+    return 'শেষবার দেখা হয়েছে $time-এ।';
+  }
+
+  @override
+  String get problemDeviceUnknown =>
+      'সার্ভার এই ডিভাইসটি আর চেনে না। এটি আবার প্রস্তুত করা হচ্ছে, এবং আবার অনুমোদন লাগবে।';
+
+  @override
+  String get deviceServerForgot =>
+      'সার্ভার এই ডিভাইসটি আর চিনত না, তাই এটির আবার অনুমোদন দরকার।';
 }

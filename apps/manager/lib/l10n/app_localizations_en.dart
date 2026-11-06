@@ -2273,4 +2273,377 @@ class AppLocalizationsEn extends AppLocalizations {
   String importServerUnsafeCode(String code) {
     return 'The code $code has a line break or a hidden control character.';
   }
+
+  @override
+  String get navDevices => 'Devices';
+
+  @override
+  String get navMyDevices => 'My devices';
+
+  @override
+  String get problemSessionOtherDevice =>
+      'This session belongs to another device. Sign in again on this one.';
+
+  @override
+  String get problemDeviceNotSetUp =>
+      'This device is not set up for this server yet. Sign in again on this device.';
+
+  @override
+  String get problemDeviceCheckFailed =>
+      'The server could not check this device. Try again. If it keeps happening, sign out and sign in again.';
+
+  @override
+  String get problemDeviceClock =>
+      'This computer’s date or time is wrong. Set the correct date, time and time zone, then try again.';
+
+  @override
+  String get problemDeviceNotApproved => 'This device is waiting for approval.';
+
+  @override
+  String get problemDeviceRevoked =>
+      'This device has been switched off for Obhijatra.';
+
+  @override
+  String get problemDeviceExpired =>
+      'This device’s approval has run out. Ask an organisation admin to approve it again.';
+
+  @override
+  String get problemDeviceKeysUnavailable =>
+      'This computer or browser could not keep the device’s security keys. If this is a private window, open a normal one, then try again.';
+
+  @override
+  String get problemDeviceKeyInUse =>
+      'This device’s keys are already in use. Set this device up again.';
+
+  @override
+  String get problemTooManyWaitingDevices =>
+      'Three of your devices are already waiting for approval. Ask an organisation admin to approve them or switch them off, then try again.';
+
+  @override
+  String get problemDeviceCodeMismatch =>
+      'These numbers do not match this device. Check them with the person again.';
+
+  @override
+  String get problemDeviceNotWaiting =>
+      'This device is no longer waiting for your approval. It may be approved already, or need a different organisation admin. Reload the list.';
+
+  @override
+  String get deviceChecking => 'Checking this device…';
+
+  @override
+  String deviceSignedInAs(String name) {
+    return 'Signed in as $name';
+  }
+
+  @override
+  String get deviceWaitingTitle => 'Waiting for approval';
+
+  @override
+  String get deviceWaitingIntro =>
+      'Before you can use Obhijatra here, someone must check that this device is really yours.';
+
+  @override
+  String get deviceRenewTitle => 'Your approval has run out';
+
+  @override
+  String get deviceRenewIntro =>
+      'Approvals last one year. To keep using Obhijatra here, someone must check this device again.';
+
+  @override
+  String get deviceCodeLabel => 'This device’s numbers';
+
+  @override
+  String deviceThisDevice(String label) {
+    return 'This device: $label';
+  }
+
+  @override
+  String get deviceWhoStaff =>
+      'Show these numbers to an organisation admin, in person or on a phone call. They type them into their manager app to approve this device.';
+
+  @override
+  String get deviceWhoAdmin =>
+      'You are an organisation admin, so two other organisation admins must each check these numbers and approve this device, in person or on a phone call.';
+
+  @override
+  String get deviceWhoAdminSecond =>
+      'One organisation admin has approved it. A second, different organisation admin must approve it too.';
+
+  @override
+  String get deviceFirstAdminTitle => 'Are you the first organisation admin?';
+
+  @override
+  String get deviceFirstAdminBody =>
+      'Then nobody can approve you in the app yet. Ask the person who runs the server to type this command on it:';
+
+  @override
+  String get deviceCommandCopied => 'Command copied.';
+
+  @override
+  String get deviceNoMessages =>
+      'Your approver will not accept these numbers by text message, email or chat: read them out or show your screen.';
+
+  @override
+  String get deviceAutoCheck =>
+      'This page checks every 15 seconds and opens Obhijatra as soon as the device is approved.';
+
+  @override
+  String get deviceCheckAgain => 'Check again';
+
+  @override
+  String get deviceCheckingNow => 'Checking…';
+
+  @override
+  String get deviceRevokedTitle => 'This device has been switched off';
+
+  @override
+  String get deviceRevokedBody =>
+      'Someone switched off this device for Obhijatra, for example because it was reported lost. To use Obhijatra here again, set it up as a new device. Someone will then need to approve it.';
+
+  @override
+  String get deviceSetUpAgain => 'Set up this device again';
+
+  @override
+  String get deviceSetUpAgainTitle => 'Set up this device again?';
+
+  @override
+  String get deviceSetUpAgainBody =>
+      'This makes new security keys for this device. You cannot use Obhijatra here until someone approves it.';
+
+  @override
+  String get deviceSetUpAgainConfirm => 'Set up again';
+
+  @override
+  String get deviceNotRecognisedTitle => 'This device could not be checked';
+
+  @override
+  String get deviceNotRecognisedBody =>
+      'The server does not recognise this device’s keys. This can happen after the server was set up again. Check again; if that does not help, set this device up again.';
+
+  @override
+  String get deviceClockTitle => 'Check this computer’s date and time';
+
+  @override
+  String get deviceClockBody =>
+      'This computer’s clock is more than 5 minutes away from the server’s. Set the correct date, time and time zone, then check again.';
+
+  @override
+  String get deviceUpdateBrowserTitle => 'Please update your browser';
+
+  @override
+  String get deviceUpdateBrowserBody =>
+      'This browser cannot keep Obhijatra’s security keys safely. Use an up-to-date browser: Chrome or Edge 137 or later, Firefox 130 or later, or Safari 17 or later. You can also use the Obhijatra desktop app.';
+
+  @override
+  String get deviceSecureAddressTitle => 'Open the secure address';
+
+  @override
+  String get deviceSecureAddressBody =>
+      'Browsers keep security keys only for pages opened at a secure address, which starts with https://. Ask your organisation admin for the manager’s https address.';
+
+  @override
+  String get devicesSummaryAdmin =>
+      'Approve new computers, browsers and phones, and switch off lost ones.';
+
+  @override
+  String get devicesSummaryBranch =>
+      'Approve the phones of field staff in your part of the organisation, and switch off lost ones.';
+
+  @override
+  String get devicesSummaryMine =>
+      'The computers and browsers you use Obhijatra on. Switch one off if it is lost.';
+
+  @override
+  String get devicesTabOthers => 'Other people’s devices';
+
+  @override
+  String get devicesTabsLabel => 'Whose devices';
+
+  @override
+  String get devicesWaiting => 'Waiting for approval';
+
+  @override
+  String get devicesApproved => 'Approved';
+
+  @override
+  String get devicesSwitchedOff => 'Switched off';
+
+  @override
+  String get devicesWaitingNone => 'No devices are waiting for approval.';
+
+  @override
+  String get devicesEmptyTitle => 'No devices yet';
+
+  @override
+  String get devicesEmptyBody =>
+      'When someone signs in on a new computer, browser or phone, it appears here for approval.';
+
+  @override
+  String get devicesMineEmptyBody => 'The devices you sign in on appear here.';
+
+  @override
+  String deviceAdded(String date) {
+    return 'Added $date';
+  }
+
+  @override
+  String deviceApprovedUntil(String date) {
+    return 'Approved until $date';
+  }
+
+  @override
+  String deviceApprovalRanOut(String date) {
+    return 'Approval ran out $date';
+  }
+
+  @override
+  String get deviceStatusWaiting => 'Waiting';
+
+  @override
+  String get deviceStatusApproved => 'Approved';
+
+  @override
+  String get deviceStatusOff => 'Switched off';
+
+  @override
+  String get deviceStatusRanOut => 'Approval ran out';
+
+  @override
+  String get deviceNeedsSecond => 'Needs a second approval';
+
+  @override
+  String get deviceThisOne => 'This device';
+
+  @override
+  String get deviceYouApprovedFirst =>
+      'You approved it once. A different organisation admin must approve it too.';
+
+  @override
+  String get deviceSwitchOff => 'Switch off';
+
+  @override
+  String get platformWeb => 'Web browser';
+
+  @override
+  String get platformWindows => 'Windows computer';
+
+  @override
+  String get platformMac => 'Mac';
+
+  @override
+  String get platformLinux => 'Linux computer';
+
+  @override
+  String get platformAndroid => 'Android phone';
+
+  @override
+  String get platformIos => 'iPhone or iPad';
+
+  @override
+  String approveTitle(String name) {
+    return 'Approve $name’s device';
+  }
+
+  @override
+  String approveHow(String name) {
+    return 'Ask $name to read out the 18 numbers on their own screen, in person or on a phone call with someone you know. Never accept numbers sent by text message, email or chat.';
+  }
+
+  @override
+  String get approveCodeLabel => 'The 18 numbers';
+
+  @override
+  String get approveCodeHelp =>
+      'Type them as you hear them. Bangla or English digits both work.';
+
+  @override
+  String get approveCodeIncomplete => 'Type all 18 numbers.';
+
+  @override
+  String approveMismatch(String name) {
+    return 'These numbers do not match this device. Check them with $name again. If they still do not match, do not approve it: someone else may be trying to get in.';
+  }
+
+  @override
+  String approveUnreadable(String name) {
+    return 'This device’s details cannot be read, so it cannot be approved. Ask $name to set the device up again.';
+  }
+
+  @override
+  String get approveAdminDevice =>
+      'This is an organisation admin’s device. A second organisation admin must also approve it before it works.';
+
+  @override
+  String get approveAdminSecond =>
+      'Another organisation admin has approved it once. Yours will be the second approval.';
+
+  @override
+  String get approveRenewal =>
+      'This device’s approval has run out. Approving it again keeps it working for another year.';
+
+  @override
+  String get approveButton => 'Approve device';
+
+  @override
+  String get approveWorking => 'Approving…';
+
+  @override
+  String approveDone(String name) {
+    return '$name can use Obhijatra on this device now.';
+  }
+
+  @override
+  String approveDoneFirst(String name) {
+    return 'You have approved it once. A second, different organisation admin must also check the 18 numbers with $name and approve it before it works.';
+  }
+
+  @override
+  String get switchOffTitle => 'Switch off this device?';
+
+  @override
+  String switchOffBody(String name, String device) {
+    return '$name’s $device will stop working for Obhijatra at once, and whoever uses it will be signed out straight away. To use it again, it must be set up again and approved.';
+  }
+
+  @override
+  String switchOffMine(String device) {
+    return 'Use this if your $device is lost or you no longer use it. It stops working for Obhijatra at once, and whoever uses it is signed out straight away.';
+  }
+
+  @override
+  String get switchOffCurrent =>
+      'This is the device you are using now. You will be signed out at once, and must set it up again and have it approved before you can carry on.';
+
+  @override
+  String get switchOffWorking => 'Switching off…';
+
+  @override
+  String get switchOffDone => 'Device switched off.';
+
+  @override
+  String get actionDone => 'Done';
+
+  @override
+  String get approveDoneTitle => 'Device approved';
+
+  @override
+  String approveDoneUntil(String date) {
+    return 'Approved until $date';
+  }
+
+  @override
+  String get approveDoneFirstTitle => 'Needs one more organisation admin';
+
+  @override
+  String deviceLastChecked(String time) {
+    return 'Last checked at $time.';
+  }
+
+  @override
+  String get problemDeviceUnknown =>
+      'The server no longer knows this device. It is being set up again and will need approval again.';
+
+  @override
+  String get deviceServerForgot =>
+      'The server no longer knew this device, so it needs approval again.';
 }

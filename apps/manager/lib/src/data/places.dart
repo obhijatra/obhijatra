@@ -199,13 +199,32 @@ String _fold(int rune) {
 }
 
 /// Whether [rune] has no place in a name or code (server/internal/schema/
-/// placename.go `UnsafeTextRune`): control characters such as line breaks
-/// and tabs, and the characters that make text show in a misleading order.
+/// placename.go `UnsafeTextRune`, which this mirrors exactly):
+///
+/// - control characters, such as line breaks and tabs (Go's
+///   `unicode.IsControl`: U+0000–U+001F and U+007F–U+009F);
+/// - the line and paragraph separators U+2028 and U+2029;
+/// - the characters that can make text show in a misleading order: the
+///   bidirectional embeddings and overrides (U+202A–U+202E), isolates
+///   (U+2066–U+2069) and marks (U+200E, U+200F, U+061C);
+/// - invisible characters: the zero-width space U+200B, the word joiner
+///   U+2060 and the byte order mark U+FEFF.
+///
+/// The zero-width joiner U+200D and non-joiner U+200C are allowed: Bangla
+/// spelling needs them to choose letter shapes.
 bool isUnsafeTextRune(int rune) =>
     rune <= 0x1F ||
     (rune >= 0x7F && rune <= 0x9F) ||
     (rune >= 0x202A && rune <= 0x202E) ||
-    (rune >= 0x2066 && rune <= 0x2069);
+    (rune >= 0x2066 && rune <= 0x2069) ||
+    _unsafeSingles.contains(rune);
+
+/// The single characters [isUnsafeTextRune] refuses besides the ranges.
+const Set<int> _unsafeSingles = <int>{
+  0x2028, 0x2029, // line and paragraph separators
+  0x200E, 0x200F, 0x061C, // left-to-right, right-to-left, Arabic letter mark
+  0x200B, 0x2060, 0xFEFF, // zero-width space, word joiner, byte order mark
+};
 
 /// [text] safe to show inside a sentence: each character the server
 /// refuses becomes a visible replacement mark, so it cannot reorder or

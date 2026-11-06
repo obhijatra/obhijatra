@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
+import 'package:obhijatra_manager/src/data/problem.dart';
+import 'package:obhijatra_manager/src/state/devices.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:obhijatra_manager/src/ui/choose_password_screen.dart';
+import 'package:obhijatra_manager/src/ui/device_screens.dart';
 import 'package:obhijatra_manager/src/ui/shell.dart';
 import 'package:obhijatra_manager/src/ui/sign_in_screen.dart';
 import 'package:obhijatra_ui/obhijatra_ui.dart';
@@ -34,15 +37,36 @@ class ObhijatraManagerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
-    final stage = ref.watch(
-      sessionProvider.select(
-        (user) => switch (user) {
-          null => _Stage.signedOut,
-          StaffUser(mustChangePassword: true) => _Stage.choosePassword,
-          _ => _Stage.signedIn,
-        },
-      ),
-    );
+    final user = ref.watch(sessionProvider);
+    final gate = ref.watch(deviceGateProvider);
+    // The device check's answer, if it is about the person signed in now
+    // (while it runs again, the last answer stays on screen).
+    final device = switch (gate.value) {
+      final DeviceGate value when user != null && value.userId == user.id =>
+        value,
+      _ => null,
+    };
+    final stage = switch ((user, device)) {
+      (null, _) => _Stage.signedOut,
+      (_, null) when gate.hasError && !gate.isLoading => _Stage.deviceProblem,
+      (_, null) => _Stage.checking,
+      // A one-time password is replaced first, from a waiting device too;
+      // the device then waits for approval.
+      (StaffUser(mustChangePassword: true), DeviceGate(:final stage))
+          when stage == DeviceStage.ready ||
+              stage == DeviceStage.waiting ||
+              stage == DeviceStage.expired =>
+        _Stage.choosePassword,
+      (_, DeviceGate(:final stage)) => switch (stage) {
+        DeviceStage.ready => _Stage.signedIn,
+        DeviceStage.waiting || DeviceStage.expired => _Stage.waiting,
+        DeviceStage.revoked => _Stage.revoked,
+        DeviceStage.notRecognised => _Stage.notRecognised,
+        DeviceStage.clockWrong => _Stage.clockWrong,
+        DeviceStage.updateBrowser => _Stage.updateBrowser,
+        DeviceStage.secureAddressNeeded => _Stage.secureAddress,
+      },
+    };
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
@@ -57,12 +81,40 @@ class ObhijatraManagerApp extends ConsumerWidget {
       theme: ObhijatraTheme.light(locale: locale),
       home: switch (stage) {
         _Stage.signedOut => const SignInScreen(),
+        _Stage.checking => const DeviceCheckingScreen(),
+        _Stage.deviceProblem => DeviceProblemScreen(
+          problem: problemFrom(gate.error!),
+        ),
         _Stage.choosePassword => const ChoosePasswordScreen(),
+        _Stage.waiting => DeviceWaitingScreen(gate: device!),
+        _Stage.revoked => const DeviceRevokedScreen(),
+        _Stage.notRecognised => const DeviceNotRecognisedScreen(),
+        _Stage.clockWrong => const DeviceClockScreen(),
+        _Stage.updateBrowser => const DeviceUnsupportedScreen(
+          secureAddress: false,
+        ),
+        _Stage.secureAddress => const DeviceUnsupportedScreen(
+          secureAddress: true,
+        ),
         _Stage.signedIn => const ManagerShell(),
       },
     );
   }
 }
 
-/// Where the person is: signed out, replacing a one-time password, or in.
-enum _Stage { signedOut, choosePassword, signedIn }
+/// Where the person is: signed out; signed in while this device is
+/// checked, waits for approval or cannot be used; replacing a one-time
+/// password; or in.
+enum _Stage {
+  signedOut,
+  checking,
+  deviceProblem,
+  choosePassword,
+  waiting,
+  revoked,
+  notRecognised,
+  clockWrong,
+  updateBrowser,
+  secureAddress,
+  signedIn,
+}

@@ -19,6 +19,10 @@ enum Section {
   /// (organisation admins only).
   places,
 
+  /// Devices to approve and switch off (organisation admins and branch
+  /// managers), and everyone's own devices ("My devices").
+  devices,
+
   /// Language and sign out.
   settings,
 

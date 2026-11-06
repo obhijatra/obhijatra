@@ -373,15 +373,53 @@ void main() {
       expect(placeNameKey('ঢাকা অঞ্চল'), 'ঢাকা অঞ্চল');
     });
 
-    test('control and direction-changing characters are unsafe, and shown '
-        'as a visible mark', () {
-      for (final rune in <int>[0x00, 0x09, 0x0A, 0x7F, 0x85, 0x202E, 0x2066]) {
+    test('control, separator, direction-changing and invisible characters '
+        'are unsafe, exactly as the server counts them, and shown as a '
+        'visible mark', () {
+      // server/internal/schema/placename.go UnsafeTextRune.
+      const unsafe = <int>[
+        // Control characters (Go's unicode.IsControl), at both ends.
+        0x00, 0x09, 0x0A, 0x0D, 0x1F, 0x7F, 0x85, 0x9F,
+        // Line and paragraph separators.
+        0x2028, 0x2029,
+        // Bidirectional embeddings, overrides and isolates, at both ends.
+        0x202A, 0x202E, 0x2066, 0x2069,
+        // Bidirectional marks.
+        0x200E, 0x200F, 0x061C,
+        // Invisible: zero-width space, word joiner, byte order mark.
+        0x200B, 0x2060, 0xFEFF,
+      ];
+      for (final rune in unsafe) {
         expect(isUnsafeTextRune(rune), isTrue, reason: rune.toRadixString(16));
       }
-      for (final rune in <int>[0x20, 0x41, 0x200D, 0x09A2, 0x2028]) {
+      const safe = <int>[
+        0x20, 0x41, 0x7E, 0xA0, 0xAD, 0x09A2, 0x09E6,
+        // Bangla needs the zero-width joiner and non-joiner.
+        0x200C, 0x200D,
+        // Just outside the refused ranges.
+        0x2027, 0x202F, 0x2065, 0x206A, 0x200A, 0x2061,
+        0x061B, 0x061D, 0xFEFE, 0xFF00,
+      ];
+      for (final rune in safe) {
         expect(isUnsafeTextRune(rune), isFalse, reason: rune.toRadixString(16));
       }
       expect(showUnsafeText('Dhaka\u202Eregion\n'), 'Dhaka\uFFFDregion\uFFFD');
+      expect(
+        showUnsafeText('\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0\u200F\u09B6\u09BE\u0996\u09BE\u2028\u09B0\u200D\u09CD\u09AF'),
+        '\u09AE\u09BF\u09B0\u09AA\u09C1\u09B0\uFFFD\u09B6\u09BE\u0996\u09BE\uFFFD\u09B0\u200D\u09CD\u09AF',
+      );
+    });
+
+    test('a name keeps no invisible character for the check to refuse, but '
+        'a code is checked as typed', () {
+      // The server cleans a name first (removing U+200B, U+2060, U+FEFF and
+      // turning U+2028 into a space) and then checks it; it checks a code
+      // as it is.
+      final name = cleanPlaceName('Mirpur\u200B\u2060\uFEFF\u2028Branch');
+      expect(name, 'Mirpur Branch');
+      expect(name.runes.any(isUnsafeTextRune), isFalse);
+      expect('MIR\u200B01'.runes.any(isUnsafeTextRune), isTrue);
+      expect('Mirpur\u200EBranch'.runes.any(isUnsafeTextRune), isTrue);
     });
 
     test(

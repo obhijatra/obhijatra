@@ -7,6 +7,9 @@ import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/pocketbase_api.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
+import 'package:obhijatra_manager/src/device/device_http.dart';
+import 'package:obhijatra_manager/src/device/identity_store.dart';
+import 'package:obhijatra_manager/src/device/platform.dart';
 import 'package:obhijatra_manager/src/state/preferences.dart';
 import 'package:obhijatra_manager/src/xform/form_definition.dart';
 import 'package:obhijatra_manager/src/xform/instance_parser.dart';
@@ -71,9 +74,43 @@ final serverUrlProvider = NotifierProvider<ServerUrlNotifier, String>(
   ServerUrlNotifier.new,
 );
 
+/// Where this device's keys are kept, for the server in use: the
+/// operating system's protected storage on the desktop, non-extractable
+/// WebCrypto keys in the browser. Tests replace it.
+final deviceIdentityStoreProvider = Provider<DeviceIdentityStore>(
+  (ref) => platformIdentityStore(ref.watch(serverUrlProvider)),
+);
+
+/// Signs every request to the server in use with this device's keys
+/// (docs/decisions/0008-device-trust.md).
+final deviceSignerProvider = Provider<DeviceSigner>((ref) {
+  ref.watch(serverUrlProvider);
+  return DeviceSigner();
+});
+
 /// The server connection. Tests replace it with a fake.
 final apiProvider = Provider<ManagerApi>(
-  (ref) => PocketBaseApi(ref.watch(serverUrlProvider)),
+  (ref) => PocketBaseApi(
+    ref.watch(serverUrlProvider),
+    signer: ref.watch(deviceSignerProvider),
+  ),
+);
+
+/// Asks for this device to be checked with the server again: counts up
+/// each time the server refuses a request because of the device (switched
+/// off, approval run out, waiting, wrong clock). The device check watches
+/// it and shows what to do.
+class DeviceRecheckNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  /// Asks for another check.
+  void request() => state++;
+}
+
+/// Holds the number of device checks asked for.
+final deviceRecheckProvider = NotifierProvider<DeviceRecheckNotifier, int>(
+  DeviceRecheckNotifier.new,
 );
 
 /// Whether the last request reached the server.
@@ -95,6 +132,7 @@ final onlineProvider = NotifierProvider<OnlineNotifier, bool>(
 Future<T> tracked<T>(Ref ref, Future<T> Function() call) => _track(
   ref.read(onlineProvider.notifier),
   ref.read(sessionProvider.notifier),
+  ref.read(deviceRecheckProvider.notifier),
   call,
 );
 
@@ -103,12 +141,23 @@ Future<T> tracked<T>(Ref ref, Future<T> Function() call) => _track(
 Future<T> trackedUi<T>(WidgetRef ref, Future<T> Function() call) => _track(
   ref.read(onlineProvider.notifier),
   ref.read(sessionProvider.notifier),
+  ref.read(deviceRecheckProvider.notifier),
+  call,
+);
+
+/// Runs [call] for the device check itself: like [tracked], but a refusal
+/// of the device does not ask for yet another device check.
+Future<T> trackedDeviceCheck<T>(Ref ref, Future<T> Function() call) => _track(
+  ref.read(onlineProvider.notifier),
+  ref.read(sessionProvider.notifier),
+  null,
   call,
 );
 
 Future<T> _track<T>(
   OnlineNotifier online,
   SessionNotifier session,
+  DeviceRecheckNotifier? recheck,
   Future<T> Function() call,
 ) async {
   try {
@@ -124,6 +173,9 @@ Future<T> _track<T>(
     if (problem.kind == ProblemKind.passwordChangeRequired) {
       session.requirePasswordChange();
     }
+    // The device was switched off, ran out or waits: the device check
+    // finds out which and shows what to do.
+    if (recheck != null && isDeviceRefusal(problem.kind)) recheck.request();
     throw problem;
   }
 }
@@ -136,11 +188,33 @@ class SessionNotifier extends Notifier<StaffUser?> {
   StaffUser? build() => ref.watch(apiProvider).currentUser;
 
   /// [tracked] for the session itself, which cannot read its own provider.
-  Future<T> _tracked<T>(Future<T> Function() call) =>
-      _track(ref.read(onlineProvider.notifier), this, call);
+  Future<T> _tracked<T>(Future<T> Function() call) => _track(
+    ref.read(onlineProvider.notifier),
+    this,
+    ref.read(deviceRecheckProvider.notifier),
+    call,
+  );
+
+  /// Signs a sign-in with the keys of whoever last used this device with
+  /// this server, so the new session is tied to the device at once. When
+  /// someone else signs in, the server ignores that signature and the
+  /// device check ties the session instead.
+  Future<void> _prepareDevice() async {
+    final signer = ref.read(deviceSignerProvider)..clear();
+    try {
+      final store = ref.read(deviceIdentityStoreProvider);
+      if (await store.support() != KeyStoreSupport.supported) return;
+      final last = await store.lastAccount();
+      final identity = last == null ? null : await store.load(last);
+      if (identity?.deviceId != null) signer.use(identity!);
+    } on Object {
+      // Signed in without a signature; the device check ties the session.
+    }
+  }
 
   /// Signs in. Throws an [AppProblem] when the server says no.
   Future<void> signIn(String email, String password) async {
+    await _prepareDevice();
     final user = await _tracked(
       () => ref.read(apiProvider).signIn(email, password),
     );
@@ -182,6 +256,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
   /// Signs in with the code from an SMS. Throws an [AppProblem] when the
   /// server says no.
   Future<void> signInWithPhoneCode(String codeId, String code) async {
+    await _prepareDevice();
     final user = await _tracked(
       () => ref.read(apiProvider).signInWithPhoneCode(codeId, code),
     );
@@ -194,6 +269,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
     required FutureOr<void> Function(Uri url) openUrl,
     required Future<void> cancelled,
   }) async {
+    await _prepareDevice();
     final user = await _tracked(
       () => ref
           .read(apiProvider)
@@ -204,9 +280,11 @@ class SessionNotifier extends Notifier<StaffUser?> {
     return true;
   }
 
-  /// Ends the session and forgets everything loaded for it.
+  /// Ends the session and forgets everything loaded for it. The device's
+  /// keys stay, for the next sign-in.
   void signOut() {
     ref.read(apiProvider).signOut();
+    ref.read(deviceSignerProvider).clear();
     ref.read(typedOneTimePasswordProvider.notifier).keep(null);
     state = null;
   }

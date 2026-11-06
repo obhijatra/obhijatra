@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:obhijatra_device/obhijatra_device.dart' show DeviceKeys;
+import 'package:obhijatra_manager/src/data/devices.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/places.dart';
@@ -177,6 +179,41 @@ abstract interface class ManagerApi {
 
   /// How many organisation admins are active.
   Future<int> countActiveOrgAdmins();
+
+  // ------------------------------------------------------------ devices
+
+  /// Enrols this device for the signed-in person with [keys], signed with
+  /// those keys (docs/decisions/0008-device-trust.md). The device then
+  /// waits for approval and the session becomes this device's. Enrolling
+  /// the same keys again returns the same device.
+  ///
+  /// Refusals: [ProblemKind.deviceKeyInUse] (409),
+  /// [ProblemKind.tooManyWaitingDevices] (429), a session problem (401).
+  Future<DeviceView> enrolDevice({
+    required DeviceKeys keys,
+    required String label,
+    required String platform,
+  });
+
+  /// This device's status, as the server has it now. A switched-off device
+  /// or a wrong clock comes back as [ProblemKind.deviceRevoked] or
+  /// [ProblemKind.deviceClock].
+  Future<DeviceView> myDevice();
+
+  /// Every device the signed-in person may see: their own, and the devices
+  /// they may approve. Newest first.
+  Future<List<DeviceRecord>> listDevices();
+
+  /// Approves [deviceId] with the numbers the approver [code] typed; the
+  /// server checks them again. An org admin's device answers with
+  /// [DeviceView.needsSecondApproval] after its first approval.
+  ///
+  /// Refusals: [ProblemKind.deviceCodeMismatch], [ProblemKind.notAllowed],
+  /// [ProblemKind.deviceNotWaiting].
+  Future<DeviceView> approveDevice(String deviceId, String code);
+
+  /// Switches [deviceId] off. Its sessions end at once.
+  Future<DeviceView> revokeDevice(String deviceId);
 
   /// Replaces the signed-in person's one-time password with their own,
   /// then signs them in again with it (the change ends every session).

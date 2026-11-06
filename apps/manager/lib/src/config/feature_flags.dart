@@ -7,14 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// made together with the feature itself.
 class FeatureFlags {
   /// Creates the flags; all are off by default.
-  const FeatureFlags({
-    this.deviceEnrolment = false,
-    this.keyCeremony = false,
-    this.decryptProtected = false,
-  });
-
-  /// Approving field officers' phones (the "Add a device" screens).
-  final bool deviceEnrolment;
+  const FeatureFlags({this.keyCeremony = false, this.decryptProtected = false});
 
   /// Creating and backing up the organisation's keys.
   final bool keyCeremony;

@@ -1,6 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:obhijatra_device/obhijatra_device.dart'
+    show DeviceReason, RedirectNotFollowed;
+import 'package:obhijatra_manager/src/device/identity_store.dart'
+    show DeviceKeysUnavailable;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:xml/xml.dart';
 
@@ -106,6 +110,55 @@ enum ProblemKind {
   /// loading and saving it.
   personChanged,
 
+  /// HTTP 401 `session_other_device`: the session belongs to another
+  /// device. (`session_revoked` is [signInRequired].)
+  sessionOtherDevice,
+
+  /// HTTP 403 `device_signature_required`: the request was not signed by a
+  /// device.
+  deviceNotSetUp,
+
+  /// HTTP 403 `device_signature_invalid`: the signature could not be
+  /// checked, even when sent again.
+  deviceCheckFailed,
+
+  /// HTTP 403 `device_unknown`: the server does not know this device (for
+  /// example, it was restored from a backup older than the enrolment). The
+  /// device check enrols the same keys again; it needs approval again.
+  deviceUnknown,
+
+  /// HTTP 403 `device_clock`: this computer's clock is more than 5 minutes
+  /// from the server's.
+  deviceClock,
+
+  /// HTTP 403 `device_not_approved`: the device waits for approval.
+  deviceNotApproved,
+
+  /// HTTP 403 `device_revoked`: the device has been switched off.
+  deviceRevoked,
+
+  /// HTTP 403 `device_expired`: the device's approval has run out.
+  deviceExpired,
+
+  /// The device's keys could not be made or kept on this computer or in
+  /// this browser.
+  deviceKeysUnavailable,
+
+  /// HTTP 409 at enrolment: the keys belong to another device, or to one
+  /// that was switched off.
+  deviceKeyInUse,
+
+  /// HTTP 429 at enrolment: 3 of the person's devices already wait.
+  tooManyWaitingDevices,
+
+  /// HTTP 400 `validation_device_code_mismatch`: the numbers typed are not
+  /// the device's.
+  deviceCodeMismatch,
+
+  /// HTTP 409 on an approval: the device no longer waits for this
+  /// approver (approved already, or needing a different org admin).
+  deviceNotWaiting,
+
   /// Anything else.
   unknown,
 }
@@ -164,11 +217,23 @@ class AppProblem implements Exception {
     ProblemKind.formUnavailable ||
     ProblemKind.googleFailed ||
     ProblemKind.passwordChangeRequired ||
+    ProblemKind.deviceCheckFailed ||
+    ProblemKind.deviceUnknown ||
+    ProblemKind.deviceClock ||
+    ProblemKind.deviceNotApproved ||
+    ProblemKind.deviceRevoked ||
+    ProblemKind.deviceExpired ||
+    ProblemKind.deviceKeysUnavailable ||
+    ProblemKind.deviceKeyInUse ||
+    ProblemKind.tooManyWaitingDevices ||
     ProblemKind.unknown => ProblemAction.tryAgain,
     ProblemKind.signInRequired ||
+    ProblemKind.sessionOtherDevice ||
+    ProblemKind.deviceNotSetUp ||
     ProblemKind.passwordSavedSignIn => ProblemAction.signInAgain,
     ProblemKind.unreadableFile => ProblemAction.chooseFile,
-    ProblemKind.personChanged => ProblemAction.reload,
+    ProblemKind.personChanged ||
+    ProblemKind.deviceNotWaiting => ProblemAction.reload,
     ProblemKind.notAllowed ||
     ProblemKind.notFound ||
     ProblemKind.tooLarge ||
@@ -188,7 +253,8 @@ class AppProblem implements Exception {
     ProblemKind.tooManyTries ||
     ProblemKind.tooManyTests ||
     ProblemKind.settingsInvalid ||
-    ProblemKind.detailsInvalid => ProblemAction.close,
+    ProblemKind.detailsInvalid ||
+    ProblemKind.deviceCodeMismatch => ProblemAction.close,
   };
 
   @override
@@ -204,17 +270,35 @@ AppProblem problemFrom(Object error) {
   if (error is FormatException || error is XmlException) {
     return const AppProblem(ProblemKind.unreadableFile);
   }
+  if (error is DeviceKeysUnavailable) {
+    return const AppProblem(ProblemKind.deviceKeysUnavailable);
+  }
+  // A redirect is never followed (it may be a Wi-Fi sign-in page): the
+  // server was not reached.
+  if (error is RedirectNotFollowed) {
+    return const AppProblem(ProblemKind.offline);
+  }
   if (error is ClientException) {
     // The SDK reports every failed connection (no network, refused, reset)
     // as an aborted request with status 0.
     final status = error.statusCode;
     final kind = switch (status) {
       0 => ProblemKind.offline,
-      401 => ProblemKind.signInRequired,
-      403 =>
-        _reasonCode(error) == passwordChangeRequiredReason
-            ? ProblemKind.passwordChangeRequired
-            : ProblemKind.notAllowed,
+      401 =>
+        _reasonCode(error) == DeviceReason.sessionOtherDevice
+            ? ProblemKind.sessionOtherDevice
+            : ProblemKind.signInRequired,
+      403 => switch (_reasonCode(error)) {
+        passwordChangeRequiredReason => ProblemKind.passwordChangeRequired,
+        DeviceReason.signatureRequired => ProblemKind.deviceNotSetUp,
+        DeviceReason.signatureInvalid => ProblemKind.deviceCheckFailed,
+        DeviceReason.unknown => ProblemKind.deviceUnknown,
+        DeviceReason.clock => ProblemKind.deviceClock,
+        DeviceReason.notApproved => ProblemKind.deviceNotApproved,
+        DeviceReason.revoked => ProblemKind.deviceRevoked,
+        DeviceReason.expired => ProblemKind.deviceExpired,
+        _ => ProblemKind.notAllowed,
+      },
       404 => ProblemKind.notFound,
       413 => ProblemKind.tooLarge,
       429 => ProblemKind.serverBusy,
@@ -255,6 +339,16 @@ Map<String, String> fieldCodes(ClientException error) {
 /// The reason code the server gives a person who must choose a new
 /// password before anything else (HTTP 403).
 const String passwordChangeRequiredReason = 'password_change_required';
+
+/// Whether [kind] is a refusal of this device (not of the person): the app
+/// then checks the device again and shows what to do about it (or, for a
+/// device the server no longer knows, enrols it again).
+bool isDeviceRefusal(ProblemKind kind) =>
+    kind == ProblemKind.deviceUnknown ||
+    kind == ProblemKind.deviceClock ||
+    kind == ProblemKind.deviceNotApproved ||
+    kind == ProblemKind.deviceRevoked ||
+    kind == ProblemKind.deviceExpired;
 
 /// `data.reason.code` of an error answer, or an empty string.
 String _reasonCode(ClientException error) => switch (error.response['data']) {

@@ -2760,5 +2760,491 @@
         "type": "String"
       }
     }
+  },
+  "navDevices": "Devices",
+  "@navDevices": {
+    "description": "Menu item: devices (for organisation admins and branch managers)."
+  },
+  "navMyDevices": "My devices",
+  "@navMyDevices": {
+    "description": "Menu item and tab: the signed-in person's own devices."
+  },
+  "problemSessionOtherDevice": "This session belongs to another device. Sign in again on this one.",
+  "@problemSessionOtherDevice": {
+    "description": "Problem: the session is tied to a different device."
+  },
+  "problemDeviceNotSetUp": "This device is not set up for this server yet. Sign in again on this device.",
+  "@problemDeviceNotSetUp": {
+    "description": "Problem: a request was not signed by a device."
+  },
+  "problemDeviceCheckFailed": "The server could not check this device. Try again. If it keeps happening, sign out and sign in again.",
+  "@problemDeviceCheckFailed": {
+    "description": "Problem: the device's signature could not be checked."
+  },
+  "problemDeviceClock": "This computer’s date or time is wrong. Set the correct date, time and time zone, then try again.",
+  "@problemDeviceClock": {
+    "description": "Problem: the computer's clock is too far from the server's."
+  },
+  "problemDeviceNotApproved": "This device is waiting for approval.",
+  "@problemDeviceNotApproved": {
+    "description": "Problem: the device is not approved yet."
+  },
+  "problemDeviceRevoked": "This device has been switched off for Obhijatra.",
+  "@problemDeviceRevoked": {
+    "description": "Problem: the device was switched off."
+  },
+  "problemDeviceExpired": "This device’s approval has run out. Ask an organisation admin to approve it again.",
+  "@problemDeviceExpired": {
+    "description": "Problem: the device's yearly approval ran out."
+  },
+  "problemDeviceKeysUnavailable": "This computer or browser could not keep the device’s security keys. If this is a private window, open a normal one, then try again.",
+  "@problemDeviceKeysUnavailable": {
+    "description": "Problem: the device keys could not be stored."
+  },
+  "problemDeviceKeyInUse": "This device’s keys are already in use. Set this device up again.",
+  "@problemDeviceKeyInUse": {
+    "description": "Problem: enrolment refused because the keys belong to another device."
+  },
+  "problemTooManyWaitingDevices": "Three of your devices are already waiting for approval. Ask an organisation admin to approve them or switch them off, then try again.",
+  "@problemTooManyWaitingDevices": {
+    "description": "Problem: the person already has 3 devices waiting."
+  },
+  "problemDeviceCodeMismatch": "These numbers do not match this device. Check them with the person again.",
+  "@problemDeviceCodeMismatch": {
+    "description": "Problem: the server says the typed numbers are not the device's."
+  },
+  "problemDeviceNotWaiting": "This device is no longer waiting for your approval. It may be approved already, or need a different organisation admin. Reload the list.",
+  "@problemDeviceNotWaiting": {
+    "description": "Problem: the device can no longer be approved by this person."
+  },
+  "deviceChecking": "Checking this device…",
+  "@deviceChecking": {
+    "description": "Shown while the app checks this device with the server after sign-in."
+  },
+  "deviceSignedInAs": "Signed in as {name}",
+  "@deviceSignedInAs": {
+    "description": "Who is signed in, on the device screens.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceWaitingTitle": "Waiting for approval",
+  "@deviceWaitingTitle": {
+    "description": "Title: this device waits for approval."
+  },
+  "deviceWaitingIntro": "Before you can use Obhijatra here, someone must check that this device is really yours.",
+  "@deviceWaitingIntro": {
+    "description": "Why the device must be approved."
+  },
+  "deviceRenewTitle": "Your approval has run out",
+  "@deviceRenewTitle": {
+    "description": "Title: this device's yearly approval ran out."
+  },
+  "deviceRenewIntro": "Approvals last one year. To keep using Obhijatra here, someone must check this device again.",
+  "@deviceRenewIntro": {
+    "description": "Why the device must be approved again."
+  },
+  "deviceCodeLabel": "This device’s numbers",
+  "@deviceCodeLabel": {
+    "description": "Label above the 18-digit check code."
+  },
+  "deviceThisDevice": "This device: {label}",
+  "@deviceThisDevice": {
+    "description": "The name of this device on the waiting screen.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceWhoStaff": "Show these numbers to an organisation admin, in person or on a phone call. They type them into their manager app to approve this device.",
+  "@deviceWhoStaff": {
+    "description": "Who approves an office staff member's device."
+  },
+  "deviceWhoAdmin": "You are an organisation admin, so two other organisation admins must each check these numbers and approve this device, in person or on a phone call.",
+  "@deviceWhoAdmin": {
+    "description": "Who approves an organisation admin's device."
+  },
+  "deviceWhoAdminSecond": "One organisation admin has approved it. A second, different organisation admin must approve it too.",
+  "@deviceWhoAdminSecond": {
+    "description": "An organisation admin's device has its first approval."
+  },
+  "deviceFirstAdminTitle": "Are you the first organisation admin?",
+  "@deviceFirstAdminTitle": {
+    "description": "Heading above the server command for the very first admin."
+  },
+  "deviceFirstAdminBody": "Then nobody can approve you in the app yet. Ask the person who runs the server to type this command on it:",
+  "@deviceFirstAdminBody": {
+    "description": "Explains the server command for the very first admin."
+  },
+  "deviceCommandCopied": "Command copied.",
+  "@deviceCommandCopied": {
+    "description": "Message after copying the server command."
+  },
+  "deviceNoMessages": "Your approver will not accept these numbers by text message, email or chat: read them out or show your screen.",
+  "@deviceNoMessages": {
+    "description": "Tells the person how to pass the numbers on."
+  },
+  "deviceAutoCheck": "This page checks every 15 seconds and opens Obhijatra as soon as the device is approved.",
+  "@deviceAutoCheck": {
+    "description": "Explains the automatic check on the waiting screen."
+  },
+  "deviceCheckAgain": "Check again",
+  "@deviceCheckAgain": {
+    "description": "Button: ask the server about this device again."
+  },
+  "deviceCheckingNow": "Checking…",
+  "@deviceCheckingNow": {
+    "description": "Button while the device is being checked."
+  },
+  "deviceRevokedTitle": "This device has been switched off",
+  "@deviceRevokedTitle": {
+    "description": "Title: this device was switched off."
+  },
+  "deviceRevokedBody": "Someone switched off this device for Obhijatra, for example because it was reported lost. To use Obhijatra here again, set it up as a new device. Someone will then need to approve it.",
+  "@deviceRevokedBody": {
+    "description": "What switching off means and what to do."
+  },
+  "deviceSetUpAgain": "Set up this device again",
+  "@deviceSetUpAgain": {
+    "description": "Button: make new keys and enrol this device again."
+  },
+  "deviceSetUpAgainTitle": "Set up this device again?",
+  "@deviceSetUpAgainTitle": {
+    "description": "Confirmation title before making new keys."
+  },
+  "deviceSetUpAgainBody": "This makes new security keys for this device. You cannot use Obhijatra here until someone approves it.",
+  "@deviceSetUpAgainBody": {
+    "description": "Confirmation text before making new keys."
+  },
+  "deviceSetUpAgainConfirm": "Set up again",
+  "@deviceSetUpAgainConfirm": {
+    "description": "Confirmation button: make new keys."
+  },
+  "deviceNotRecognisedTitle": "This device could not be checked",
+  "@deviceNotRecognisedTitle": {
+    "description": "Title: the server does not recognise the device's keys."
+  },
+  "deviceNotRecognisedBody": "The server does not recognise this device’s keys. This can happen after the server was set up again. Check again; if that does not help, set this device up again.",
+  "@deviceNotRecognisedBody": {
+    "description": "What to do when the device is not recognised."
+  },
+  "deviceClockTitle": "Check this computer’s date and time",
+  "@deviceClockTitle": {
+    "description": "Title: the computer's clock is wrong."
+  },
+  "deviceClockBody": "This computer’s clock is more than 5 minutes away from the server’s. Set the correct date, time and time zone, then check again.",
+  "@deviceClockBody": {
+    "description": "What to do about a wrong clock."
+  },
+  "deviceUpdateBrowserTitle": "Please update your browser",
+  "@deviceUpdateBrowserTitle": {
+    "description": "Title: the browser cannot keep device keys."
+  },
+  "deviceUpdateBrowserBody": "This browser cannot keep Obhijatra’s security keys safely. Use an up-to-date browser: Chrome or Edge 137 or later, Firefox 130 or later, or Safari 17 or later. You can also use the Obhijatra desktop app.",
+  "@deviceUpdateBrowserBody": {
+    "description": "Which browsers work."
+  },
+  "deviceSecureAddressTitle": "Open the secure address",
+  "@deviceSecureAddressTitle": {
+    "description": "Title: the page was not opened over https."
+  },
+  "deviceSecureAddressBody": "Browsers keep security keys only for pages opened at a secure address, which starts with https://. Ask your organisation admin for the manager’s https address.",
+  "@deviceSecureAddressBody": {
+    "description": "What to do on a page opened over plain http."
+  },
+  "devicesSummaryAdmin": "Approve new computers, browsers and phones, and switch off lost ones.",
+  "@devicesSummaryAdmin": {
+    "description": "Subtitle of Devices for organisation admins."
+  },
+  "devicesSummaryBranch": "Approve the phones of field staff in your part of the organisation, and switch off lost ones.",
+  "@devicesSummaryBranch": {
+    "description": "Subtitle of Devices for branch managers."
+  },
+  "devicesSummaryMine": "The computers and browsers you use Obhijatra on. Switch one off if it is lost.",
+  "@devicesSummaryMine": {
+    "description": "Subtitle of My devices."
+  },
+  "devicesTabOthers": "Other people’s devices",
+  "@devicesTabOthers": {
+    "description": "Tab: devices of other people."
+  },
+  "devicesTabsLabel": "Whose devices",
+  "@devicesTabsLabel": {
+    "description": "Spoken name of the tabs on Devices."
+  },
+  "devicesWaiting": "Waiting for approval",
+  "@devicesWaiting": {
+    "description": "Section heading: devices to approve."
+  },
+  "devicesApproved": "Approved",
+  "@devicesApproved": {
+    "description": "Section heading: approved devices."
+  },
+  "devicesSwitchedOff": "Switched off",
+  "@devicesSwitchedOff": {
+    "description": "Section heading: devices switched off."
+  },
+  "devicesWaitingNone": "No devices are waiting for approval.",
+  "@devicesWaitingNone": {
+    "description": "Shown when nothing waits."
+  },
+  "devicesEmptyTitle": "No devices yet",
+  "@devicesEmptyTitle": {
+    "description": "Empty Devices list title."
+  },
+  "devicesEmptyBody": "When someone signs in on a new computer, browser or phone, it appears here for approval.",
+  "@devicesEmptyBody": {
+    "description": "Empty Devices list text."
+  },
+  "devicesMineEmptyBody": "The devices you sign in on appear here.",
+  "@devicesMineEmptyBody": {
+    "description": "Empty My devices text."
+  },
+  "deviceAdded": "Added {date}",
+  "@deviceAdded": {
+    "description": "When the device was enrolled.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceApprovedUntil": "Approved until {date}",
+  "@deviceApprovedUntil": {
+    "description": "When the approval runs out.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceApprovalRanOut": "Approval ran out {date}",
+  "@deviceApprovalRanOut": {
+    "description": "When the approval ran out.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceStatusWaiting": "Waiting",
+  "@deviceStatusWaiting": {
+    "description": "Badge: waiting for approval."
+  },
+  "deviceStatusApproved": "Approved",
+  "@deviceStatusApproved": {
+    "description": "Badge: approved."
+  },
+  "deviceStatusOff": "Switched off",
+  "@deviceStatusOff": {
+    "description": "Badge: switched off."
+  },
+  "deviceStatusRanOut": "Approval ran out",
+  "@deviceStatusRanOut": {
+    "description": "Badge: the approval ran out."
+  },
+  "deviceNeedsSecond": "Needs a second approval",
+  "@deviceNeedsSecond": {
+    "description": "Badge: an admin's device approved once."
+  },
+  "deviceThisOne": "This device",
+  "@deviceThisOne": {
+    "description": "Badge: the device in use now."
+  },
+  "deviceYouApprovedFirst": "You approved it once. A different organisation admin must approve it too.",
+  "@deviceYouApprovedFirst": {
+    "description": "Shown to the admin who gave the first approval."
+  },
+  "deviceSwitchOff": "Switch off",
+  "@deviceSwitchOff": {
+    "description": "Button: switch a device off."
+  },
+  "platformWeb": "Web browser",
+  "@platformWeb": {
+    "description": "Device platform: a web browser."
+  },
+  "platformWindows": "Windows computer",
+  "@platformWindows": {
+    "description": "Device platform: Windows."
+  },
+  "platformMac": "Mac",
+  "@platformMac": {
+    "description": "Device platform: macOS."
+  },
+  "platformLinux": "Linux computer",
+  "@platformLinux": {
+    "description": "Device platform: Linux."
+  },
+  "platformAndroid": "Android phone",
+  "@platformAndroid": {
+    "description": "Device platform: Android."
+  },
+  "platformIos": "iPhone or iPad",
+  "@platformIos": {
+    "description": "Device platform: iOS."
+  },
+  "approveTitle": "Approve {name}’s device",
+  "@approveTitle": {
+    "description": "Approve dialog title.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approveHow": "Ask {name} to read out the 18 numbers on their own screen, in person or on a phone call with someone you know. Never accept numbers sent by text message, email or chat.",
+  "@approveHow": {
+    "description": "How to get the numbers safely.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approveCodeLabel": "The 18 numbers",
+  "@approveCodeLabel": {
+    "description": "Label of the field for the check code."
+  },
+  "approveCodeHelp": "Type them as you hear them. Bangla or English digits both work.",
+  "@approveCodeHelp": {
+    "description": "Help under the check code field."
+  },
+  "approveCodeIncomplete": "Type all 18 numbers.",
+  "@approveCodeIncomplete": {
+    "description": "Problem: fewer than 18 digits."
+  },
+  "approveMismatch": "These numbers do not match this device. Check them with {name} again. If they still do not match, do not approve it: someone else may be trying to get in.",
+  "@approveMismatch": {
+    "description": "Problem: the typed numbers are not the device's.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approveUnreadable": "This device’s details cannot be read, so it cannot be approved. Ask {name} to set the device up again.",
+  "@approveUnreadable": {
+    "description": "Problem: the device's keys are unreadable.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approveAdminDevice": "This is an organisation admin’s device. A second organisation admin must also approve it before it works.",
+  "@approveAdminDevice": {
+    "description": "Note on an admin's device."
+  },
+  "approveAdminSecond": "Another organisation admin has approved it once. Yours will be the second approval.",
+  "@approveAdminSecond": {
+    "description": "Note on an admin's device with one approval."
+  },
+  "approveRenewal": "This device’s approval has run out. Approving it again keeps it working for another year.",
+  "@approveRenewal": {
+    "description": "Note on a device whose approval ran out."
+  },
+  "approveButton": "Approve device",
+  "@approveButton": {
+    "description": "Button: approve the device."
+  },
+  "approveWorking": "Approving…",
+  "@approveWorking": {
+    "description": "Button while approving."
+  },
+  "approveDone": "{name} can use Obhijatra on this device now.",
+  "@approveDone": {
+    "description": "Approve dialog result text after a full approval.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approveDoneFirst": "You have approved it once. A second, different organisation admin must also check the 18 numbers with {name} and approve it before it works.",
+  "@approveDoneFirst": {
+    "description": "Approve dialog result text after the first of two approvals.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "switchOffTitle": "Switch off this device?",
+  "@switchOffTitle": {
+    "description": "Switch-off confirmation title."
+  },
+  "switchOffBody": "{name}’s {device} will stop working for Obhijatra at once, and whoever uses it will be signed out straight away. To use it again, it must be set up again and approved.",
+  "@switchOffBody": {
+    "description": "What switching off another person's device does.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "switchOffMine": "Use this if your {device} is lost or you no longer use it. It stops working for Obhijatra at once, and whoever uses it is signed out straight away.",
+  "@switchOffMine": {
+    "description": "What switching off your own device does.",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "switchOffCurrent": "This is the device you are using now. You will be signed out at once, and must set it up again and have it approved before you can carry on.",
+  "@switchOffCurrent": {
+    "description": "Warning when switching off the device in use."
+  },
+  "switchOffWorking": "Switching off…",
+  "@switchOffWorking": {
+    "description": "Button while switching off."
+  },
+  "switchOffDone": "Device switched off.",
+  "@switchOffDone": {
+    "description": "Message after switching off."
+  },
+  "actionDone": "Done",
+  "@actionDone": {
+    "description": "Button: close a dialog after it has finished."
+  },
+  "approveDoneTitle": "Device approved",
+  "@approveDoneTitle": {
+    "description": "Approve dialog result title when no end date is known."
+  },
+  "approveDoneUntil": "Approved until {date}",
+  "@approveDoneUntil": {
+    "description": "Approve dialog result title: when the approval runs out.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "approveDoneFirstTitle": "Needs one more organisation admin",
+  "@approveDoneFirstTitle": {
+    "description": "Approve dialog result title after the first of two approvals."
+  },
+  "deviceLastChecked": "Last checked at {time}.",
+  "@deviceLastChecked": {
+    "description": "When the waiting screen last asked the server, for example \"Last checked at 14:32.\"",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "problemDeviceUnknown": "The server no longer knows this device. It is being set up again and will need approval again.",
+  "@problemDeviceUnknown": {
+    "description": "Problem: the server does not know this device (for example after it was restored from a backup)."
+  },
+  "deviceServerForgot": "The server no longer knew this device, so it needs approval again.",
+  "@deviceServerForgot": {
+    "description": "Waiting screen note: the device was enrolled again because the server no longer knew it."
   }
 }

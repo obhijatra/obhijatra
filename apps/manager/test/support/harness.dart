@@ -12,6 +12,7 @@ import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_api.dart';
+import 'fake_device.dart';
 
 /// A file chooser that returns what a test says.
 class FakePicker implements FormFilePicker {
@@ -38,7 +39,8 @@ class FakeCsvPicker implements CsvFilePicker {
 PickedFile pickedText(String name, String text) =>
     PickedFile(name: name, bytes: Uint8List.fromList(utf8.encode(text)));
 
-/// Starts the whole app against [api] at [size], in [lang].
+/// Starts the whole app against [api] at [size], in [lang], with device
+/// keys in [store] (a new, empty one by default).
 Future<void> pumpManager(
   WidgetTester tester,
   FakeManagerApi api, {
@@ -46,6 +48,7 @@ Future<void> pumpManager(
   Size size = const Size(1280, 900),
   FakePicker? picker,
   FakeCsvPicker? csvPicker,
+  MemoryIdentityStore? store,
   List<Override> overrides = const <Override>[],
   bool settle = true,
 }) async {
@@ -57,6 +60,9 @@ Future<void> pumpManager(
     ManagerRoot(
       overrides: <Override>[
         apiProvider.overrideWithValue(api),
+        deviceIdentityStoreProvider.overrideWithValue(
+          store ?? MemoryIdentityStore(),
+        ),
         initialLocaleProvider.overrideWithValue(Locale(lang)),
         if (picker != null) formFilePickerProvider.overrideWithValue(picker),
         if (csvPicker != null)

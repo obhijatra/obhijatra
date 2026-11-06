@@ -5,34 +5,51 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
+import 'package:obhijatra_device/obhijatra_device.dart';
+import 'package:obhijatra_manager/src/data/devices.dart';
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/phone_number.dart';
 import 'package:obhijatra_manager/src/data/places.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
+import 'package:obhijatra_manager/src/device/device_http.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 /// The real [ManagerApi], talking to an Obhijatra server (PocketBase).
 ///
 /// The session lives in memory only (PocketBase's default auth store), so
 /// nothing about the person is written to browser storage.
+///
+/// Every request goes through a [DeviceHttpClient] and is signed by
+/// [signer] with this device's keys (docs/decisions/0008-device-trust.md):
+/// the SDK's requests, live updates, the raw file downloads and the Google
+/// code exchange alike. Redirects are never followed.
 class PocketBaseApi implements ManagerApi {
-  /// Creates the API for the server at [baseUrl]. [httpClient] is for tests.
+  /// Creates the API for the server at [baseUrl], signing with `signer`.
+  /// [httpClient] is for tests.
   PocketBaseApi(
     String baseUrl, {
     http.Client? httpClient,
+    this._signer = const UnsignedRequests(),
     this.timeout = const Duration(seconds: 30),
     @visibleForTesting AuthStore? authStore,
-  }) : _client = httpClient ?? http.Client(),
-       _pb = PocketBase(
-         baseUrl,
-         authStore: authStore,
-         httpClientFactory: httpClient == null ? null : () => httpClient,
-       );
+  }) : _newInner = httpClient == null ? http.Client.new : (() => httpClient) {
+    _pb = PocketBase(
+      baseUrl,
+      authStore: authStore,
+      httpClientFactory: _signedClient,
+    );
+  }
 
-  final PocketBase _pb;
-  final http.Client _client;
+  late final PocketBase _pb;
+  final http.Client Function() _newInner;
+  final RequestSigner _signer;
+
+  /// A new client that signs with [signer], by default this device's. The
+  /// SDK closes the client it gets after each request.
+  http.Client _signedClient([RequestSigner? signer]) =>
+      DeviceHttpClient(_newInner(), signer: signer ?? _signer);
 
   /// How long to wait for the server before giving up.
   final Duration timeout;
@@ -447,15 +464,32 @@ class PocketBaseApi implements ManagerApi {
     return _fetchText(uri);
   });
 
+  /// Downloads a file, signed like every other request: the server refuses
+  /// a file token that does not come from an approved device of its person.
   Future<String> _fetchText(Uri uri) async {
-    final response = await _client.get(
-      uri,
-      headers: <String, String>{'Authorization': _pb.authStore.token},
-    );
-    if (response.statusCode != 200) {
-      throw ClientException(url: uri, statusCode: response.statusCode);
+    final client = _signedClient();
+    try {
+      final response = await client.get(
+        uri,
+        headers: <String, String>{'Authorization': _pb.authStore.token},
+      );
+      if (response.statusCode != 200) {
+        Map<String, dynamic> body;
+        try {
+          body = jsonDecode(response.body) as Map<String, dynamic>;
+        } on Object {
+          body = const <String, dynamic>{};
+        }
+        throw ClientException(
+          url: uri,
+          statusCode: response.statusCode,
+          response: body,
+        );
+      }
+      return utf8.decode(response.bodyBytes);
+    } finally {
+      client.close();
     }
-    return utf8.decode(response.bodyBytes);
   }
 
   @override
@@ -1033,6 +1067,142 @@ class PocketBaseApi implements ManagerApi {
         );
     return result.totalItems;
   });
+
+  // ------------------------------------------------------------ devices
+
+  static const String _devices = '/api/obhijatra/v1/devices';
+
+  /// The device fields a list needs, and the names of the people they
+  /// belong to (never their whole records).
+  static const String _deviceFields =
+      'id,field_user,staff_user,label,platform,status,expires,approved_at,'
+      'first_approved_by,sign_public_key,enc_public_key,created,'
+      'expand.field_user.name,expand.field_user.email,expand.field_user.phone,'
+      'expand.staff_user.name,expand.staff_user.email,expand.staff_user.phone,'
+      'expand.staff_user.role';
+
+  @override
+  Future<DeviceView> enrolDevice({
+    required DeviceKeys keys,
+    required String label,
+    required String platform,
+  }) async {
+    // Signed with the keys it enrols ("enrol" as the device), whatever the
+    // device signer holds: this proves the device has the private key.
+    final enrol = PocketBase(
+      _pb.baseURL,
+      lang: _pb.lang,
+      authStore: _pb.authStore,
+      httpClientFactory: () => _signedClient(DeviceRequestSigner(keys)),
+    );
+    try {
+      final answer = await enrol
+          .send<dynamic>(
+            deviceEnrolPath,
+            method: 'POST',
+            body: <String, dynamic>{
+              'label': label,
+              'platform': platform,
+              'sign_public_key': base64.encode(keys.signPublicKey),
+              'enc_public_key': base64.encode(keys.encPublicKey),
+            },
+          )
+          .timeout(timeout);
+      if (answer is! Map<String, dynamic>) {
+        throw const AppProblem(ProblemKind.unknown);
+      }
+      return DeviceView.fromJson(answer);
+    } on ClientException catch (e) {
+      throw switch (e.statusCode) {
+        409 => const AppProblem(ProblemKind.deviceKeyInUse, statusCode: 409),
+        429 => const AppProblem(
+          ProblemKind.tooManyWaitingDevices,
+          statusCode: 429,
+        ),
+        _ => problemFrom(e),
+      };
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  @override
+  Future<DeviceView> myDevice() =>
+      _guard(() async => DeviceView.fromJson(await _sendJson(deviceMePath)));
+
+  DeviceRecord _deviceFrom(RecordModel record) {
+    final fieldUser = record.getStringValue('field_user');
+    final kind = fieldUser.isNotEmpty ? PersonKind.field : PersonKind.staff;
+    final relation = kind == PersonKind.field ? 'field_user' : 'staff_user';
+    String owner(String field) =>
+        record.get<String>('expand.$relation.$field', '');
+    final contact = _firstNonEmpty(owner('email'), owner('phone'));
+    final name = owner('name').trim();
+    return DeviceRecord(
+      id: record.id,
+      ownerKind: kind,
+      ownerId: kind == PersonKind.field
+          ? fieldUser
+          : record.getStringValue('staff_user'),
+      ownerName: _firstNonEmpty(name, contact),
+      ownerContact: name.isEmpty ? '' : contact,
+      ownerRole: kind == PersonKind.field ? fieldOfficerRole : owner('role'),
+      label: record.getStringValue('label'),
+      platform: record.getStringValue('platform'),
+      status: DeviceStatus.fromWire(record.getStringValue('status')),
+      signPublicKey: record.getStringValue('sign_public_key'),
+      encPublicKey: record.getStringValue('enc_public_key'),
+      expires: _date(record.getStringValue('expires')),
+      approvedAt: _date(record.getStringValue('approved_at')),
+      created: _date(record.getStringValue('created')),
+      firstApprovedBy: record.getStringValue('first_approved_by'),
+    );
+  }
+
+  @override
+  Future<List<DeviceRecord>> listDevices() => _guard(() async {
+    final records = await _pb
+        .collection('devices')
+        .getFullList(
+          batch: 200,
+          sort: '-created',
+          expand: 'field_user,staff_user',
+          fields: _deviceFields,
+        );
+    return records.map(_deviceFrom).toList();
+  });
+
+  @override
+  Future<DeviceView> approveDevice(String deviceId, String code) async {
+    try {
+      return DeviceView.fromJson(
+        await _sendJson(
+          '$_devices/${Uri.encodeComponent(deviceId)}/approve',
+          method: 'POST',
+          body: <String, dynamic>{'code': code},
+        ),
+      );
+    } on ClientException catch (e) {
+      throw switch (e.statusCode) {
+        400 when fieldCodes(e)['code'] == 'validation_device_code_mismatch' =>
+          const AppProblem(ProblemKind.deviceCodeMismatch, statusCode: 400),
+        409 => const AppProblem(ProblemKind.deviceNotWaiting, statusCode: 409),
+        _ => problemFrom(e),
+      };
+    } on Object catch (error) {
+      throw problemFrom(error);
+    }
+  }
+
+  @override
+  Future<DeviceView> revokeDevice(String deviceId) => _guard(
+    () async => DeviceView.fromJson(
+      await _sendJson(
+        '$_devices/${Uri.encodeComponent(deviceId)}/revoke',
+        method: 'POST',
+      ),
+    ),
+  );
 
   @override
   Future<StaffUser> chooseNewPassword({

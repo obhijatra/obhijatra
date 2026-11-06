@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
+import 'package:obhijatra_manager/src/state/devices.dart';
 import 'package:obhijatra_manager/src/state/navigation.dart';
 import 'package:obhijatra_manager/src/state/people.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:obhijatra_manager/src/ui/about_screen.dart';
+import 'package:obhijatra_manager/src/ui/devices_screen.dart';
 import 'package:obhijatra_manager/src/ui/forms_screen.dart';
 import 'package:obhijatra_manager/src/ui/leave_guard.dart';
 import 'package:obhijatra_manager/src/ui/people_screen.dart';
@@ -39,7 +41,8 @@ void retryAll(WidgetRef ref) {
     ..invalidate(answersProvider)
     ..invalidate(formDefinitionProvider)
     ..invalidate(peopleListProvider)
-    ..invalidate(placesProvider);
+    ..invalidate(placesProvider)
+    ..invalidate(devicesProvider);
 }
 
 /// The signed-in frame: top bar, menu, the chosen screen.
@@ -51,6 +54,9 @@ class ManagerShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final canManagePeople = ref.watch(
       sessionProvider.select((user) => user?.canManagePeople ?? false),
+    );
+    final canApproveDevices = ref.watch(
+      sessionProvider.select((user) => user?.canApproveDevices ?? false),
     );
     final chosen = ref.watch(sectionProvider);
     // People and Places are only ever shown to an active organisation
@@ -73,6 +79,7 @@ class ManagerShell extends ConsumerWidget {
             Section.submissions => const SubmissionsScreen(),
             Section.people => const PeopleScreen(),
             Section.places => const PlacesScreen(),
+            Section.devices => const DevicesScreen(),
             Section.settings => const SettingsScreen(),
             Section.about => const AboutScreen(),
           };
@@ -88,6 +95,7 @@ class ManagerShell extends ConsumerWidget {
                           _BottomNav(
                             section: section,
                             destinations: destinations,
+                            canApproveDevices: canApproveDevices,
                           ),
                         ],
                       )
@@ -98,6 +106,7 @@ class ManagerShell extends ConsumerWidget {
                             section: section,
                             extended: extended,
                             destinations: destinations,
+                            canApproveDevices: canApproveDevices,
                           ),
                           Expanded(child: body),
                         ],
@@ -123,6 +132,7 @@ const List<_Destination> _destinations = <_Destination>[
   _Destination(Section.submissions, Icons.inbox_outlined, Icons.inbox),
   _Destination(Section.people, Icons.people_outline, Icons.people),
   _Destination(Section.places, Icons.account_tree_outlined, Icons.account_tree),
+  _Destination(Section.devices, Icons.devices_outlined, Icons.devices),
   _Destination(Section.settings, Icons.settings_outlined, Icons.settings),
   _Destination(Section.about, Icons.info_outline, Icons.info),
 ];
@@ -139,15 +149,21 @@ List<_Destination> _destinationsFor({required bool canManagePeople}) =>
           destination,
     ];
 
-String _sectionLabel(AppLocalizations l10n, Section section) =>
-    switch (section) {
-      Section.forms => l10n.navForms,
-      Section.submissions => l10n.navSubmissions,
-      Section.people => l10n.navPeople,
-      Section.places => l10n.navPlaces,
-      Section.settings => l10n.navSettings,
-      Section.about => l10n.navAbout,
-    };
+/// A section's name in the menu. Devices is "My devices" for people who
+/// approve no devices, as that is all it shows them.
+String _sectionLabel(
+  AppLocalizations l10n,
+  Section section, {
+  required bool canApproveDevices,
+}) => switch (section) {
+  Section.forms => l10n.navForms,
+  Section.submissions => l10n.navSubmissions,
+  Section.people => l10n.navPeople,
+  Section.places => l10n.navPlaces,
+  Section.devices => canApproveDevices ? l10n.navDevices : l10n.navMyDevices,
+  Section.settings => l10n.navSettings,
+  Section.about => l10n.navAbout,
+};
 
 class _TopBar extends ConsumerWidget {
   const _TopBar({required this.compact});
@@ -176,37 +192,65 @@ class _TopBar extends ConsumerWidget {
           children: <Widget>[
             const BrandMark(),
             const SizedBox(width: Spacing.space3),
-            Text('Obhijatra', style: serif),
-            if (!compact) ...<Widget>[
+            // On a narrow screen the app's name takes the room that is
+            // left; it is shortened only when it does not fit (for example
+            // with large text).
+            if (compact)
+              Expanded(
+                child: Text(
+                  'Obhijatra',
+                  style: serif,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            else ...<Widget>[
+              Text('Obhijatra', style: serif),
               const SizedBox(width: Spacing.space4),
               ObBadge(label: kIsWeb ? l10n.badgeWebApp : l10n.badgeDesktopApp),
             ],
-            if (!compact && org.isNotEmpty) ...<Widget>[
-              const SizedBox(width: Spacing.space4),
-              Container(
-                padding: const EdgeInsetsDirectional.only(
-                  start: Spacing.space4,
-                ),
-                decoration: BoxDecoration(
-                  border: BorderDirectional(
-                    start: BorderSide(color: palette.border),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Icon(
-                      Icons.apartment_outlined,
-                      size: Sizes.icon,
-                      color: palette.textMuted,
-                    ),
-                    const SizedBox(width: Spacing.space2),
-                    Text(org, style: Theme.of(context).textTheme.labelLarge),
-                  ],
-                ),
+            // On a wide screen the organisation's name takes it, likewise.
+            if (!compact)
+              Expanded(
+                child: org.isNotEmpty
+                    ? Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Container(
+                          margin: const EdgeInsetsDirectional.only(
+                            start: Spacing.space4,
+                          ),
+                          padding: const EdgeInsetsDirectional.only(
+                            start: Spacing.space4,
+                          ),
+                          decoration: BoxDecoration(
+                            border: BorderDirectional(
+                              start: BorderSide(color: palette.border),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(
+                                Icons.apartment_outlined,
+                                size: Sizes.icon,
+                                color: palette.textMuted,
+                              ),
+                              const SizedBox(width: Spacing.space2),
+                              Flexible(
+                                child: Text(
+                                  org,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.labelLarge,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
-            ],
-            const Spacer(),
+            const SizedBox(width: Spacing.space2),
             const LanguageSwitch(),
             const SizedBox(width: Spacing.space2),
             if (user != null) _UserMenu(user: user, compact: compact),
@@ -345,11 +389,13 @@ class _SideNav extends ConsumerWidget {
     required this.section,
     required this.extended,
     required this.destinations,
+    required this.canApproveDevices,
   });
 
   final Section section;
   final bool extended;
   final List<_Destination> destinations;
+  final bool canApproveDevices;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -379,7 +425,11 @@ class _SideNav extends ConsumerWidget {
                     icon: destination.section == section
                         ? destination.selectedIcon
                         : destination.icon,
-                    label: _sectionLabel(l10n, destination.section),
+                    label: _sectionLabel(
+                      l10n,
+                      destination.section,
+                      canApproveDevices: canApproveDevices,
+                    ),
                     selected: destination.section == section,
                     extended: extended,
                     onTap: () => unawaited(
@@ -480,10 +530,15 @@ class _NavItem extends StatelessWidget {
 }
 
 class _BottomNav extends ConsumerWidget {
-  const _BottomNav({required this.section, required this.destinations});
+  const _BottomNav({
+    required this.section,
+    required this.destinations,
+    required this.canApproveDevices,
+  });
 
   final Section section;
   final List<_Destination> destinations;
+  final bool canApproveDevices;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -506,7 +561,11 @@ class _BottomNav extends ConsumerWidget {
                   icon: destination.section == section
                       ? destination.selectedIcon
                       : destination.icon,
-                  label: _sectionLabel(l10n, destination.section),
+                  label: _sectionLabel(
+                    l10n,
+                    destination.section,
+                    canApproveDevices: canApproveDevices,
+                  ),
                   selected: destination.section == section,
                   extended: false,
                   onTap: () =>
