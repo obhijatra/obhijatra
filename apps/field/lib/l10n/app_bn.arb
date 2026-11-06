@@ -849,6 +849,162 @@
   "@aboutSecurityBody": {
     "x-translation-status": "draft: owner to check"
   },
+  "actionSignInAgain": "আবার সাইন ইন করুন",
+  "@actionSignInAgain": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSettingUpTitle": "ফোনটি সেট আপ করা হচ্ছে",
+  "@deviceSettingUpTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSettingUpBody": "ফর্ম পাওয়ার আগে আপনার প্রতিষ্ঠানের সার্ভারের সঙ্গে এই ফোনটি সেট আপ করতে হবে। এর জন্য ইন্টারনেট সংযোগ লাগবে।",
+  "@deviceSettingUpBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSettingUpWorking": "সেট আপ করা হচ্ছে…",
+  "@deviceSettingUpWorking": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceWaitingTitle": "অনুমোদনের অপেক্ষায়",
+  "@deviceWaitingTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceWaitingBody": "এই ফোনে ফর্ম পাওয়া বা পাঠানোর আগে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে ফোনটি অনুমোদন করতে হবে।",
+  "@deviceWaitingBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceServerForgot": "সার্ভার এই ফোনটিকে আর চিনতে পারেনি, তাই এটির আবার অনুমোদন লাগবে।",
+  "@deviceServerForgot": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceRenewalTitle": "অনুমোদনের মেয়াদ শেষ",
+  "@deviceRenewalTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceRenewalBody": "প্রতিটি অনুমোদন এক বছর থাকে, আর এই ফোনের অনুমোদনের মেয়াদ শেষ হয়ে গেছে। আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে আবার অনুমোদন করতে হবে। তাঁরা আগের নম্বরগুলোই মিলিয়ে দেখবেন।",
+  "@deviceRenewalBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSwitchedOffTitle": "এই ফোনটি বন্ধ করা হয়েছে",
+  "@deviceSwitchedOffTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSwitchedOffBody": "আপনার প্রতিষ্ঠান অভিযাত্রার জন্য এই ফোনটি বন্ধ করে দিয়েছে, তাই এতে ফর্ম পাওয়া বা পাঠানো যাবে না। যেমন, কোনো ফোন হারিয়ে গেছে বলে জানালে এমন হয়।",
+  "@deviceSwitchedOffBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSwitchedOffKept": "আপনার না-পাঠানো ফর্ম ও খসড়া এই ফোনেই থাকবে।",
+  "@deviceSwitchedOffKept": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSwitchedOffNext": "এই ফোনটি আপনি ব্যবহার করবেন কি না, তা আপনার প্রতিষ্ঠানের অ্যাডমিনের কাছে জেনে নিন। করলে ফোনটি আবার সেট আপ করুন, তারপর আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে অনুমোদন করতে বলুন।",
+  "@deviceSwitchedOffNext": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceCodeHeading": "এই ফোনের নম্বরগুলো",
+  "@deviceCodeHeading": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceCodeSpoken": "এই ফোনের নম্বরগুলো: {numbers}",
+  "@deviceCodeSpoken": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceShowInPerson": "নম্বরগুলো তাঁদের সামনাসামনি দেখান, অথবা ফোন কলে পড়ে শোনান।",
+  "@deviceShowInPerson": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceNeverSend": "নম্বরগুলো কখনো মেসেজে (এসএমএস, হোয়াটসঅ্যাপ বা ইমেইলে) পাঠাবেন না। অনুমোদনকারীকে নম্বরগুলো আপনার কাছ থেকেই দেখতে বা শুনতে হবে।",
+  "@deviceNeverSend": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceAutoCheck": "এই স্ক্রিনটি খোলা থাকলে প্রতি ১৫ সেকেন্ডে নিজে থেকেই আবার দেখে নেয়।",
+  "@deviceAutoCheck": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceLastChecked": "শেষবার দেখা হয়েছে {when}",
+  "@deviceLastChecked": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceCheckAgain": "আবার দেখুন",
+  "@deviceCheckAgain": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceChecking": "দেখা হচ্ছে…",
+  "@deviceChecking": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceFillInForms": "আপাতত এই ফোনে ফর্ম পূরণ করুন",
+  "@deviceFillInForms": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceCheckOffline": "ইন্টারনেট সংযোগ নেই, তাই এই ফোনটি আপনার প্রতিষ্ঠানের সার্ভারে পৌঁছাতে পারেনি। ইন্টারনেটে যুক্ত হয়ে আবার চেষ্টা করুন।",
+  "@deviceCheckOffline": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSetUpAgain": "ফোনটি আবার সেট আপ করুন",
+  "@deviceSetUpAgain": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSetUpAgainTitle": "ফোনটি আবার সেট আপ করবেন?",
+  "@deviceSetUpAgainTitle": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSetUpAgainBody": "এই ফোনটি নতুন নম্বর পাবে, আর আপনি সাইন আউট হয়ে যাবেন। আপনার না-পাঠানো ফর্ম ও খসড়া এই ফোনেই থাকবে। তারপর আবার সাইন ইন করুন, এবং নতুন নম্বরগুলো অনুমোদন করতে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে বলুন।",
+  "@deviceSetUpAgainBody": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSetUpAgainConfirm": "আবার সেট আপ করুন",
+  "@deviceSetUpAgainConfirm": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceNoticeSettingUp": "এই ফোনটি এখনো আপনার প্রতিষ্ঠানের সার্ভারের সঙ্গে সেট আপ করা হয়নি। সেট আপ ও অনুমোদন হলে শেষ করা ফর্মগুলো পাঠানো হবে।",
+  "@deviceNoticeSettingUp": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceNoticeWaiting": "এই ফোনটি অনুমোদনের অপেক্ষায় আছে। অনুমোদনের পরে শেষ করা ফর্মগুলো পাঠানো হবে।",
+  "@deviceNoticeWaiting": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceNoticeRenewal": "এই ফোনের অনুমোদনের মেয়াদ শেষ হয়ে গেছে। আবার অনুমোদনের পরে শেষ করা ফর্মগুলো পাঠানো হবে।",
+  "@deviceNoticeRenewal": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceNoticeSwitchedOff": "অভিযাত্রার জন্য এই ফোনটি বন্ধ করা হয়েছে। শেষ করা ফর্মগুলো এই ফোনেই থাকবে।",
+  "@deviceNoticeSwitchedOff": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceShowCode": "এই ফোনের নম্বরগুলো দেখুন",
+  "@deviceShowCode": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceSeeWhatToDo": "কী করবেন দেখুন",
+  "@deviceSeeWhatToDo": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "settingsThisPhone": "এই ফোন",
+  "@settingsThisPhone": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceStatusApproved": "{date} পর্যন্ত অনুমোদিত",
+  "@deviceStatusApproved": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceStatusWaiting": "অনুমোদনের অপেক্ষায়",
+  "@deviceStatusWaiting": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceStatusRenewal": "অনুমোদনের মেয়াদ শেষ",
+  "@deviceStatusRenewal": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceStatusSwitchedOff": "বন্ধ করা হয়েছে",
+  "@deviceStatusSwitchedOff": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "deviceStatusSettingUp": "এখনো সেট আপ করা হয়নি",
+  "@deviceStatusSettingUp": {
+    "x-translation-status": "draft: owner to check"
+  },
   "problem_offline": "এখন ইন্টারনেট সংযোগ নেই। আপনার কাজ এই ফোনে নিরাপদ আছে, সিগন্যাল ফিরলে পাঠানো হবে।",
   "@problem_offline": {
     "x-translation-status": "draft: owner to check"
@@ -991,6 +1147,50 @@
   },
   "problem_passwordChangedSignInAgain": "আপনার নতুন পাসওয়ার্ড সেভ হয়েছে। নতুন পাসওয়ার্ড দিয়ে আবার সাইন ইন করুন।",
   "@problem_passwordChangedSignInAgain": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceNotEnrolled": "এই ফোনটি এখনো আপনার প্রতিষ্ঠানের সার্ভারের সঙ্গে সেট আপ করা হয়নি। ইন্টারনেটে যুক্ত হয়ে অ্যাপটি খুলুন, এটি নিজে থেকেই সেট আপ হবে। আপনার কাজ এই ফোনে নিরাপদ আছে।",
+  "@problem_deviceNotEnrolled": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceSignatureInvalid": "সার্ভার এই ফোনের অনুরোধটি যাচাই করতে পারেনি। আমরা নিজে থেকেই আবার চেষ্টা করব। বারবার এমন হলে সাইন আউট করে আবার সাইন ইন করুন।",
+  "@problem_deviceSignatureInvalid": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceUnknown": "আপনার প্রতিষ্ঠানের সার্ভার এই ফোনটিকে আর চিনতে পারেনি, তাই একই নম্বর দিয়ে ফোনটি আবার সেট আপ করা হচ্ছে, আর এটির আবার অনুমোদন লাগবে। আপনার ফর্মগুলো এই ফোনেই থাকবে।",
+  "@problem_deviceUnknown": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceClockWrong": "এই ফোনের তারিখ বা সময় ভুল, তাই সার্ভার তা গ্রহণ করতে পারছে না। ফোনের সেটিংসে গিয়ে স্বয়ংক্রিয় তারিখ ও সময় চালু করুন, তারপর অ্যাপে ফিরে আবার চেষ্টা করুন। আপনার ফর্ম এই ফোনে রাখা আছে।",
+  "@problem_deviceClockWrong": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceNotApproved": "এই ফোনটি আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনের অনুমোদনের অপেক্ষায় আছে। আপনার ফর্মগুলো রাখা আছে, অনুমোদনের পরে পাঠানো হবে।",
+  "@problem_deviceNotApproved": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceApprovalExpired": "এই ফোনের অনুমোদনের মেয়াদ শেষ হয়ে গেছে। আবার অনুমোদন করতে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে বলুন। আপনার ফর্মগুলো রাখা আছে।",
+  "@problem_deviceApprovalExpired": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceRevoked": "আপনার প্রতিষ্ঠান অভিযাত্রার জন্য এই ফোনটি বন্ধ করে দিয়েছে। আপনার ফর্মগুলো এই ফোনেই থাকবে। কী করতে হবে, তা আপনার প্রতিষ্ঠানের অ্যাডমিনের কাছে জেনে নিন।",
+  "@problem_deviceRevoked": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_sessionEnded": "আপনার সাইন-ইনের মেয়াদ শেষ হয়েছে। ফর্ম পাঠাতে আবার সাইন ইন করুন। আপনার উত্তরগুলো এই ফোনেই থাকবে।",
+  "@problem_sessionEnded": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_sessionOnOtherDevice": "এই সাইন-ইনটি অন্য একটি ফোনের। এই ফোনে আবার সাইন ইন করুন। আপনার উত্তরগুলো এই ফোনেই থাকবে।",
+  "@problem_sessionOnOtherDevice": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_deviceKeyInUse": "এই ফোনের নম্বরগুলো আগে থেকেই ব্যবহার হচ্ছে, তাই ফোনটি সেট আপ করা যায়নি। আবার চেষ্টা করুন। আবারও এমন হলে আপনার প্রতিষ্ঠানের অ্যাডমিনকে জানান।",
+  "@problem_deviceKeyInUse": {
+    "x-translation-status": "draft: owner to check"
+  },
+  "problem_tooManyDevicesWaiting": "আপনার তিনটি ফোন আগে থেকেই অনুমোদনের অপেক্ষায় আছে। সেগুলো অনুমোদন বা বন্ধ করতে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে বলুন, তারপর আবার চেষ্টা করুন।",
+  "@problem_tooManyDevicesWaiting": {
     "x-translation-status": "draft: owner to check"
   },
   "problem_unknown": "কিছু একটা ভুল হয়েছে। আপনার কাজ এই ফোনে নিরাপদ আছে। আবার চেষ্টা করুন।",

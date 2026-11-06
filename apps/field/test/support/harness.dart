@@ -21,6 +21,7 @@ import 'package:obhijatra_field/src/app_info.dart';
 import 'package:obhijatra_field/src/platform/device_authenticator.dart';
 import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
 import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
+import 'package:obhijatra_field/src/providers/device_providers.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/sync_providers.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -96,7 +97,14 @@ const List<double> testScales = <double>[1.0, 2.0];
 class TestEnv {
   TestEnv({String? xform, FakeObhijatraServer? server})
     : db = _newDatabase(),
-      server = server ?? FakeObhijatraServer(xform: xform);
+      server = server ?? FakeObhijatraServer(xform: xform) {
+    // Every app test runs against the server's device checks: a request
+    // the app forgot to sign fails the test. A phone that enrols is
+    // approved at once, unless a test plays the approver itself.
+    this.server
+      ..requireDevices = true
+      ..approveDevicesAtOnce = true;
+  }
 
   static DeviceDatabase _newDatabase() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -127,6 +135,9 @@ class TestEnv {
 
   /// The browser tab Google's sign-in page opens in.
   final FakeBrowser browser = FakeBrowser();
+
+  /// The phone's device keys and enrolment (the OS key store stand-in).
+  final MemoryDeviceKeyStore deviceStore = MemoryDeviceKeyStore();
 
   /// The overrides every test shares: the app lock is open from the start
   /// (lock tests use [lockedOverrides] instead) and the database is [db].
@@ -169,6 +180,7 @@ class TestEnv {
 
   late final List<Override> _common = <Override>[
     secureValuesProvider.overrideWithValue(secureValues),
+    deviceKeyStoreProvider.overrideWithValue(deviceStore),
     deviceAuthenticatorProvider.overrideWithValue(deviceAuth),
     pinComputeProvider.overrideWithValue(runHere),
     httpClientFactoryProvider.overrideWithValue(server.client),
@@ -189,9 +201,13 @@ class TestEnv {
   /// Opens the encrypted-database stand-in with the server address (and
   /// optionally a signed-in user) already saved, as after first use. With
   /// [into], that database is used instead of [db].
+  ///
+  /// A signed-in phone is enrolled too (in [deviceStore]); with
+  /// [deviceApproved] it is approved, as the app last heard.
   Future<void> seedSignedIn({
     bool signedIn = true,
     DeviceDatabase? into,
+    bool deviceApproved = true,
   }) async {
     final settings = SettingsRepository(into ?? db);
     await settings.write(
@@ -199,17 +215,43 @@ class TestEnv {
       FakeObhijatraServer.baseUrl.toString(),
     );
     if (signedIn) {
-      // Sign in through a real client so the saved session is genuine.
+      // Sign in and enrol through a real client, so the saved session and
+      // the phone's device are genuine. That happened earlier, with the
+      // phone's clock right: a test may set the server's clock apart after.
+      final offset = server.clockOffset;
+      server.clockOffset = Duration.zero;
+      final identity = await DeviceIdentity.open(deviceStore);
       final store = await settings.authStore();
       final client = ObhijatraServer(
         baseUrl: FakeObhijatraServer.baseUrl,
         appVersion: appReleaseVersion,
         authStore: store,
+        signer: identity,
         httpClientFactory: server.client,
       );
       await client.signIn(email: fakeEmail, password: fakePassword);
+      final atOnce = server.approveDevicesAtOnce;
+      server.approveDevicesAtOnce = deviceApproved;
+      final status = await identity.ensureEnrolled(
+        client,
+        label: 'Field app, Android',
+        platform: DevicePlatform.android,
+      );
+      server.approveDevicesAtOnce = atOnce;
+      if (deviceApproved && status.state != DeviceState.active) {
+        server.approveDevice(status.id, identity.checkCode);
+        await identity.refresh(client);
+      }
       client.close();
+      await identity.close();
+      server.clockOffset = offset;
     }
+  }
+
+  /// This phone's device on the fake server, once enrolled.
+  FakeDevice? get phoneDevice {
+    final id = DeviceEnrolment.decode(deviceStore.enrolmentText)?.deviceId;
+    return id == null ? null : server.devices[id];
   }
 
   /// Stores [xform] on the phone as a downloaded form.

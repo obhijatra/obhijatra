@@ -35,17 +35,25 @@ const String xmlPartName = 'xml_submission_file';
 typedef OpenBrowser = Future<void> Function(Uri url);
 
 /// Talks to one `obhijatra-server`: the version handshake, field-user
-/// sign-in (email and password, SMS code, Google), published forms and
-/// submission upload.
+/// sign-in (email and password, SMS code, Google), device enrolment and
+/// status, published forms and submission upload.
 ///
 /// Every failure is an [ObhijatraException] with a plain-language
-/// [ProblemCode]; raw transport exceptions never leave this class.
+/// [ProblemCode]; raw transport exceptions never leave this class. The
+/// server's device-trust refusals (docs/decisions/0008-device-trust.md)
+/// have codes of their own: [ProblemCode.deviceNotEnrolled],
+/// [ProblemCode.deviceSignatureInvalid], [ProblemCode.deviceUnknown],
+/// [ProblemCode.deviceClockWrong],
+/// [ProblemCode.deviceNotApproved], [ProblemCode.deviceApprovalExpired],
+/// [ProblemCode.deviceRevoked], [ProblemCode.sessionEnded] and
+/// [ProblemCode.sessionOnOtherDevice].
 final class ObhijatraServer {
   /// Connects to the server at [baseUrl] as app release [appVersion].
   ///
   /// Pass an [authStore] that persists the session (see
-  /// `SettingsRepository.authStore`); [signer] adds device signatures once
-  /// the zero-trust milestone ships; [httpClientFactory] is for tests.
+  /// `SettingsRepository.authStore`) and the device's [signer] (a
+  /// `DeviceIdentity`), which signs every request once the device is
+  /// enrolled; [httpClientFactory] is for tests.
   ObhijatraServer({
     required Uri baseUrl,
     required this.appVersion,
@@ -133,17 +141,23 @@ final class ObhijatraServer {
   }
 
   /// Signs in a field user with [email] and [password].
+  ///
+  /// No session token is sent with it (a saved session that the server has
+  /// ended would make the server refuse the sign-in itself). The device
+  /// signature is: once the device is enrolled, the new session belongs to
+  /// it at once.
   Future<SignedInUser> signIn({
     required String email,
     required String password,
   }) async {
-    final auth = await _pocketBase(
-      () => _pb
-          .collection(fieldUsersCollection)
-          .authWithPassword(email.trim(), password),
-      onBadRequest: ProblemCode.signInFailed,
+    final response = await _postJson(
+      '/api/collections/$fieldUsersCollection/auth-with-password',
+      {'identity': email.trim(), 'password': password},
     );
-    return _userOf(auth.record);
+    if (response.statusCode != 200) {
+      throw _problemOf(response, onBadRequest: ProblemCode.signInFailed);
+    }
+    return _saveSession(_decodeJson(response));
   }
 
   /// Asks the server which ways to sign in it offers (public; no sign-in
@@ -368,6 +382,80 @@ final class ObhijatraServer {
         cause: e,
       );
     }
+  }
+
+  /// Enrols this device for the signed-in person: registers its public
+  /// [keys] under [label] (what the approver sees, up to
+  /// [maxDeviceLabelLength] characters) and [platform]. The device then
+  /// waits for approval, and the session becomes this device's.
+  ///
+  /// The request is signed with the signing key it registers (the
+  /// [RequestSigner] given to this client must sign with [keys]; a
+  /// `DeviceIdentity` does). Enrolling the same keys again returns the same
+  /// device.
+  ///
+  /// Failures: [ProblemCode.deviceKeyInUse] (the keys belong to someone
+  /// else, or to a device that was switched off: make new keys),
+  /// [ProblemCode.tooManyDevicesWaiting], [ProblemCode.sessionEnded],
+  /// [ProblemCode.sessionOnOtherDevice], [ProblemCode.deviceClockWrong],
+  /// [ProblemCode.signInRequired] (no session) and connection problems.
+  Future<DeviceStatus> enrolDevice({
+    required DeviceKeys keys,
+    required String label,
+    required DevicePlatform platform,
+  }) async {
+    _requireSession();
+    final name = label.trim();
+    if (name.isEmpty ||
+        name.runes.length > maxDeviceLabelLength ||
+        name.runes.any((r) => r < 0x20 || (r >= 0x7f && r < 0xa0))) {
+      throw ArgumentError.value(label, 'label', 'Not a usable device label');
+    }
+    final response = await _sendRaw(
+      http.Request('POST', _pb.buildURL(deviceEnrolPath))
+        ..headers['content-type'] = 'application/json'
+        ..headers['Authorization'] = _pb.authStore.token
+        ..bodyBytes = utf8.encode(
+          jsonEncode({
+            'label': name,
+            'platform': platform.name,
+            'sign_public_key': base64.encode(keys.signPublicKey),
+            'enc_public_key': base64.encode(keys.encPublicKey),
+          }),
+        ),
+    );
+    if (response.statusCode != 200) {
+      throw _problemOf(
+        response,
+        onBadRequest: ProblemCode.unexpectedResponse,
+        overrides: const {
+          409: ProblemCode.deviceKeyInUse,
+          429: ProblemCode.tooManyDevicesWaiting,
+        },
+      );
+    }
+    return DeviceStatus.fromJson(_asJsonObject(_decodeJson(response)));
+  }
+
+  /// Asks the server where this device stands (`GET /devices/me`, signed).
+  /// A device that waits, or whose approval ran out, may still ask.
+  ///
+  /// A device that was switched off gets [ProblemCode.deviceRevoked], one
+  /// the server no longer knows [ProblemCode.deviceUnknown]; other
+  /// failures: [ProblemCode.sessionEnded], [ProblemCode.sessionOnOtherDevice],
+  /// [ProblemCode.deviceClockWrong], [ProblemCode.deviceNotEnrolled] (the
+  /// device has no id yet), [ProblemCode.signInRequired] and connection
+  /// problems.
+  Future<DeviceStatus> deviceStatus() async {
+    _requireSession();
+    final response = await _sendRaw(
+      http.Request('GET', _pb.buildURL(deviceMePath))
+        ..headers['Authorization'] = _pb.authStore.token,
+    );
+    if (response.statusCode != 200) {
+      throw _problemOf(response, onBadRequest: ProblemCode.unexpectedResponse);
+    }
+    return DeviceStatus.fromJson(_asJsonObject(_decodeJson(response)));
   }
 
   /// Lists every form version the server has published to this user.
@@ -843,6 +931,17 @@ final class ObhijatraServer {
         serverMessage: message,
       );
     }
+    // Device trust: the reason says which screen helps.
+    final device = (status == 401 || status == 403)
+        ? _deviceReasons[reason]
+        : null;
+    if (device != null) {
+      return ObhijatraException(
+        device,
+        statusCode: status,
+        serverMessage: message,
+      );
+    }
     final code =
         overrides[status] ??
         switch (status) {
@@ -859,6 +958,20 @@ final class ObhijatraServer {
         };
     return ObhijatraException(code, statusCode: status, serverMessage: message);
   }
+
+  /// The problem for each device-trust reason the server gives
+  /// (`data.reason.code` of a 401 or 403).
+  static const Map<String, ProblemCode> _deviceReasons = {
+    DeviceReason.signatureRequired: ProblemCode.deviceNotEnrolled,
+    DeviceReason.signatureInvalid: ProblemCode.deviceSignatureInvalid,
+    DeviceReason.unknown: ProblemCode.deviceUnknown,
+    DeviceReason.clock: ProblemCode.deviceClockWrong,
+    DeviceReason.notApproved: ProblemCode.deviceNotApproved,
+    DeviceReason.expired: ProblemCode.deviceApprovalExpired,
+    DeviceReason.revoked: ProblemCode.deviceRevoked,
+    DeviceReason.sessionRevoked: ProblemCode.sessionEnded,
+    DeviceReason.sessionOtherDevice: ProblemCode.sessionOnOtherDevice,
+  };
 
   static Object? _decodeJson(http.Response response) {
     try {

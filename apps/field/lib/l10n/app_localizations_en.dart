@@ -847,6 +847,145 @@ class AppLocalizationsEn extends AppLocalizations {
       'The app locks when it has been in the background for 5 minutes. Open it with your phone\'s screen lock, or with the app PIN if the phone has no screen lock. If you have not signed in with the internet for 30 days, the app stays locked until you sign in again. Use one phone per person: until the app can keep each person\'s data apart, anyone who can open the app on this phone can see the forms on it.';
 
   @override
+  String get actionSignInAgain => 'Sign in again';
+
+  @override
+  String get deviceSettingUpTitle => 'Setting up this phone';
+
+  @override
+  String get deviceSettingUpBody =>
+      'Before you can get forms, this phone must be set up with your organisation\'s server. This needs an internet connection.';
+
+  @override
+  String get deviceSettingUpWorking => 'Setting up…';
+
+  @override
+  String get deviceWaitingTitle => 'Waiting for approval';
+
+  @override
+  String get deviceWaitingBody =>
+      'Before this phone can get or send forms, your branch manager or an organisation admin must approve it.';
+
+  @override
+  String get deviceServerForgot =>
+      'The server no longer knew this phone, so it needs approval again.';
+
+  @override
+  String get deviceRenewalTitle => 'Approval has run out';
+
+  @override
+  String get deviceRenewalBody =>
+      'Each approval lasts one year, and this phone\'s has run out. Your branch manager or an organisation admin must approve it again. They check the same numbers as before.';
+
+  @override
+  String get deviceSwitchedOffTitle => 'This phone has been switched off';
+
+  @override
+  String get deviceSwitchedOffBody =>
+      'Your organisation has switched off this phone for Obhijatra, so it cannot get or send forms. This happens, for example, when a phone is reported lost.';
+
+  @override
+  String get deviceSwitchedOffKept =>
+      'Your unsent forms and drafts stay on this phone.';
+
+  @override
+  String get deviceSwitchedOffNext =>
+      'Ask your organisation admin whether you should use this phone. If so, set it up again, then ask your branch manager or an organisation admin to approve it.';
+
+  @override
+  String get deviceCodeHeading => 'This phone\'s numbers';
+
+  @override
+  String deviceCodeSpoken(String numbers) {
+    return 'This phone\'s numbers: $numbers';
+  }
+
+  @override
+  String get deviceShowInPerson =>
+      'Show these numbers to them in person, or read them out on a phone call.';
+
+  @override
+  String get deviceNeverSend =>
+      'Never send the numbers in a message (SMS, WhatsApp or email): your approver must see or hear them from you.';
+
+  @override
+  String get deviceAutoCheck =>
+      'While this screen is open, it checks again by itself every 15 seconds.';
+
+  @override
+  String deviceLastChecked(String when) {
+    return 'Last checked $when';
+  }
+
+  @override
+  String get deviceCheckAgain => 'Check again';
+
+  @override
+  String get deviceChecking => 'Checking…';
+
+  @override
+  String get deviceFillInForms => 'Fill in forms on this phone for now';
+
+  @override
+  String get deviceCheckOffline =>
+      'There is no internet connection, so this phone could not reach your organisation\'s server. Connect to the internet, then try again.';
+
+  @override
+  String get deviceSetUpAgain => 'Set up this phone again';
+
+  @override
+  String get deviceSetUpAgainTitle => 'Set up this phone again?';
+
+  @override
+  String get deviceSetUpAgainBody =>
+      'This phone gets new numbers, and you are signed out. Your unsent forms and drafts stay on this phone. Then sign in again, and ask your branch manager or an organisation admin to approve the new numbers.';
+
+  @override
+  String get deviceSetUpAgainConfirm => 'Set up again';
+
+  @override
+  String get deviceNoticeSettingUp =>
+      'This phone is not set up with your organisation\'s server yet. Finished forms are sent once it is set up and approved.';
+
+  @override
+  String get deviceNoticeWaiting =>
+      'This phone is waiting for approval. Finished forms are sent once it is approved.';
+
+  @override
+  String get deviceNoticeRenewal =>
+      'This phone\'s approval has run out. Finished forms are sent once it is approved again.';
+
+  @override
+  String get deviceNoticeSwitchedOff =>
+      'This phone is switched off for Obhijatra. Finished forms stay on this phone.';
+
+  @override
+  String get deviceShowCode => 'Show this phone\'s numbers';
+
+  @override
+  String get deviceSeeWhatToDo => 'See what to do';
+
+  @override
+  String get settingsThisPhone => 'This phone';
+
+  @override
+  String deviceStatusApproved(String date) {
+    return 'Approved until $date';
+  }
+
+  @override
+  String get deviceStatusWaiting => 'Waiting for approval';
+
+  @override
+  String get deviceStatusRenewal => 'Approval has run out';
+
+  @override
+  String get deviceStatusSwitchedOff => 'Switched off';
+
+  @override
+  String get deviceStatusSettingUp => 'Not set up yet';
+
+  @override
   String get problem_offline =>
       'There is no internet connection right now. Your work is safe on this phone and will be sent when the signal returns.';
 
@@ -989,6 +1128,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get problem_passwordChangedSignInAgain =>
       'Your new password is saved. Sign in again with your new password.';
+
+  @override
+  String get problem_deviceNotEnrolled =>
+      'This phone is not set up with your organisation\'s server yet. Connect to the internet and open the app: it sets itself up. Your work is safe on this phone.';
+
+  @override
+  String get problem_deviceSignatureInvalid =>
+      'The server could not check this phone\'s request. We will try again by ourselves. If it keeps happening, sign out and sign in again.';
+
+  @override
+  String get problem_deviceUnknown =>
+      'Your organisation\'s server no longer knew this phone, so the phone is set up again with the same numbers and must be approved again. Your forms stay on this phone.';
+
+  @override
+  String get problem_deviceClockWrong =>
+      'The date or time on this phone is wrong, so the server cannot accept it. Open the phone\'s Settings and turn on automatic date and time, then come back and try again. Your forms are kept on this phone.';
+
+  @override
+  String get problem_deviceNotApproved =>
+      'This phone is waiting for approval by your branch manager or an organisation admin. Your forms are kept and sent once it is approved.';
+
+  @override
+  String get problem_deviceApprovalExpired =>
+      'This phone\'s approval has run out. Ask your branch manager or an organisation admin to approve it again. Your forms are kept.';
+
+  @override
+  String get problem_deviceRevoked =>
+      'Your organisation has switched off this phone for Obhijatra. Your forms stay on this phone. Ask your organisation admin what to do.';
+
+  @override
+  String get problem_sessionEnded =>
+      'Your sign-in has ended. Please sign in again to send your forms. Your answers stay on this phone.';
+
+  @override
+  String get problem_sessionOnOtherDevice =>
+      'This sign-in belongs to another phone. Please sign in again on this phone. Your answers stay on this phone.';
+
+  @override
+  String get problem_deviceKeyInUse =>
+      'This phone\'s numbers are already in use, so it could not be set up. Try again. If it happens again, ask your organisation admin.';
+
+  @override
+  String get problem_tooManyDevicesWaiting =>
+      'Three of your phones are already waiting for approval. Ask your branch manager or an organisation admin to approve them or switch them off, then try again.';
 
   @override
   String get problem_unknown =>

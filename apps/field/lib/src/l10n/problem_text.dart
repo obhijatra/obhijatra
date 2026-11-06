@@ -47,6 +47,17 @@ String problemText(AppLocalizations l10n, ProblemCode code) => switch (code) {
   ProblemCode.newPasswordInvalid => l10n.problem_newPasswordInvalid,
   ProblemCode.passwordChangedSignInAgain =>
     l10n.problem_passwordChangedSignInAgain,
+  ProblemCode.deviceNotEnrolled => l10n.problem_deviceNotEnrolled,
+  ProblemCode.deviceSignatureInvalid => l10n.problem_deviceSignatureInvalid,
+  ProblemCode.deviceUnknown => l10n.problem_deviceUnknown,
+  ProblemCode.deviceClockWrong => l10n.problem_deviceClockWrong,
+  ProblemCode.deviceNotApproved => l10n.problem_deviceNotApproved,
+  ProblemCode.deviceApprovalExpired => l10n.problem_deviceApprovalExpired,
+  ProblemCode.deviceRevoked => l10n.problem_deviceRevoked,
+  ProblemCode.sessionEnded => l10n.problem_sessionEnded,
+  ProblemCode.sessionOnOtherDevice => l10n.problem_sessionOnOtherDevice,
+  ProblemCode.deviceKeyInUse => l10n.problem_deviceKeyInUse,
+  ProblemCode.tooManyDevicesWaiting => l10n.problem_tooManyDevicesWaiting,
   ProblemCode.unknown => l10n.problem_unknown,
 };
 

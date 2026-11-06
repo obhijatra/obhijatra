@@ -1,8 +1,11 @@
 // Phase 1 gate: a submission queued on the phone syncs to the real
 // obhijatra-server, and one queued before a server restart (an upgrade on
 // the same data) syncs afterwards. Also against the real server: sign-in
-// methods, the Google realtime connection, and replacing a one-time
-// password.
+// methods, the Google realtime connection, replacing a one-time password,
+// and device trust (docs/decisions/0008-device-trust.md): every device,
+// the organisation admin's included, makes its keys, enrols, is approved
+// with `obhijatra-server device approve` and signs every request; an
+// unsigned request is refused.
 //
 // Runs the server binary from server/dist (or OBHIJATRA_SERVER_BIN).
 // Run only this test with:  dart test -t e2e
@@ -19,6 +22,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_core/src/server/realtime_channel.dart';
+import 'package:obhijatra_core/testing.dart' show MemoryDeviceKeyStore;
+import 'package:obhijatra_device/obhijatra_device.dart' show toBanglaDigits;
 import 'package:pocketbase/pocketbase.dart' show AuthStore;
 import 'package:test/test.dart';
 
@@ -48,8 +53,9 @@ void main() {
 
   test('queued submissions sync, also across a server restart', () async {
     // ---- The organisation admin sets up a branch, a field user and the
-    // ---- sample form through the server's ordinary API.
-    final admin = await _Admin.signIn(server.baseUrl);
+    // ---- sample form through the server's ordinary API, from a device
+    // ---- approved on the server's command line.
+    final admin = await _Admin.signIn(server);
     addTearDown(admin.close);
     final root = (await admin.list('locations')).single;
     final branch = await admin.create('locations', {
@@ -75,11 +81,14 @@ void main() {
       xform: householdVisitXForm,
     );
 
-    // ---- First life of the app.
+    // ---- First life of the app. Its device keys are made before the
+    // ---- first sign-in.
     final keys = MemoryKeyStore();
+    final deviceStore = MemoryDeviceKeyStore();
     final dbFile = File('${work.path}/device/device.sqlite');
     await dbFile.parent.create();
-    var phone = await _Phone.open(server.baseUrl, keys, dbFile);
+    var phone = await _Phone.open(server.baseUrl, keys, dbFile, deviceStore);
+    expect(deviceStore.seedsText, isNotNull);
 
     final meta = await phone.server.fetchMeta();
     expect(meta.syncBlocker('0.1.0'), isNull);
@@ -87,6 +96,52 @@ void main() {
     expect(meta.serverTime, isNotNull);
     expect(meta.clockSkewed(DateTime.now()), isFalse);
     await phone.signIn();
+
+    // ---- Device trust: an unsigned request is refused; the phone enrols,
+    // ---- waits, and is approved with the code it shows.
+    await expectLater(
+      phone.server.listPublishedFormVersions(),
+      _problem(ProblemCode.deviceNotEnrolled),
+    );
+    final enrolled = await phone.enrol();
+    expect(enrolled.state, DeviceState.pending);
+    expect(enrolled.platform, 'linux');
+    expect(phone.identity.deviceId, enrolled.id);
+    await expectLater(
+      phone.server.listPublishedFormVersions(),
+      _problem(ProblemCode.deviceNotApproved),
+    );
+    // Waiting: nothing is sent, and nothing is marked as failed.
+    final early = await phone.sync.syncNow();
+    expect(early.stoppedBy, ProblemCode.deviceNotApproved);
+    expect(
+      (await phone.identity.refresh(phone.server)).state,
+      DeviceState.pending,
+    );
+    // The approver reads the code aloud; it is typed in Bangla digits.
+    await server.approveDevice(
+      enrolled.id,
+      toBanglaDigits(groupCheckCode(phone.identity.checkCode)),
+    );
+    final approved = await phone.identity.refresh(phone.server);
+    expect(approved.state, DeviceState.active);
+    expect(
+      approved.expires!.isAfter(DateTime.now().add(const Duration(days: 360))),
+      isTrue,
+    );
+    // A client without the device, on the same session, is still refused.
+    final unsigned = ObhijatraServer(
+      baseUrl: server.baseUrl,
+      appVersion: obhijatraCoreVersion,
+      authStore: await SettingsRepository(phone.db).authStore(),
+      timeout: const Duration(seconds: 10),
+    );
+    addTearDown(unsigned.close);
+    await expectLater(
+      unsigned.listPublishedFormVersions(),
+      _problem(ProblemCode.deviceNotEnrolled),
+    );
+
     final refresh = await phone.forms.refreshFromServer(phone.server);
     expect(refresh.added.single.version, sampleFormVersion);
     expect(refresh.failed, isEmpty);
@@ -131,11 +186,14 @@ void main() {
     // ---- The upgraded server starts on the same data.
     await server.start();
 
-    // ---- Second life of the app: same encrypted database, saved session.
-    phone = await _Phone.open(server.baseUrl, keys, dbFile);
+    // ---- Second life of the app: same encrypted database, saved session,
+    // ---- same device.
+    phone = await _Phone.open(server.baseUrl, keys, dbFile, deviceStore);
     addTearDown(phone.close);
     expect(phone.server.hasValidSession, isTrue);
     expect(keys.created, 1);
+    expect(deviceStore.seedWrites, 1);
+    expect(phone.identity.deviceId, enrolled.id);
 
     final after = await phone.sync.syncNow();
     expect(after.sent, 1, reason: 'report: ${after.stoppedBy}');
@@ -196,7 +254,7 @@ void main() {
         throwsA(isA<ObhijatraException>().having((e) => e.code, 'code', code));
 
     // ---- The organisation admin adds a person with a one-time password.
-    final admin = await _Admin.signIn(server.baseUrl);
+    final admin = await _Admin.signIn(server);
     addTearDown(admin.close);
     final root = (await admin.list('locations', filter: "parent = ''")).single;
     final branch = await admin.create('locations', {
@@ -215,33 +273,46 @@ void main() {
     });
     expect(person['must_change_password'], isTrue);
 
-    // ---- The phone signs in with it.
+    // ---- The phone signs in with it and enrols, as the app does.
     final store = AuthStore();
+    final identity = await DeviceIdentity.open(MemoryDeviceKeyStore());
+    addTearDown(identity.close);
     final client = ObhijatraServer(
       baseUrl: server.baseUrl,
       appVersion: obhijatraCoreVersion,
       authStore: store,
+      signer: identity,
       timeout: const Duration(seconds: 10),
     );
     addTearDown(client.close);
-    final user = await client.signIn(email: email, password: oneTime);
+    final user = await _retrying(
+      () => client.signIn(email: email, password: oneTime),
+    );
     expect(user.mustChangePassword, isTrue);
     expect(user.email, email);
     final oneTimeToken = store.token;
+    final enrolled = await identity.ensureEnrolled(
+      client,
+      label: 'E2E field phone',
+      platform: DevicePlatform.android,
+    );
+    expect(enrolled.state, DeviceState.pending);
 
-    // Nothing else works, and the app can tell why.
+    // Nothing else works from the waiting phone, and the app can tell why.
     await expectLater(
       client.listPublishedFormVersions(),
-      problem(ProblemCode.passwordChangeRequired),
+      problem(ProblemCode.deviceNotApproved),
     );
     final instance = await fillHouseholdVisit();
     await expectLater(
       client.submit(instanceXml: instance.xml),
-      problem(ProblemCode.passwordChangeRequired),
+      problem(ProblemCode.deviceNotApproved),
     );
     expect((await client.fetchMeta()).syncBlocker('0.1.0'), isNull);
     expect((await client.fetchSignInMethods()).password, isTrue);
+    expect((await client.deviceStatus()).state, DeviceState.pending);
 
+    // ---- The new password is chosen from the waiting phone.
     // A wrong one-time password changes nothing.
     await expectLater(
       client.changePassword(
@@ -253,14 +324,22 @@ void main() {
     expect(client.hasValidSession, isTrue);
 
     // ---- The person chooses their own password.
-    final changed = await client.changePassword(
-      currentPassword: oneTime,
-      newPassword: own,
+    final changed = await _retrying(
+      () => client.changePassword(currentPassword: oneTime, newPassword: own),
     );
     expect(changed.id, person['id']);
     expect(changed.mustChangePassword, isFalse);
     expect(client.hasValidSession, isTrue);
     expect(store.token, isNot(oneTimeToken));
+    // The new session belongs to the waiting phone, which still waits.
+    expect((await client.deviceStatus()).state, DeviceState.pending);
+    await expectLater(
+      client.listPublishedFormVersions(),
+      problem(ProblemCode.deviceNotApproved),
+    );
+    // ---- Then it is approved, and works.
+    await server.approveDevice(enrolled.id, identity.checkCode);
+    expect((await identity.refresh(client)).state, DeviceState.active);
     await client.listPublishedFormVersions(); // no longer refused
 
     // The one-time session ended, and the one-time password no longer
@@ -277,7 +356,7 @@ void main() {
     );
     addTearDown(again.close);
     await expectLater(
-      again.signIn(email: email, password: oneTime),
+      _retrying(() => again.signIn(email: email, password: oneTime)),
       problem(ProblemCode.signInFailed),
     );
     final stored = (await admin.list(
@@ -285,6 +364,49 @@ void main() {
       filter: "id = '${person['id']}'",
     )).single;
     expect(stored['must_change_password'], isFalse);
+
+    // ---- On an approved phone, the server's own refusal of a person with
+    // ---- a one-time password reaches the app as such.
+    const second = 'one.time.two@example.org';
+    await admin.create('field_users', {
+      'email': second,
+      'password': oneTime,
+      'passwordConfirm': oneTime,
+      'name': 'Sample Officer Two',
+      'role': 'field_officer',
+      'location': branch['id'],
+      'active': true,
+      'must_change_password': true,
+    });
+    final secondIdentity = await DeviceIdentity.open(
+      MemoryDeviceKeyStore(),
+    );
+    addTearDown(secondIdentity.close);
+    final secondClient = ObhijatraServer(
+      baseUrl: server.baseUrl,
+      appVersion: obhijatraCoreVersion,
+      authStore: AuthStore(),
+      signer: secondIdentity,
+      timeout: const Duration(seconds: 10),
+    );
+    addTearDown(secondClient.close);
+    await _retrying(
+      () => secondClient.signIn(email: second, password: oneTime),
+    );
+    final secondDevice = await secondIdentity.ensureEnrolled(
+      secondClient,
+      label: 'E2E field phone two',
+      platform: DevicePlatform.ios,
+    );
+    await server.approveDevice(secondDevice.id, secondIdentity.checkCode);
+    await expectLater(
+      secondClient.listPublishedFormVersions(),
+      problem(ProblemCode.passwordChangeRequired),
+    );
+    await expectLater(
+      secondClient.submit(instanceXml: instance.xml),
+      problem(ProblemCode.passwordChangeRequired),
+    );
   });
 
   test('the realtime connection of Google sign-in outlives the request '
@@ -311,31 +433,60 @@ void main() {
   });
 }
 
-/// The phone: encrypted database, server client, repositories and engine.
+Matcher _problem(ProblemCode code) =>
+    throwsA(isA<ObhijatraException>().having((e) => e.code, 'code', code));
+
+/// Runs a sign-in, waiting out the server's sign-in rate limit if needed.
+Future<T> _retrying<T>(Future<T> Function() signIn) async {
+  for (var attempt = 1; ; attempt++) {
+    try {
+      return await signIn();
+    } on ObhijatraException catch (e) {
+      if (e.code != ProblemCode.serverBusy || attempt == 3) rethrow;
+      await Future<void>.delayed(const Duration(milliseconds: 3500));
+    }
+  }
+}
+
+/// The phone: encrypted database, device identity, server client,
+/// repositories and engine.
 final class _Phone {
-  _Phone._(this.db, this.server)
+  _Phone._(this.db, this.identity, this.server)
     : forms = FormRepository(db),
       drafts = DraftRepository(db),
       outbox = OutboxRepository(db),
-      sync = SyncEngine(database: db, server: server, autoRetry: false);
+      sync = SyncEngine(
+        database: db,
+        server: server,
+        device: identity,
+        autoRetry: false,
+      );
 
-  static Future<_Phone> open(Uri baseUrl, KeyStore keys, File file) async {
+  static Future<_Phone> open(
+    Uri baseUrl,
+    KeyStore keys,
+    File file,
+    DeviceKeyStore deviceStore,
+  ) async {
     final db = await openDeviceDatabase(
       keyStore: keys,
       opener: FileDatabaseOpener(file),
     );
+    final identity = await DeviceIdentity.open(deviceStore);
     final server = ObhijatraServer(
       baseUrl: baseUrl,
       appVersion: obhijatraCoreVersion,
       authStore: await SettingsRepository(db).authStore(),
+      signer: identity,
       timeout: const Duration(seconds: 10),
     );
-    final phone = _Phone._(db, server);
+    final phone = _Phone._(db, identity, server);
     await phone.sync.start();
     return phone;
   }
 
   final DeviceDatabase db;
+  final DeviceIdentity identity;
   final ObhijatraServer server;
   final FormRepository forms;
   final DraftRepository drafts;
@@ -343,17 +494,16 @@ final class _Phone {
   final SyncEngine sync;
 
   /// Signs in, waiting out the server's login rate limit if needed.
-  Future<void> signIn() async {
-    for (var attempt = 1; ; attempt++) {
-      try {
-        await server.signIn(email: _fieldEmail, password: _fieldPassword);
-        return;
-      } on ObhijatraException catch (e) {
-        if (e.code != ProblemCode.serverBusy || attempt == 3) rethrow;
-        await Future<void>.delayed(const Duration(milliseconds: 3500));
-      }
-    }
-  }
+  Future<void> signIn() => _retrying(
+    () => server.signIn(email: _fieldEmail, password: _fieldPassword),
+  );
+
+  /// Enrols this phone right after the sign-in, as the app does.
+  Future<DeviceStatus> enrol() => identity.ensureEnrolled(
+    server,
+    label: 'E2E field phone',
+    platform: DevicePlatform.linux,
+  );
 
   /// Fills the cached sample form, saving the draft after every screen,
   /// and queues it. Returns the instance id.
@@ -388,6 +538,7 @@ final class _Phone {
   Future<void> close() async {
     await sync.dispose();
     server.close();
+    await identity.close();
     await db.close();
   }
 }
@@ -478,6 +629,24 @@ final class _Server {
     fail('The server did not start within 30 seconds:\n$_output');
   }
 
+  /// Approves the device [id] after checking [code], as the person running
+  /// the server does: `obhijatra-server device approve <id> <code>`.
+  Future<void> approveDevice(String id, String code) async {
+    final result = await Process.run(
+      binary,
+      ['device', 'approve', id, code, '--dir', _dataDir],
+      environment: _environment(),
+      includeParentEnvironment: false,
+    );
+    if (result.exitCode != 0) {
+      fail(
+        'device approve failed (${result.exitCode}):\n'
+        '${result.stdout}\n${result.stderr}',
+      );
+    }
+    expect('${result.stdout}', contains('Approved'));
+  }
+
   Future<void> stop() async {
     final process = _process;
     if (process == null) return;
@@ -501,20 +670,53 @@ final class _Server {
   }
 }
 
-/// The organisation admin, using the PocketBase record API directly.
+/// The organisation admin, using the PocketBase record API directly from a
+/// computer of their own: it makes its device keys, signs in, enrols the
+/// computer and has it approved on the server's command line (how the
+/// first organisation admin's first device is approved), then signs every
+/// request.
 final class _Admin {
   _Admin._(this.base, this.token, this.client);
 
-  static Future<_Admin> signIn(Uri base) async {
-    final client = http.Client();
-    final response = await client.post(
-      base.resolve('/api/collections/staff_users/auth-with-password'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'identity': _adminEmail, 'password': _adminPassword}),
-    );
+  static Future<_Admin> signIn(_Server server) async {
+    final base = server.baseUrl;
+    final keys = await SoftwareDeviceKeys.generate();
+    final signer = DeviceRequestSigner(keys);
+    final client = SigningHttpClient(http.Client(), signer: signer);
+    late http.Response response;
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      response = await client.post(
+        base.resolve('/api/collections/staff_users/auth-with-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'identity': _adminEmail, 'password': _adminPassword}),
+      );
+      if (response.statusCode != 429) break;
+      await Future<void>.delayed(const Duration(milliseconds: 3500));
+    }
     expect(response.statusCode, 200, reason: response.body);
     final json = jsonDecode(response.body) as Map<String, Object?>;
-    return _Admin._(base, json['token']! as String, client);
+    final token = json['token']! as String;
+
+    final enrol = await client.post(
+      base.resolve(deviceEnrolPath),
+      headers: {'Authorization': token, 'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'label': 'E2E admin computer',
+        'platform': 'linux',
+        'sign_public_key': base64.encode(keys.signPublicKey),
+        'enc_public_key': base64.encode(keys.encPublicKey),
+      }),
+    );
+    expect(enrol.statusCode, 200, reason: enrol.body);
+    final device = jsonDecode(enrol.body) as Map<String, Object?>;
+    expect(device['status'], 'pending');
+    final id = device['id']! as String;
+    await server.approveDevice(
+      id,
+      groupCheckCode(deviceCheckCode(keys.signPublicKey, keys.encPublicKey)),
+    );
+    signer.deviceId = id;
+    return _Admin._(base, token, client);
   }
 
   final Uri base;

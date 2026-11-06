@@ -8,6 +8,7 @@ import 'package:obhijatra_field/src/app_info.dart';
 import 'package:obhijatra_field/src/platform/device_authenticator.dart';
 import 'package:obhijatra_field/src/platform/secure_storage_key_store.dart';
 import 'package:obhijatra_field/src/platform/sign_in_browser.dart';
+import 'package:obhijatra_field/src/providers/device_providers.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 
 /// Where the app lock keeps its values (next to the database key).
@@ -256,8 +257,12 @@ class AppLockController extends AsyncNotifier<AppLockState> {
     final opener = await ref.read(databaseOpenerProvider.future);
     if (!await opener.databaseExists()) {
       // A new install: entries that survived an earlier one (an iOS
-      // Keychain outlives the app) must not lock an empty database.
+      // Keychain outlives the app) must not lock an empty database, and its
+      // device keys are not this installation's: it makes its own.
       await _lock.reset();
+      await ref.read(deviceKeyStoreProvider).clear();
+      // Anything opened from the old keys reopens with new ones.
+      ref.invalidate(deviceIdentityProvider);
       return const LockFresh();
     }
     return _evaluate();
@@ -386,6 +391,7 @@ class AppLockController extends AsyncNotifier<AppLockState> {
     final server = ObhijatraServer(
       baseUrl: address,
       appVersion: appReleaseVersion,
+      signer: await readDeviceIdentity(ref),
       httpClientFactory: ref.read(httpClientFactoryProvider),
     );
     try {
@@ -430,6 +436,8 @@ class AppLockController extends AsyncNotifier<AppLockState> {
       baseUrl: address,
       appVersion: appReleaseVersion,
       authStore: SettingsRepository.detachedAuthStore((data) => session = data),
+      // Signed once the phone is enrolled: the session is this phone's.
+      signer: await readDeviceIdentity(ref),
       httpClientFactory: ref.read(httpClientFactoryProvider),
     );
     try {
@@ -475,11 +483,15 @@ class AppLockController extends AsyncNotifier<AppLockState> {
         (data) => session = data,
         initial: pending.session,
       ),
+      signer: await readDeviceIdentity(ref),
       httpClientFactory: ref.read(httpClientFactoryProvider),
     );
     try {
       final SignedInUser user;
       try {
+        // The new password is chosen from an enrolled phone (it may still
+        // wait for approval).
+        await enrolThisPhone(ref, server);
         user = await server.changePassword(
           currentPassword: currentPassword,
           newPassword: newPassword,
@@ -489,6 +501,9 @@ class AppLockController extends AsyncNotifier<AppLockState> {
             e.code == ProblemCode.signInRequired) {
           _pendingChange = null; // The one-time session has ended.
         }
+        // For example, a phone the server no longer knows enrols again, so
+        // trying again works.
+        await recordDeviceProblem(ref, e, server);
         rethrow;
       }
       _pendingChange = null;
@@ -523,6 +538,14 @@ class AppLockController extends AsyncNotifier<AppLockState> {
     if (last != null && last.userId != user.id) {
       server.signOut();
       throw const WrongAccount();
+    }
+    // Enrol now if this phone is not enrolled yet (for example after an
+    // update from before device trust). A failure is not a sign-in failure:
+    // the device screen tries again once the data is open.
+    try {
+      await enrolThisPhone(ref, server);
+    } on ObhijatraException {
+      // Shown and retried by the device screen.
     }
     final saved = session();
     if (user.mustChangePassword) {

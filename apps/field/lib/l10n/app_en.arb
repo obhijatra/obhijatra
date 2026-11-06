@@ -991,6 +991,180 @@
   "@aboutSecurityBody": {
     "description": "Security notes on the About screen, including the advice to use one phone per person until each person's data can be kept apart."
   },
+  "actionSignInAgain": "Sign in again",
+  "@actionSignInAgain": {
+    "description": "Button that signs out, so the person can sign in again, when their sign-in has ended or belongs to another phone."
+  },
+  "deviceSettingUpTitle": "Setting up this phone",
+  "@deviceSettingUpTitle": {
+    "description": "Title of the screen shown while this phone enrols with the organisation's server (device trust), right after sign-in."
+  },
+  "deviceSettingUpBody": "Before you can get forms, this phone must be set up with your organisation's server. This needs an internet connection.",
+  "@deviceSettingUpBody": {
+    "description": "Explains the setting-up screen."
+  },
+  "deviceSettingUpWorking": "Setting up…",
+  "@deviceSettingUpWorking": {
+    "description": "Shown and spoken while the phone enrols."
+  },
+  "deviceWaitingTitle": "Waiting for approval",
+  "@deviceWaitingTitle": {
+    "description": "Title of the screen shown while this phone waits for a branch manager or an organisation admin to approve it."
+  },
+  "deviceWaitingBody": "Before this phone can get or send forms, your branch manager or an organisation admin must approve it.",
+  "@deviceWaitingBody": {
+    "description": "Says who approves the phone."
+  },
+  "deviceServerForgot": "The server no longer knew this phone, so it needs approval again.",
+  "@deviceServerForgot": {
+    "description": "Shown on the waiting screen when the organisation's server no longer knew this phone (for example after it was restored from a backup), so the phone was set up again with the same numbers."
+  },
+  "deviceRenewalTitle": "Approval has run out",
+  "@deviceRenewalTitle": {
+    "description": "Title of the screen shown when this phone's yearly approval has run out."
+  },
+  "deviceRenewalBody": "Each approval lasts one year, and this phone's has run out. Your branch manager or an organisation admin must approve it again. They check the same numbers as before.",
+  "@deviceRenewalBody": {
+    "description": "Explains the renewal screen."
+  },
+  "deviceSwitchedOffTitle": "This phone has been switched off",
+  "@deviceSwitchedOffTitle": {
+    "description": "Title of the screen shown when the organisation has switched this phone off (revoked it)."
+  },
+  "deviceSwitchedOffBody": "Your organisation has switched off this phone for Obhijatra, so it cannot get or send forms. This happens, for example, when a phone is reported lost.",
+  "@deviceSwitchedOffBody": {
+    "description": "Explains the switched-off screen."
+  },
+  "deviceSwitchedOffKept": "Your unsent forms and drafts stay on this phone.",
+  "@deviceSwitchedOffKept": {
+    "description": "Reassurance on the switched-off screen."
+  },
+  "deviceSwitchedOffNext": "Ask your organisation admin whether you should use this phone. If so, set it up again, then ask your branch manager or an organisation admin to approve it.",
+  "@deviceSwitchedOffNext": {
+    "description": "What to do on the switched-off screen."
+  },
+  "deviceCodeHeading": "This phone's numbers",
+  "@deviceCodeHeading": {
+    "description": "Heading above the 18-digit check code (six groups of three digits) that the approver checks. Called 'numbers', as in the manager app and on the server."
+  },
+  "deviceCodeSpoken": "This phone's numbers: {numbers}",
+  "@deviceCodeSpoken": {
+    "description": "What a screen reader says for the check code, read digit by digit, group by group.",
+    "placeholders": {
+      "numbers": {
+        "type": "String",
+        "example": "2 2 5, 1 4 2, 7 5 3, 6 9 9, 7 5 2, 8 8 9"
+      }
+    }
+  },
+  "deviceShowInPerson": "Show these numbers to them in person, or read them out on a phone call.",
+  "@deviceShowInPerson": {
+    "description": "How to give the approver the numbers."
+  },
+  "deviceNeverSend": "Never send the numbers in a message (SMS, WhatsApp or email): your approver must see or hear them from you.",
+  "@deviceNeverSend": {
+    "description": "Warning on the waiting screen."
+  },
+  "deviceAutoCheck": "While this screen is open, it checks again by itself every 15 seconds.",
+  "@deviceAutoCheck": {
+    "description": "Says that the waiting screen asks the server again by itself."
+  },
+  "deviceLastChecked": "Last checked {when}",
+  "@deviceLastChecked": {
+    "description": "When the server last answered about this phone.",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "today at 10:30 am"
+      }
+    }
+  },
+  "deviceCheckAgain": "Check again",
+  "@deviceCheckAgain": {
+    "description": "Button that asks the server again whether this phone is approved."
+  },
+  "deviceChecking": "Checking…",
+  "@deviceChecking": {
+    "description": "Shown on the button while the server is asked."
+  },
+  "deviceFillInForms": "Fill in forms on this phone for now",
+  "@deviceFillInForms": {
+    "description": "Button that opens the app before the phone is approved, to fill in forms already on the phone. They are sent once it is approved."
+  },
+  "deviceCheckOffline": "There is no internet connection, so this phone could not reach your organisation's server. Connect to the internet, then try again.",
+  "@deviceCheckOffline": {
+    "description": "Shown on the device screen when the server cannot be reached."
+  },
+  "deviceSetUpAgain": "Set up this phone again",
+  "@deviceSetUpAgain": {
+    "description": "Button on the switched-off screen."
+  },
+  "deviceSetUpAgainTitle": "Set up this phone again?",
+  "@deviceSetUpAgainTitle": {
+    "description": "Title of the confirmation before setting the phone up again."
+  },
+  "deviceSetUpAgainBody": "This phone gets new numbers, and you are signed out. Your unsent forms and drafts stay on this phone. Then sign in again, and ask your branch manager or an organisation admin to approve the new numbers.",
+  "@deviceSetUpAgainBody": {
+    "description": "What setting the phone up again does."
+  },
+  "deviceSetUpAgainConfirm": "Set up again",
+  "@deviceSetUpAgainConfirm": {
+    "description": "Confirms setting the phone up again."
+  },
+  "deviceNoticeSettingUp": "This phone is not set up with your organisation's server yet. Finished forms are sent once it is set up and approved.",
+  "@deviceNoticeSettingUp": {
+    "description": "Notice on the Today screen."
+  },
+  "deviceNoticeWaiting": "This phone is waiting for approval. Finished forms are sent once it is approved.",
+  "@deviceNoticeWaiting": {
+    "description": "Notice on the Today screen."
+  },
+  "deviceNoticeRenewal": "This phone's approval has run out. Finished forms are sent once it is approved again.",
+  "@deviceNoticeRenewal": {
+    "description": "Notice on the Today screen."
+  },
+  "deviceNoticeSwitchedOff": "This phone is switched off for Obhijatra. Finished forms stay on this phone.",
+  "@deviceNoticeSwitchedOff": {
+    "description": "Notice on the Today screen."
+  },
+  "deviceShowCode": "Show this phone's numbers",
+  "@deviceShowCode": {
+    "description": "Button on the Today notice that opens the waiting screen."
+  },
+  "deviceSeeWhatToDo": "See what to do",
+  "@deviceSeeWhatToDo": {
+    "description": "Button on the Today notice that opens the device screen."
+  },
+  "settingsThisPhone": "This phone",
+  "@settingsThisPhone": {
+    "description": "Heading of the Settings section about this phone's approval."
+  },
+  "deviceStatusApproved": "Approved until {date}",
+  "@deviceStatusApproved": {
+    "description": "This phone's status in Settings.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "4 November 2027"
+      }
+    }
+  },
+  "deviceStatusWaiting": "Waiting for approval",
+  "@deviceStatusWaiting": {
+    "description": "This phone's status in Settings."
+  },
+  "deviceStatusRenewal": "Approval has run out",
+  "@deviceStatusRenewal": {
+    "description": "This phone's status in Settings."
+  },
+  "deviceStatusSwitchedOff": "Switched off",
+  "@deviceStatusSwitchedOff": {
+    "description": "This phone's status in Settings."
+  },
+  "deviceStatusSettingUp": "Not set up yet",
+  "@deviceStatusSettingUp": {
+    "description": "This phone's status in Settings."
+  },
   "problem_offline": "There is no internet connection right now. Your work is safe on this phone and will be sent when the signal returns.",
   "@problem_offline": {
     "description": "Plain-language explanation of the problem code \"offline\". Shown to a field officer."
@@ -1134,6 +1308,50 @@
   "problem_passwordChangedSignInAgain": "Your new password is saved. Sign in again with your new password.",
   "@problem_passwordChangedSignInAgain": {
     "description": "Plain-language explanation of the problem code \"passwordChangedSignInAgain\". Shown to a field officer."
+  },
+  "problem_deviceNotEnrolled": "This phone is not set up with your organisation's server yet. Connect to the internet and open the app: it sets itself up. Your work is safe on this phone.",
+  "@problem_deviceNotEnrolled": {
+    "description": "Plain-language explanation of the problem code \"deviceNotEnrolled\". Shown to a field officer."
+  },
+  "problem_deviceSignatureInvalid": "The server could not check this phone's request. We will try again by ourselves. If it keeps happening, sign out and sign in again.",
+  "@problem_deviceSignatureInvalid": {
+    "description": "Plain-language explanation of the problem code \"deviceSignatureInvalid\". Shown to a field officer."
+  },
+  "problem_deviceUnknown": "Your organisation's server no longer knew this phone, so the phone is set up again with the same numbers and must be approved again. Your forms stay on this phone.",
+  "@problem_deviceUnknown": {
+    "description": "Plain-language explanation of the problem code \"deviceUnknown\". Shown to a field officer."
+  },
+  "problem_deviceClockWrong": "The date or time on this phone is wrong, so the server cannot accept it. Open the phone's Settings and turn on automatic date and time, then come back and try again. Your forms are kept on this phone.",
+  "@problem_deviceClockWrong": {
+    "description": "Plain-language explanation of the problem code \"deviceClockWrong\". Shown to a field officer."
+  },
+  "problem_deviceNotApproved": "This phone is waiting for approval by your branch manager or an organisation admin. Your forms are kept and sent once it is approved.",
+  "@problem_deviceNotApproved": {
+    "description": "Plain-language explanation of the problem code \"deviceNotApproved\". Shown to a field officer."
+  },
+  "problem_deviceApprovalExpired": "This phone's approval has run out. Ask your branch manager or an organisation admin to approve it again. Your forms are kept.",
+  "@problem_deviceApprovalExpired": {
+    "description": "Plain-language explanation of the problem code \"deviceApprovalExpired\". Shown to a field officer."
+  },
+  "problem_deviceRevoked": "Your organisation has switched off this phone for Obhijatra. Your forms stay on this phone. Ask your organisation admin what to do.",
+  "@problem_deviceRevoked": {
+    "description": "Plain-language explanation of the problem code \"deviceRevoked\". Shown to a field officer."
+  },
+  "problem_sessionEnded": "Your sign-in has ended. Please sign in again to send your forms. Your answers stay on this phone.",
+  "@problem_sessionEnded": {
+    "description": "Plain-language explanation of the problem code \"sessionEnded\". Shown to a field officer."
+  },
+  "problem_sessionOnOtherDevice": "This sign-in belongs to another phone. Please sign in again on this phone. Your answers stay on this phone.",
+  "@problem_sessionOnOtherDevice": {
+    "description": "Plain-language explanation of the problem code \"sessionOnOtherDevice\". Shown to a field officer."
+  },
+  "problem_deviceKeyInUse": "This phone's numbers are already in use, so it could not be set up. Try again. If it happens again, ask your organisation admin.",
+  "@problem_deviceKeyInUse": {
+    "description": "Plain-language explanation of the problem code \"deviceKeyInUse\". Shown to a field officer."
+  },
+  "problem_tooManyDevicesWaiting": "Three of your phones are already waiting for approval. Ask your branch manager or an organisation admin to approve them or switch them off, then try again.",
+  "@problem_tooManyDevicesWaiting": {
+    "description": "Plain-language explanation of the problem code \"tooManyDevicesWaiting\". Shown to a field officer."
   },
   "problem_unknown": "Something went wrong. Your work is safe on this phone. Please try again.",
   "@problem_unknown": {

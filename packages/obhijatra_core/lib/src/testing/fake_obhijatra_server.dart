@@ -7,6 +7,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:obhijatra_core/src/forms/xform_info.dart';
+import 'package:obhijatra_core/src/server/request_signer.dart';
+import 'package:obhijatra_core/src/server/server_models.dart';
+import 'package:obhijatra_core/src/testing/ed25519_check.dart';
 import 'package:xml/xml.dart';
 
 /// The password of every field user of a [FakeObhijatraServer].
@@ -85,6 +88,20 @@ final class ErrorStatus extends Glitch {
   final String message;
 }
 
+/// The server refuses the request as its device gate does: HTTP [status]
+/// with the device-trust [reason] (one of `DeviceReason`) in
+/// `data.reason.code`. Used by submissions.
+final class DeviceRefusal extends Glitch {
+  /// Creates the glitch.
+  const DeviceRefusal(this.status, this.reason);
+
+  /// The HTTP status (401 or 403).
+  final int status;
+
+  /// The reason code.
+  final String reason;
+}
+
 /// For a submission: the server stores it, but the answer never reaches the
 /// phone (the connection drops after the request). Elsewhere it acts as
 /// [NoConnection].
@@ -145,6 +162,55 @@ final class StoredSubmission {
   final List<Part> parts;
 }
 
+/// A device enrolled with a [FakeObhijatraServer].
+final class FakeDevice {
+  FakeDevice._({
+    required this.id,
+    required this.userId,
+    required this.label,
+    required this.platform,
+    required this.signPublicKey,
+    required this.encPublicKey,
+  });
+
+  /// The device id the fake gave it (15 characters).
+  final String id;
+
+  /// The field user it belongs to.
+  final String userId;
+
+  /// Its label, as sent at enrolment.
+  final String label;
+
+  /// Its platform, as sent at enrolment.
+  final String platform;
+
+  /// Its Ed25519 public key.
+  final Uint8List signPublicKey;
+
+  /// Its X25519 public key.
+  final Uint8List encPublicKey;
+
+  /// `pending`, `active` or `revoked`, as the server stores it.
+  String status = 'pending';
+
+  /// When it was approved.
+  DateTime? approvedAt;
+
+  /// When its approval runs out.
+  DateTime? expires;
+
+  /// The 18-digit check code of its keys, as the approver's app works it
+  /// out.
+  String get checkCode => deviceCheckCode(signPublicKey, encPublicKey);
+
+  /// Whether it is approved and the approval has not run out at [now].
+  bool usableAt(DateTime now) {
+    final until = expires;
+    return status == 'active' && until != null && until.isAfter(now);
+  }
+}
+
 /// An in-memory stand-in for `obhijatra-server`, for app and core tests.
 ///
 /// It follows the server's contract for what the apps use:
@@ -161,6 +227,20 @@ final class StoredSubmission {
 /// [sentSms]; [finishGoogleSignIn] plays the person's part on Google's page
 /// (the realtime connection the app holds gets the code, as the server's
 /// redirect page would hand it over).
+///
+/// Device trust follows the server (docs/decisions/0008-device-trust.md):
+/// `POST /api/obhijatra/v1/devices/enrol` and `GET .../devices/me` always
+/// work, with the server's checks and refusals, and every signature is
+/// checked with the real Ed25519 algorithm. With [requireDevices], every
+/// request of a signed-in person must also be signed by an approved device
+/// of theirs (a waiting one may only read its status and do what replacing
+/// a one-time password needs), sessions belong to one device, and file
+/// downloads need an approved device. [approveDevice] does what
+/// `obhijatra-server device approve` does (it checks the code);
+/// [revokeDevice], [expireDevice] and [endSessionsOf] do what an
+/// organisation admin, time and the server do; [forgetDevice] what a
+/// restore from an older backup does (the device's requests then get
+/// `device_unknown`).
 ///
 /// One-time passwords follow the server as well: [giveOneTimePassword] does
 /// what an organisation admin does (the sign-in answer then says
@@ -183,10 +263,119 @@ final class StoredSubmission {
 ///
 /// The end-to-end test in `obhijatra_core` runs the real server instead.
 final class FakeObhijatraServer {
-  /// Creates a server publishing [xform], if given.
-  FakeObhijatraServer({String? xform}) {
+  /// Creates a server publishing [xform], if given; [requireDevices] turns
+  /// on the device checks of every request.
+  FakeObhijatraServer({String? xform, this.requireDevices = false}) {
     if (xform != null) publish(xform);
   }
+
+  /// Whether every request of a signed-in person must be signed by an
+  /// approved device of theirs, as on the real server. Off by default, for
+  /// tests that are not about device trust; the device routes work either
+  /// way.
+  bool requireDevices;
+
+  /// Whether a newly enrolled device is approved at once (for tests that
+  /// need a signed-in, approved phone without playing the approver).
+  bool approveDevicesAtOnce = false;
+
+  /// The devices enrolled, by id.
+  final Map<String, FakeDevice> devices = {};
+
+  /// The devices of the user with [email], oldest first.
+  List<FakeDevice> devicesOf(String email) {
+    final id = users[email]?.id;
+    return [
+      for (final d in devices.values)
+        if (d.userId == id) d,
+    ];
+  }
+
+  /// Approves the device [id] after checking [code] (spaces, dashes and
+  /// Bangla digits allowed), as `obhijatra-server device approve` does: for
+  /// a year from now. Throws a [StateError] when the device is unknown or
+  /// switched off, or the code does not match.
+  FakeDevice approveDevice(String id, String code) {
+    final device = devices[id];
+    if (device == null) throw StateError('No device has the id $id');
+    if (device.status == 'revoked') {
+      throw StateError('The device $id is switched off');
+    }
+    if (normaliseCheckCode(code) != device.checkCode) {
+      throw StateError('The code does not match the device $id');
+    }
+    final now = _serverNow();
+    device
+      ..status = 'active'
+      ..approvedAt = now
+      ..expires = now.add(const Duration(days: 365));
+    return device;
+  }
+
+  /// Switches the device [id] off and ends its sessions.
+  void revokeDevice(String id) {
+    devices[id]!.status = 'revoked';
+    for (final token in [
+      for (final MapEntry(:key, :value) in _sessionDevices.entries)
+        if (value == id) key,
+    ]) {
+      final user = _tokens.remove(token);
+      if (user != null) _endedSessions[token] = user;
+    }
+  }
+
+  /// Forgets the device [id] as a restore from a backup older than its
+  /// enrolment does: the device is gone, and so is what tied sessions to it
+  /// (the sessions themselves stay; end them with [endSessionsOf] for a
+  /// backup older than the sign-in too). Its keys can then be enrolled
+  /// again as a new device.
+  void forgetDevice(String id) {
+    devices.remove(id);
+    _sessionDevices.removeWhere((_, device) => device == id);
+  }
+
+  /// Makes the approval of device [id] run out (an hour ago).
+  void expireDevice(String id) =>
+      devices[id]!.expires = _serverNow().subtract(const Duration(hours: 1));
+
+  /// Ends every session of the user with [email], as an organisation admin
+  /// does: the session tokens still look valid, but the server answers 401
+  /// with the reason `session_revoked`.
+  void endSessionsOf(String email) {
+    final id = users[email]!.id;
+    for (final token in [
+      for (final MapEntry(:key, :value) in _tokens.entries)
+        if (value == id) key,
+    ]) {
+      _endedSessions[token] = _tokens.remove(token)!;
+    }
+  }
+
+  /// Registers a file token for [userId], as `POST /api/files/token` gives
+  /// one (for example, to open a download link without the app).
+  String issueFileToken(String userId) {
+    final token = 'file-token-${_fileTokens.length}';
+    _fileTokens[token] = userId;
+    return token;
+  }
+
+  /// The id of the device session [token] belongs to, if any.
+  String? deviceOfSession(String token) => _sessionDevices[token];
+
+  /// The headers of the last request that reached the fake.
+  Map<String, String> lastHeaders = const {};
+
+  /// Glitches for the next device requests (enrolment and status), used up
+  /// one per request.
+  final List<Glitch> deviceGlitches = [];
+
+  final Map<String, String> _sessionDevices = {};
+  final Map<String, String> _endedSessions = {};
+  final Set<String> _nonces = {};
+  int _deviceIds = 0;
+
+  /// The server's clock: the phone's ([clock.now]) moved by [clockOffset].
+  DateTime _serverNow() => clock.now().toUtc().add(clockOffset);
 
   /// The address to give the client; any address works.
   static final Uri baseUrl = Uri.parse('https://data.example.org');
@@ -300,7 +489,9 @@ final class FakeObhijatraServer {
   final Map<String, String> _published = {};
   final Map<String, String> _tokens = {};
   int _tokenSerial = 0;
-  final List<String> _fileTokens = [];
+
+  /// File tokens and the user each was given to.
+  final Map<String, String> _fileTokens = {};
 
   // SMS codes by code id, and when codes were asked for, by number.
   final Map<String, _Code> _codes = {};
@@ -384,11 +575,17 @@ final class FakeObhijatraServer {
   }
 
   /// Forgets every session, as when sessions expire on the server.
-  void expireSessions() => _tokens.clear();
+  void expireSessions() {
+    _tokens.clear();
+    _endedSessions.clear();
+  }
 
-  /// Ends every session of [userId], as a password change does.
-  void _endSessionsOf(String userId) =>
-      _tokens.removeWhere((_, owner) => owner == userId);
+  /// Ends every session of [userId], as a password change does (the old
+  /// session tokens stop working at all).
+  void _endSessionsOf(String userId) {
+    _tokens.removeWhere((_, owner) => owner == userId);
+    _endedSessions.removeWhere((_, owner) => owner == userId);
+  }
 
   /// An HTTP client routed to this fake.
   http.Client client() => MockClient.streaming(_handleStreamed);
@@ -434,9 +631,18 @@ final class FakeObhijatraServer {
         ),
       );
     }
+    lastHeaders = request.headers;
+    FakeDevice? verified;
+    if (requireDevices) {
+      final gate = _deviceGate(request);
+      if (gate.refusal != null) return _withDate(gate.refusal!);
+      verified = gate.device;
+    }
     final refused = _passwordGate(request);
     if (refused != null) return _withDate(refused);
     final response = switch (path) {
+      deviceEnrolPath => _enrolDevice(request),
+      deviceMePath => _deviceMe(request, verified),
       '/api/obhijatra/v1/meta' => _meta(request),
       '/api/collections/field_users/auth-with-password' => _signIn(request),
       '/api/obhijatra/v1/signin/methods' => _signInMethods(request),
@@ -507,15 +713,24 @@ final class FakeObhijatraServer {
         'Sign-in failed. Check the email address and password and try again.',
       );
     }
-    return _authResponse(email as String, user);
+    return _authResponse(request, email as String, user);
   }
 
   /// PocketBase's answer to a sign-in that worked: a session token and the
-  /// user's record.
-  http.Response _authResponse(String email, FakeFieldUser user) => _json(200, {
-    'token': issueToken(user.id),
-    'record': _recordOf(email, user),
-  });
+  /// user's record. A sign-in signed by a device of the user's (not
+  /// switched off) ties the new session to it at once.
+  http.Response _authResponse(
+    http.Request request,
+    String email,
+    FakeFieldUser user,
+  ) {
+    final token = issueToken(user.id);
+    if ((request.headers[DeviceHeaders.device] ?? '').isNotEmpty) {
+      final signed = _verifiedDevice(request, user.id);
+      if (signed.device != null) _sessionDevices[token] = signed.device!.id;
+    }
+    return _json(200, {'token': token, 'record': _recordOf(email, user)});
+  }
 
   /// The user's record, as the server shows it to the user.
   Map<String, Object?> _recordOf(String email, FakeFieldUser user) => {
@@ -538,9 +753,28 @@ final class FakeObhijatraServer {
   http.Response? _passwordGate(http.Request request) {
     final userId = _user(request);
     if (userId == null || !_mustChange.contains(userId)) return null;
+    if (_passwordGateAllows(request, userId)) return null;
+    const message = 'Choose a new password before you continue.';
+    return _json(403, {
+      'status': 403,
+      'message': message,
+      'data': {
+        'reason': {'code': 'password_change_required', 'message': message},
+      },
+    });
+  }
+
+  /// What a person who must choose their own password may do: the public
+  /// routes, sign-in and refresh, enrol this device and read its status,
+  /// and read or change (only the password of) their own record; never with
+  /// related records expanded.
+  static bool _passwordGateAllows(http.Request request, String userId) {
+    if (request.url.queryParameters.containsKey('expand')) return false;
     final path = request.url.path;
-    final allowed = switch (path) {
+    return switch (path) {
       '/api/obhijatra/v1/meta' || '/api/obhijatra/v1/signin/methods' => true,
+      deviceEnrolPath => request.method == 'POST',
+      deviceMePath => request.method == 'GET',
       _
           when path.startsWith('/api/collections/field_users/auth-with-') ||
               path == '/api/collections/field_users/auth-refresh' =>
@@ -552,15 +786,6 @@ final class FakeObhijatraServer {
       },
       _ => false,
     };
-    if (allowed) return null;
-    const message = 'Choose a new password before you continue.';
-    return _json(403, {
-      'status': 403,
-      'message': message,
-      'data': {
-        'reason': {'code': 'password_change_required', 'message': message},
-      },
-    });
   }
 
   static bool _onlyPasswordFields(http.Request request) {
@@ -749,7 +974,7 @@ final class FakeObhijatraServer {
     final email = users.entries
         .firstWhere((e) => identical(e.value, current))
         .key;
-    return _authResponse(email, current);
+    return _authResponse(request, email, current);
   }
 
   http.Response _authMethods() => _json(200, {
@@ -832,7 +1057,7 @@ final class FakeObhijatraServer {
         'This account cannot sign in. Ask your organisation admin.',
       );
     }
-    return _authResponse(entry.key, entry.value);
+    return _authResponse(request, entry.key, entry.value);
   }
 
   http.StreamedResponse _connectRealtime(http.BaseRequest request) {
@@ -911,14 +1136,14 @@ final class FakeObhijatraServer {
   }
 
   http.Response _fileToken(http.Request request) {
-    if (_user(request) == null) return _error(401, 'Sign in.');
-    _fileTokens.add('file-token-${_fileTokens.length}');
-    return _json(200, {'token': _fileTokens.last});
+    final user = _user(request);
+    if (user == null) return _error(401, 'Sign in.');
+    return _json(200, {'token': issueFileToken(user)});
   }
 
   http.Response _download(http.Request request) {
     // A protected file: only a file token opens it, as on the server.
-    if (!_fileTokens.contains(request.url.queryParameters['token'])) {
+    if (!_fileTokens.containsKey(request.url.queryParameters['token'])) {
       return _error(404, "The requested resource wasn't found.");
     }
     final fileName = request.url.pathSegments.last;
@@ -941,6 +1166,9 @@ final class FakeObhijatraServer {
       throw http.ClientException('Connection reset by peer', request.url);
     }
     if (glitch is ErrorStatus) return _error(glitch.status, glitch.message);
+    if (glitch is DeviceRefusal) {
+      return _deviceRefusal(glitch.status, glitch.reason);
+    }
 
     final userId = _user(request);
     if (userId == null) {
@@ -1011,6 +1239,369 @@ final class FakeObhijatraServer {
       'instance_id': instanceId,
       'status': 'received',
       'message': 'Submission received.',
+    });
+  }
+
+  // ---- Device trust ------------------------------------------------------
+
+  /// The server's device gate for one request (see [requireDevices]): the
+  /// device that signed it, or why it is refused.
+  ({FakeDevice? device, http.Response? refusal}) _deviceGate(
+    http.Request request,
+  ) {
+    final token = request.headers['Authorization'] ?? '';
+    final person = _tokens[token] ?? _endedSessions[token];
+    if (person == null) {
+      // Strangers and sign-in; a file token of a person needs their device.
+      return (device: null, refusal: _fileTokenGate(request));
+    }
+    final path = request.url.path;
+    if (request.method == 'POST' && path == deviceEnrolPath) {
+      return (device: null, refusal: null); // checked by the route
+    }
+    final signed = _verifiedDevice(request, person);
+    final device = signed.device;
+    if (device == null) return signed;
+    if (!device.usableAt(_serverNow()) && !_mayUseUnapproved(request, person)) {
+      return (device: null, refusal: _unusable(device));
+    }
+    final session = _sessionRefusal(token, device);
+    return (device: session == null ? device : null, refusal: session);
+  }
+
+  /// What a waiting device (or one whose approval ran out) may do.
+  bool _mayUseUnapproved(http.Request request, String userId) {
+    final path = request.url.path;
+    if (path == deviceMePath && request.method == 'GET') return true;
+    if (request.method == 'POST' &&
+        path == '/api/collections/field_users/auth-refresh' &&
+        !request.url.queryParameters.containsKey('expand')) {
+      return true;
+    }
+    return _mustChange.contains(userId) && _passwordGateAllows(request, userId);
+  }
+
+  http.Response? _fileTokenGate(http.Request request) {
+    if (!request.url.path.startsWith('/api/files/')) return null;
+    final person = _fileTokens[request.url.queryParameters['token']];
+    if (person == null) return null;
+    final signed = _verifiedDevice(request, person);
+    final device = signed.device;
+    if (device == null) return signed.refusal;
+    return device.usableAt(_serverNow()) ? null : _unusable(device);
+  }
+
+  http.Response _unusable(FakeDevice device) => device.status == 'active'
+      ? _deviceRefusal(403, DeviceReason.expired)
+      : _deviceRefusal(403, DeviceReason.notApproved);
+
+  /// The session [token] on [device]: refused when it has ended or belongs
+  /// to another device; a session no device has used yet becomes this
+  /// one's.
+  http.Response? _sessionRefusal(String token, FakeDevice device) {
+    if (_endedSessions.containsKey(token)) {
+      return _deviceRefusal(401, DeviceReason.sessionRevoked);
+    }
+    final bound = _sessionDevices[token];
+    if (bound == null) {
+      _sessionDevices[token] = device.id;
+    } else if (bound != device.id) {
+      return _deviceRefusal(401, DeviceReason.sessionOtherDevice);
+    }
+    return null;
+  }
+
+  /// The device named in [request]'s headers, if it belongs to [userId],
+  /// signed this request and is not switched off; otherwise the refusal.
+  ({FakeDevice? device, http.Response? refusal}) _verifiedDevice(
+    http.Request request,
+    String userId,
+  ) {
+    final id = request.headers[DeviceHeaders.device] ?? '';
+    if (id.isEmpty) {
+      return (
+        device: null,
+        refusal: _deviceRefusal(403, DeviceReason.signatureRequired),
+      );
+    }
+    final device = devices[id];
+    if (device == null || device.userId != userId) {
+      // Not one of this person's devices (for example, forgotten by a
+      // restore from an older backup): the phone enrols again.
+      return (device: null, refusal: _deviceRefusal(403, DeviceReason.unknown));
+    }
+    final refusal = _signatureRefusal(request, id, device.signPublicKey);
+    if (refusal != null) return (device: null, refusal: refusal);
+    if (device.status == 'revoked') {
+      return (device: null, refusal: _deviceRefusal(403, DeviceReason.revoked));
+    }
+    return (device: device, refusal: null);
+  }
+
+  /// Checks the signature headers of [request] with [signKey]: the time
+  /// within 5 minutes of the server's clock, a nonce not seen before (for
+  /// [scope]) and the Ed25519 signature over the exact request.
+  http.Response? _signatureRefusal(
+    http.Request request,
+    String scope,
+    List<int> signKey,
+  ) {
+    final time = request.headers[DeviceHeaders.time] ?? '';
+    final nonce = request.headers[DeviceHeaders.nonce] ?? '';
+    final signature = request.headers[DeviceHeaders.signature] ?? '';
+    if (time.isEmpty || nonce.isEmpty || signature.isEmpty) {
+      return _deviceRefusal(403, DeviceReason.signatureRequired);
+    }
+    final seconds = int.tryParse(time);
+    if (seconds == null || !RegExp(r'^[A-Za-z0-9_-]{22}$').hasMatch(nonce)) {
+      return _deviceRefusal(403, DeviceReason.signatureInvalid);
+    }
+    final at = DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true);
+    if (at.difference(_serverNow()).abs() > const Duration(minutes: 5)) {
+      return _deviceRefusal(403, DeviceReason.clock);
+    }
+    final List<int> bytes;
+    try {
+      bytes = base64Url.decode(base64Url.normalize(signature));
+    } on FormatException {
+      return _deviceRefusal(403, DeviceReason.signatureInvalid);
+    }
+    final message = requestMessage(
+      method: request.method,
+      target: requestTarget(request.url),
+      unixTime: time,
+      nonce: nonce,
+      body: request.bodyBytes,
+    );
+    if (!ed25519SignatureValid(signKey, message, bytes) ||
+        !_nonces.add('$scope\u0000$nonce')) {
+      return _deviceRefusal(403, DeviceReason.signatureInvalid);
+    }
+    return null;
+  }
+
+  /// `POST /api/obhijatra/v1/devices/enrol`, with the server's checks.
+  http.Response _enrolDevice(http.Request request) {
+    final glitch = _next(deviceGlitches, null);
+    if (glitch is Redirect) return _redirect(glitch);
+    if (glitch is NoConnection || glitch is LostResponse) _drop(request);
+    if (glitch is ErrorStatus) return _error(glitch.status, glitch.message);
+    if (request.method != 'POST') {
+      return _error(404, "The requested resource wasn't found.");
+    }
+    final token = request.headers['Authorization'] ?? '';
+    final userId = _tokens[token] ?? _endedSessions[token];
+    if (userId == null) {
+      return _error(
+        401,
+        'The request requires valid record authorization token.',
+      );
+    }
+    final Object? body;
+    try {
+      body = jsonDecode(request.body);
+    } on FormatException {
+      return _error(400, 'The request could not be read.');
+    }
+    if (body is! Map<String, Object?>) {
+      return _error(400, 'The request could not be read.');
+    }
+    final signText = body['sign_public_key'];
+    final encText = body['enc_public_key'];
+    final signKey = _keyOf(signText);
+    if (signKey == null || !ed25519KeyUsable(signKey)) {
+      return _fieldError('sign_public_key', 'validation_invalid_key');
+    }
+    final encKey = _keyOf(encText);
+    if (encKey == null || encKey.every((b) => b == 0)) {
+      return _fieldError('enc_public_key', 'validation_invalid_key');
+    }
+    final label = body['label'] is String
+        ? (body['label']! as String).trim()
+        : '';
+    if (label.isEmpty ||
+        label.runes.length > maxDeviceLabelLength ||
+        label.runes.any((r) => r < 0x20 || (r >= 0x7f && r < 0xa0))) {
+      return _fieldError('label', 'validation_invalid_label');
+    }
+    final platform = body['platform'];
+    if (!DevicePlatform.values.any((p) => p.name == platform)) {
+      return _fieldError('platform', 'validation_invalid_platform');
+    }
+    if (request.headers[DeviceHeaders.device] != enrolDeviceId) {
+      return _deviceRefusal(403, DeviceReason.signatureRequired);
+    }
+    // The session first, so an ended session cannot fill the nonce memory.
+    if (_endedSessions.containsKey(token)) {
+      return _deviceRefusal(401, DeviceReason.sessionRevoked);
+    }
+    // A session already tied to a device (even one that is gone) enrols
+    // only that device's keys.
+    final boundId = _sessionDevices[token];
+    final bound = devices[boundId];
+    if (boundId != null &&
+        (bound == null || !_sameBytes(bound.signPublicKey, signKey))) {
+      return _deviceRefusal(401, DeviceReason.sessionOtherDevice);
+    }
+    final refusal = _signatureRefusal(request, 'enrol:$signText', signKey);
+    if (refusal != null) return refusal;
+
+    final existing = devices.values
+        .where((d) => _sameBytes(d.signPublicKey, signKey))
+        .firstOrNull;
+    if (existing != null) {
+      if (existing.userId != userId ||
+          existing.status == 'revoked' ||
+          !_sameBytes(existing.encPublicKey, encKey)) {
+        return _error(
+          409,
+          "This device's key is already in use. Clear the app's data on "
+          'this device and sign in again.',
+        );
+      }
+      _sessionDevices[token] = existing.id;
+      return _json(200, _viewOf(existing));
+    }
+    if (bound != null) {
+      return _deviceRefusal(401, DeviceReason.sessionOtherDevice);
+    }
+    final waiting = devices.values
+        .where((d) => d.userId == userId && d.status == 'pending')
+        .length;
+    if (waiting >= 3) {
+      return _error(
+        429,
+        'Too many of your devices are waiting for approval. Ask your '
+        'approver to approve them or switch them off.',
+      );
+    }
+    final device = FakeDevice._(
+      id: 'device${++_deviceIds}'.padRight(15, '0'),
+      userId: userId,
+      label: label,
+      platform: platform! as String,
+      signPublicKey: signKey,
+      encPublicKey: encKey,
+    );
+    devices[device.id] = device;
+    if (approveDevicesAtOnce) approveDevice(device.id, device.checkCode);
+    _sessionDevices[token] = device.id;
+    return _json(200, _viewOf(device));
+  }
+
+  /// `GET /api/obhijatra/v1/devices/me`: the status of the device that
+  /// signed the request ([verified] by the gate, or checked here when
+  /// [requireDevices] is off).
+  http.Response _deviceMe(http.Request request, FakeDevice? verified) {
+    final glitch = _next(deviceGlitches, null);
+    if (glitch is Redirect) return _redirect(glitch);
+    if (glitch is NoConnection || glitch is LostResponse) _drop(request);
+    if (glitch is ErrorStatus) return _error(glitch.status, glitch.message);
+    if (request.method != 'GET') {
+      return _error(404, "The requested resource wasn't found.");
+    }
+    var device = verified;
+    if (device == null) {
+      final token = request.headers['Authorization'] ?? '';
+      final userId = _tokens[token] ?? _endedSessions[token];
+      if (userId == null) {
+        return _error(
+          401,
+          'The request requires valid record authorization token.',
+        );
+      }
+      final signed = _verifiedDevice(request, userId);
+      if (signed.device == null) return signed.refusal!;
+      final session = _sessionRefusal(token, signed.device!);
+      if (session != null) return session;
+      device = signed.device!;
+    }
+    return _json(200, _viewOf(device));
+  }
+
+  /// The server's device view.
+  Map<String, Object?> _viewOf(FakeDevice d) => {
+    'id': d.id,
+    'status': d.status,
+    'label': d.label,
+    'platform': d.platform,
+    'expires': _pocketBaseDate(d.expires),
+    'approved_at': _pocketBaseDate(d.approvedAt),
+    'needs_second_approval': false,
+    'approval_expired': d.status == 'active' && !d.usableAt(_serverNow()),
+  };
+
+  static String _pocketBaseDate(DateTime? time) =>
+      time == null ? '' : time.toUtc().toIso8601String().replaceFirst('T', ' ');
+
+  /// A public key as the server reads it: 32 bytes in standard base64 with
+  /// padding, written the one canonical way.
+  static Uint8List? _keyOf(Object? text) {
+    if (text is! String) return null;
+    try {
+      final bytes = base64.decode(text);
+      if (bytes.length != 32 || base64.encode(bytes) != text) return null;
+      return bytes;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  static bool _sameBytes(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// A device-trust refusal with its reason code in `data.reason.code`, as
+  /// the server words it.
+  static http.Response _deviceRefusal(int status, String reason) {
+    final message = switch (reason) {
+      DeviceReason.signatureRequired =>
+        'This device is not set up for this server yet. Sign in again on '
+            'this device.',
+      DeviceReason.signatureInvalid =>
+        'This request could not be checked. Try again; if it keeps '
+            'happening, sign in again.',
+      DeviceReason.unknown =>
+        'The server does not know this device. Set it up again; it will '
+            'need approval again.',
+      DeviceReason.clock =>
+        "This device's date or time is wrong. Set the date and time, then "
+            'try again.',
+      DeviceReason.notApproved =>
+        'This device is waiting for approval. Ask your branch manager or '
+            'organisation admin to approve it.',
+      DeviceReason.revoked =>
+        'This device has been switched off for Obhijatra. Ask your '
+            'organisation admin.',
+      DeviceReason.expired =>
+        "This device's approval has run out. Ask your branch manager or "
+            'organisation admin to approve it again.',
+      DeviceReason.sessionRevoked => 'Your session has ended. Sign in again.',
+      _ =>
+        'This session belongs to another device. Sign in again on this '
+            'device.',
+    };
+    return _json(status, {
+      'status': status,
+      'message': message,
+      'data': {
+        'reason': {'code': reason, 'message': message},
+      },
+    });
+  }
+
+  static http.Response _fieldError(String field, String code) {
+    const message = 'Invalid value.';
+    return _json(400, {
+      'status': 400,
+      'message': 'Something went wrong while processing your request.',
+      'data': {
+        field: {'code': code, 'message': message},
+      },
     });
   }
 

@@ -138,6 +138,60 @@ enum ProblemCode {
   /// session has ended; the person signs in again with the new password.
   passwordChangedSignInAgain,
 
+  /// This phone is not enrolled with the server yet, so its requests carry
+  /// no device signature (the server's reason `device_signature_required`).
+  /// The app enrols it; nothing is sent before.
+  deviceNotEnrolled,
+
+  /// The server could not check this phone's signature (the reason
+  /// `device_signature_invalid`: for example a request repeated, or a server
+  /// restart in the same second). Trying again usually works.
+  deviceSignatureInvalid,
+
+  /// The server no longer knows this phone's device (the reason
+  /// `device_unknown`; for example, it was restored from a backup older
+  /// than the enrolment). The phone forgets its device id, keeps its keys
+  /// and enrols again with them: it must be approved again. Finished forms
+  /// stay queued.
+  deviceUnknown,
+
+  /// The server refused the phone's signed request because the phone's
+  /// clock is more than 5 minutes from the server's (the reason
+  /// `device_clock`). The person sets the date and time, then tries again.
+  deviceClockWrong,
+
+  /// This phone is waiting for a branch manager or an organisation admin to
+  /// approve it (the reason `device_not_approved`). Finished forms stay
+  /// queued and are sent once it is approved.
+  deviceNotApproved,
+
+  /// This phone's approval (one year) has run out; it must be approved again
+  /// with the same check code (the reason `device_expired`). Finished forms
+  /// stay queued.
+  deviceApprovalExpired,
+
+  /// This phone has been switched off for Obhijatra by the organisation (the
+  /// reason `device_revoked`). It must be set up again as a new device.
+  /// Finished forms stay on the phone.
+  deviceRevoked,
+
+  /// The server has ended this session (the reason `session_revoked`): the
+  /// person signs in again. Finished forms stay queued.
+  sessionEnded,
+
+  /// This session belongs to another device (the reason
+  /// `session_other_device`): the person signs in again on this phone.
+  sessionOnOtherDevice,
+
+  /// Enrolling refused: this phone's key is already in use (by another
+  /// person, or by a device that was switched off; HTTP 409). New keys
+  /// solve it.
+  deviceKeyInUse,
+
+  /// Enrolling refused: 3 of this person's devices are already waiting for
+  /// approval (HTTP 429). An approver must approve or switch them off first.
+  tooManyDevicesWaiting,
+
   /// Something unexpected happened inside the app.
   unknown;
 
@@ -157,6 +211,7 @@ enum ProblemCode {
     serverBusy ||
     unexpectedResponse ||
     redirected ||
+    deviceSignatureInvalid ||
     unknown => true,
     _ => false,
   };
@@ -171,9 +226,40 @@ enum ProblemCode {
     serverIncompatible ||
     serverNotSetUp ||
     clockSkew ||
-    passwordChangeRequired => true,
+    passwordChangeRequired ||
+    deviceNotEnrolled ||
+    deviceUnknown ||
+    deviceClockWrong ||
+    deviceNotApproved ||
+    deviceApprovalExpired ||
+    deviceRevoked ||
+    sessionEnded ||
+    sessionOnOtherDevice => true,
     _ => false,
   };
+
+  /// Whether the server refused the request because of this phone's device
+  /// trust (docs/decisions/0008-device-trust.md): never a fault of the data
+  /// sent, so no submission is ever marked as failed for it.
+  bool get isDeviceProblem => switch (this) {
+    deviceNotEnrolled ||
+    deviceSignatureInvalid ||
+    deviceUnknown ||
+    deviceClockWrong ||
+    deviceNotApproved ||
+    deviceApprovalExpired ||
+    deviceRevoked ||
+    sessionEnded ||
+    sessionOnOtherDevice => true,
+    _ => false,
+  };
+
+  /// Whether only signing in again helps: the session has run out, has been
+  /// ended, or belongs to another device.
+  bool get needsSignInAgain =>
+      this == signInRequired ||
+      this == sessionEnded ||
+      this == sessionOnOtherDevice;
 }
 
 /// An exception carrying a [ProblemCode] for the UI and details for logs.

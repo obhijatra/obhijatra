@@ -1370,6 +1370,240 @@ abstract class AppLocalizations {
   /// **'The app locks when it has been in the background for 5 minutes. Open it with your phone\'s screen lock, or with the app PIN if the phone has no screen lock. If you have not signed in with the internet for 30 days, the app stays locked until you sign in again. Use one phone per person: until the app can keep each person\'s data apart, anyone who can open the app on this phone can see the forms on it.'**
   String get aboutSecurityBody;
 
+  /// Button that signs out, so the person can sign in again, when their sign-in has ended or belongs to another phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get actionSignInAgain;
+
+  /// Title of the screen shown while this phone enrols with the organisation's server (device trust), right after sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up this phone'**
+  String get deviceSettingUpTitle;
+
+  /// Explains the setting-up screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you can get forms, this phone must be set up with your organisation\'s server. This needs an internet connection.'**
+  String get deviceSettingUpBody;
+
+  /// Shown and spoken while the phone enrols.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up…'**
+  String get deviceSettingUpWorking;
+
+  /// Title of the screen shown while this phone waits for a branch manager or an organisation admin to approve it.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get deviceWaitingTitle;
+
+  /// Says who approves the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Before this phone can get or send forms, your branch manager or an organisation admin must approve it.'**
+  String get deviceWaitingBody;
+
+  /// Shown on the waiting screen when the organisation's server no longer knew this phone (for example after it was restored from a backup), so the phone was set up again with the same numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'The server no longer knew this phone, so it needs approval again.'**
+  String get deviceServerForgot;
+
+  /// Title of the screen shown when this phone's yearly approval has run out.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval has run out'**
+  String get deviceRenewalTitle;
+
+  /// Explains the renewal screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Each approval lasts one year, and this phone\'s has run out. Your branch manager or an organisation admin must approve it again. They check the same numbers as before.'**
+  String get deviceRenewalBody;
+
+  /// Title of the screen shown when the organisation has switched this phone off (revoked it).
+  ///
+  /// In en, this message translates to:
+  /// **'This phone has been switched off'**
+  String get deviceSwitchedOffTitle;
+
+  /// Explains the switched-off screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation has switched off this phone for Obhijatra, so it cannot get or send forms. This happens, for example, when a phone is reported lost.'**
+  String get deviceSwitchedOffBody;
+
+  /// Reassurance on the switched-off screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Your unsent forms and drafts stay on this phone.'**
+  String get deviceSwitchedOffKept;
+
+  /// What to do on the switched-off screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask your organisation admin whether you should use this phone. If so, set it up again, then ask your branch manager or an organisation admin to approve it.'**
+  String get deviceSwitchedOffNext;
+
+  /// Heading above the 18-digit check code (six groups of three digits) that the approver checks. Called 'numbers', as in the manager app and on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s numbers'**
+  String get deviceCodeHeading;
+
+  /// What a screen reader says for the check code, read digit by digit, group by group.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s numbers: {numbers}'**
+  String deviceCodeSpoken(String numbers);
+
+  /// How to give the approver the numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Show these numbers to them in person, or read them out on a phone call.'**
+  String get deviceShowInPerson;
+
+  /// Warning on the waiting screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Never send the numbers in a message (SMS, WhatsApp or email): your approver must see or hear them from you.'**
+  String get deviceNeverSend;
+
+  /// Says that the waiting screen asks the server again by itself.
+  ///
+  /// In en, this message translates to:
+  /// **'While this screen is open, it checks again by itself every 15 seconds.'**
+  String get deviceAutoCheck;
+
+  /// When the server last answered about this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked {when}'**
+  String deviceLastChecked(String when);
+
+  /// Button that asks the server again whether this phone is approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get deviceCheckAgain;
+
+  /// Shown on the button while the server is asked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get deviceChecking;
+
+  /// Button that opens the app before the phone is approved, to fill in forms already on the phone. They are sent once it is approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in forms on this phone for now'**
+  String get deviceFillInForms;
+
+  /// Shown on the device screen when the server cannot be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no internet connection, so this phone could not reach your organisation\'s server. Connect to the internet, then try again.'**
+  String get deviceCheckOffline;
+
+  /// Button on the switched-off screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up this phone again'**
+  String get deviceSetUpAgain;
+
+  /// Title of the confirmation before setting the phone up again.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up this phone again?'**
+  String get deviceSetUpAgainTitle;
+
+  /// What setting the phone up again does.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone gets new numbers, and you are signed out. Your unsent forms and drafts stay on this phone. Then sign in again, and ask your branch manager or an organisation admin to approve the new numbers.'**
+  String get deviceSetUpAgainBody;
+
+  /// Confirms setting the phone up again.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up again'**
+  String get deviceSetUpAgainConfirm;
+
+  /// Notice on the Today screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is not set up with your organisation\'s server yet. Finished forms are sent once it is set up and approved.'**
+  String get deviceNoticeSettingUp;
+
+  /// Notice on the Today screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is waiting for approval. Finished forms are sent once it is approved.'**
+  String get deviceNoticeWaiting;
+
+  /// Notice on the Today screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s approval has run out. Finished forms are sent once it is approved again.'**
+  String get deviceNoticeRenewal;
+
+  /// Notice on the Today screen.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is switched off for Obhijatra. Finished forms stay on this phone.'**
+  String get deviceNoticeSwitchedOff;
+
+  /// Button on the Today notice that opens the waiting screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this phone\'s numbers'**
+  String get deviceShowCode;
+
+  /// Button on the Today notice that opens the device screen.
+  ///
+  /// In en, this message translates to:
+  /// **'See what to do'**
+  String get deviceSeeWhatToDo;
+
+  /// Heading of the Settings section about this phone's approval.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get settingsThisPhone;
+
+  /// This phone's status in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved until {date}'**
+  String deviceStatusApproved(String date);
+
+  /// This phone's status in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get deviceStatusWaiting;
+
+  /// This phone's status in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval has run out'**
+  String get deviceStatusRenewal;
+
+  /// This phone's status in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched off'**
+  String get deviceStatusSwitchedOff;
+
+  /// This phone's status in Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set up yet'**
+  String get deviceStatusSettingUp;
+
   /// Plain-language explanation of the problem code "offline". Shown to a field officer.
   ///
   /// In en, this message translates to:
@@ -1585,6 +1819,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your new password is saved. Sign in again with your new password.'**
   String get problem_passwordChangedSignInAgain;
+
+  /// Plain-language explanation of the problem code "deviceNotEnrolled". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is not set up with your organisation\'s server yet. Connect to the internet and open the app: it sets itself up. Your work is safe on this phone.'**
+  String get problem_deviceNotEnrolled;
+
+  /// Plain-language explanation of the problem code "deviceSignatureInvalid". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not check this phone\'s request. We will try again by ourselves. If it keeps happening, sign out and sign in again.'**
+  String get problem_deviceSignatureInvalid;
+
+  /// Plain-language explanation of the problem code "deviceUnknown". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation\'s server no longer knew this phone, so the phone is set up again with the same numbers and must be approved again. Your forms stay on this phone.'**
+  String get problem_deviceUnknown;
+
+  /// Plain-language explanation of the problem code "deviceClockWrong". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'The date or time on this phone is wrong, so the server cannot accept it. Open the phone\'s Settings and turn on automatic date and time, then come back and try again. Your forms are kept on this phone.'**
+  String get problem_deviceClockWrong;
+
+  /// Plain-language explanation of the problem code "deviceNotApproved". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is waiting for approval by your branch manager or an organisation admin. Your forms are kept and sent once it is approved.'**
+  String get problem_deviceNotApproved;
+
+  /// Plain-language explanation of the problem code "deviceApprovalExpired". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s approval has run out. Ask your branch manager or an organisation admin to approve it again. Your forms are kept.'**
+  String get problem_deviceApprovalExpired;
+
+  /// Plain-language explanation of the problem code "deviceRevoked". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organisation has switched off this phone for Obhijatra. Your forms stay on this phone. Ask your organisation admin what to do.'**
+  String get problem_deviceRevoked;
+
+  /// Plain-language explanation of the problem code "sessionEnded". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in has ended. Please sign in again to send your forms. Your answers stay on this phone.'**
+  String get problem_sessionEnded;
+
+  /// Plain-language explanation of the problem code "sessionOnOtherDevice". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This sign-in belongs to another phone. Please sign in again on this phone. Your answers stay on this phone.'**
+  String get problem_sessionOnOtherDevice;
+
+  /// Plain-language explanation of the problem code "deviceKeyInUse". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s numbers are already in use, so it could not be set up. Try again. If it happens again, ask your organisation admin.'**
+  String get problem_deviceKeyInUse;
+
+  /// Plain-language explanation of the problem code "tooManyDevicesWaiting". Shown to a field officer.
+  ///
+  /// In en, this message translates to:
+  /// **'Three of your phones are already waiting for approval. Ask your branch manager or an organisation admin to approve them or switch them off, then try again.'**
+  String get problem_tooManyDevicesWaiting;
 
   /// Plain-language explanation of the problem code "unknown". Shown to a field officer.
   ///

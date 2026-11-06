@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:obhijatra_core/src/db/device_database.dart';
 import 'package:obhijatra_core/src/db/settings_repository.dart';
 import 'package:obhijatra_core/src/problem.dart';
+import 'package:obhijatra_core/src/security/device_identity.dart';
 import 'package:obhijatra_core/src/server/obhijatra_server.dart';
 import 'package:obhijatra_core/src/server/server_models.dart';
 import 'package:obhijatra_core/src/sync/backoff.dart';
@@ -130,6 +131,15 @@ final class SyncReport {
 ///   [maxClockSkew] ([ProblemCode.clockSkew]), or while the person must
 ///   still replace a one-time password ([ProblemCode.passwordChangeRequired],
 ///   also when the server first says so in answer to a submission).
+/// - Sends nothing without an approved device: with a [DeviceIdentity], a
+///   device that is not enrolled stops the run
+///   ([ProblemCode.deviceNotEnrolled]), and one not known to be approved is
+///   checked with the server first (`GET /devices/me`), so a run after the
+///   approval sends at once. A device refusal of a submission (switched
+///   off, waiting, approval run out, clock, session, or a device the server
+///   no longer knows, which enrols again with the same keys) stops the run
+///   and is kept on the identity; the submission goes back to the queue as
+///   it was, never marked as failed.
 /// - Sends due entries oldest first; a confirmation (`received` or
 ///   `already_received`) marks an entry sent; a 409 or other refusal marks
 ///   it as a problem with a plain-language code; a temporary failure
@@ -145,11 +155,13 @@ final class SyncReport {
 /// database.
 final class SyncEngine {
   /// Creates an engine for [database] and [server]; [attachments] reads
-  /// the files sent with submissions.
+  /// the files sent with submissions; [device] is the identity [server]
+  /// signs with (without it, the device is not checked before sending).
   SyncEngine({
     required DeviceDatabase database,
     required this._server,
     this._attachments,
+    this._device,
     this._backoff = const Backoff(),
     Random? random,
     this._autoRetry = true,
@@ -161,6 +173,7 @@ final class SyncEngine {
   final OutboxRepository _outbox;
   final SettingsRepository _settings;
   final ObhijatraServer _server;
+  final DeviceIdentity? _device;
   final AttachmentStore? _attachments;
   final Backoff _backoff;
   final Random _random;
@@ -278,8 +291,14 @@ final class SyncEngine {
         }
         sent++;
       } on ObhijatraException catch (e) {
-        if (e.code.blocksSync) {
+        if (e.code.blocksSync || e.code.isDeviceProblem) {
+          // Nothing wrong with the submission: it goes back to the queue
+          // as it was, and the run stops until the person (or an approver)
+          // acts, or, for a signature that could not be checked, until the
+          // engine tries again.
           await _outbox.release(id, problem: e.code);
+          // A device the server no longer knows enrols again here.
+          await _device?.recordProblem(e.code, server: _server);
           stoppedBy = e.code;
           break;
         }
@@ -356,8 +375,8 @@ final class SyncEngine {
     }
   }
 
-  /// Checks the server, the phone's clock and the session; returns why not
-  /// to send, if so.
+  /// Checks the server, the phone's clock, the session and the device;
+  /// returns why not to send, if so.
   Future<ProblemCode?> _handshake() async {
     final ProblemCode? blocker;
     try {
@@ -384,15 +403,34 @@ final class SyncEngine {
             // new password; the server would refuse every submission.
             : _server.currentUser!.mustChangePassword
             ? ProblemCode.passwordChangeRequired
-            : await _checkOwner());
+            : await _deviceBlocker(_server.currentUser!.id) ??
+                  await _checkOwner());
+    final blocks = stop != null && stop.blocksSync;
     _update(
       _status.copyWith(
-        isOffline: false,
-        blockedBy: stop,
-        clearBlockedBy: stop == null,
+        isOffline: _offlineCodes.contains(stop),
+        blockedBy: blocks ? stop : null,
+        clearBlockedBy: !blocks,
       ),
     );
     return stop;
+  }
+
+  /// Why this device may not send for [userId], or `null` when it may. A
+  /// device not known to be approved is checked with the server, so a run
+  /// after its approval sends at once; a failed check (no connection, for
+  /// example) stops the run like any other.
+  Future<ProblemCode?> _deviceBlocker(String userId) async {
+    final device = _device;
+    if (device == null) return null;
+    final known = device.knownBlocker(userId);
+    if (known == null || known == ProblemCode.deviceNotEnrolled) return known;
+    try {
+      final status = await device.refresh(_server);
+      return status.blockerAt(clock.now());
+    } on ObhijatraException catch (e) {
+      return e.code;
+    }
   }
 
   /// Makes sure submissions are sent only under the account that made
@@ -458,5 +496,6 @@ final class SyncEngine {
       _offlineCodes.contains(code) ||
       code == ProblemCode.serverError ||
       code == ProblemCode.serverBusy ||
-      code == ProblemCode.redirected;
+      code == ProblemCode.redirected ||
+      code == ProblemCode.deviceSignatureInvalid;
 }

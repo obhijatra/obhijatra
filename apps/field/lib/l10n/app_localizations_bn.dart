@@ -801,6 +801,145 @@ class AppLocalizationsBn extends AppLocalizations {
       'অ্যাপটি ৫ মিনিট ব্যাকগ্রাউন্ডে থাকলে নিজে থেকেই লক হয়ে যায়। ফোনের স্ক্রিন লক দিয়ে, অথবা ফোনে স্ক্রিন লক না থাকলে অ্যাপ পিন দিয়ে এটি খুলুন। ৩০ দিন ইন্টারনেট দিয়ে সাইন ইন না করলে আবার সাইন ইন না করা পর্যন্ত অ্যাপটি লক থাকবে। প্রতি জনের জন্য একটি করে ফোন ব্যবহার করুন: যতদিন অ্যাপটি প্রত্যেকের তথ্য আলাদা রাখতে পারছে না, ততদিন যে কেউ এই ফোনে অ্যাপটি খুলতে পারলে এতে থাকা ফর্মগুলো দেখতে পারবে।';
 
   @override
+  String get actionSignInAgain => 'আবার সাইন ইন করুন';
+
+  @override
+  String get deviceSettingUpTitle => 'ফোনটি সেট আপ করা হচ্ছে';
+
+  @override
+  String get deviceSettingUpBody =>
+      'ফর্ম পাওয়ার আগে আপনার প্রতিষ্ঠানের সার্ভারের সঙ্গে এই ফোনটি সেট আপ করতে হবে। এর জন্য ইন্টারনেট সংযোগ লাগবে।';
+
+  @override
+  String get deviceSettingUpWorking => 'সেট আপ করা হচ্ছে…';
+
+  @override
+  String get deviceWaitingTitle => 'অনুমোদনের অপেক্ষায়';
+
+  @override
+  String get deviceWaitingBody =>
+      'এই ফোনে ফর্ম পাওয়া বা পাঠানোর আগে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে ফোনটি অনুমোদন করতে হবে।';
+
+  @override
+  String get deviceServerForgot =>
+      'সার্ভার এই ফোনটিকে আর চিনতে পারেনি, তাই এটির আবার অনুমোদন লাগবে।';
+
+  @override
+  String get deviceRenewalTitle => 'অনুমোদনের মেয়াদ শেষ';
+
+  @override
+  String get deviceRenewalBody =>
+      'প্রতিটি অনুমোদন এক বছর থাকে, আর এই ফোনের অনুমোদনের মেয়াদ শেষ হয়ে গেছে। আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে আবার অনুমোদন করতে হবে। তাঁরা আগের নম্বরগুলোই মিলিয়ে দেখবেন।';
+
+  @override
+  String get deviceSwitchedOffTitle => 'এই ফোনটি বন্ধ করা হয়েছে';
+
+  @override
+  String get deviceSwitchedOffBody =>
+      'আপনার প্রতিষ্ঠান অভিযাত্রার জন্য এই ফোনটি বন্ধ করে দিয়েছে, তাই এতে ফর্ম পাওয়া বা পাঠানো যাবে না। যেমন, কোনো ফোন হারিয়ে গেছে বলে জানালে এমন হয়।';
+
+  @override
+  String get deviceSwitchedOffKept =>
+      'আপনার না-পাঠানো ফর্ম ও খসড়া এই ফোনেই থাকবে।';
+
+  @override
+  String get deviceSwitchedOffNext =>
+      'এই ফোনটি আপনি ব্যবহার করবেন কি না, তা আপনার প্রতিষ্ঠানের অ্যাডমিনের কাছে জেনে নিন। করলে ফোনটি আবার সেট আপ করুন, তারপর আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে অনুমোদন করতে বলুন।';
+
+  @override
+  String get deviceCodeHeading => 'এই ফোনের নম্বরগুলো';
+
+  @override
+  String deviceCodeSpoken(String numbers) {
+    return 'এই ফোনের নম্বরগুলো: $numbers';
+  }
+
+  @override
+  String get deviceShowInPerson =>
+      'নম্বরগুলো তাঁদের সামনাসামনি দেখান, অথবা ফোন কলে পড়ে শোনান।';
+
+  @override
+  String get deviceNeverSend =>
+      'নম্বরগুলো কখনো মেসেজে (এসএমএস, হোয়াটসঅ্যাপ বা ইমেইলে) পাঠাবেন না। অনুমোদনকারীকে নম্বরগুলো আপনার কাছ থেকেই দেখতে বা শুনতে হবে।';
+
+  @override
+  String get deviceAutoCheck =>
+      'এই স্ক্রিনটি খোলা থাকলে প্রতি ১৫ সেকেন্ডে নিজে থেকেই আবার দেখে নেয়।';
+
+  @override
+  String deviceLastChecked(String when) {
+    return 'শেষবার দেখা হয়েছে $when';
+  }
+
+  @override
+  String get deviceCheckAgain => 'আবার দেখুন';
+
+  @override
+  String get deviceChecking => 'দেখা হচ্ছে…';
+
+  @override
+  String get deviceFillInForms => 'আপাতত এই ফোনে ফর্ম পূরণ করুন';
+
+  @override
+  String get deviceCheckOffline =>
+      'ইন্টারনেট সংযোগ নেই, তাই এই ফোনটি আপনার প্রতিষ্ঠানের সার্ভারে পৌঁছাতে পারেনি। ইন্টারনেটে যুক্ত হয়ে আবার চেষ্টা করুন।';
+
+  @override
+  String get deviceSetUpAgain => 'ফোনটি আবার সেট আপ করুন';
+
+  @override
+  String get deviceSetUpAgainTitle => 'ফোনটি আবার সেট আপ করবেন?';
+
+  @override
+  String get deviceSetUpAgainBody =>
+      'এই ফোনটি নতুন নম্বর পাবে, আর আপনি সাইন আউট হয়ে যাবেন। আপনার না-পাঠানো ফর্ম ও খসড়া এই ফোনেই থাকবে। তারপর আবার সাইন ইন করুন, এবং নতুন নম্বরগুলো অনুমোদন করতে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে বলুন।';
+
+  @override
+  String get deviceSetUpAgainConfirm => 'আবার সেট আপ করুন';
+
+  @override
+  String get deviceNoticeSettingUp =>
+      'এই ফোনটি এখনো আপনার প্রতিষ্ঠানের সার্ভারের সঙ্গে সেট আপ করা হয়নি। সেট আপ ও অনুমোদন হলে শেষ করা ফর্মগুলো পাঠানো হবে।';
+
+  @override
+  String get deviceNoticeWaiting =>
+      'এই ফোনটি অনুমোদনের অপেক্ষায় আছে। অনুমোদনের পরে শেষ করা ফর্মগুলো পাঠানো হবে।';
+
+  @override
+  String get deviceNoticeRenewal =>
+      'এই ফোনের অনুমোদনের মেয়াদ শেষ হয়ে গেছে। আবার অনুমোদনের পরে শেষ করা ফর্মগুলো পাঠানো হবে।';
+
+  @override
+  String get deviceNoticeSwitchedOff =>
+      'অভিযাত্রার জন্য এই ফোনটি বন্ধ করা হয়েছে। শেষ করা ফর্মগুলো এই ফোনেই থাকবে।';
+
+  @override
+  String get deviceShowCode => 'এই ফোনের নম্বরগুলো দেখুন';
+
+  @override
+  String get deviceSeeWhatToDo => 'কী করবেন দেখুন';
+
+  @override
+  String get settingsThisPhone => 'এই ফোন';
+
+  @override
+  String deviceStatusApproved(String date) {
+    return '$date পর্যন্ত অনুমোদিত';
+  }
+
+  @override
+  String get deviceStatusWaiting => 'অনুমোদনের অপেক্ষায়';
+
+  @override
+  String get deviceStatusRenewal => 'অনুমোদনের মেয়াদ শেষ';
+
+  @override
+  String get deviceStatusSwitchedOff => 'বন্ধ করা হয়েছে';
+
+  @override
+  String get deviceStatusSettingUp => 'এখনো সেট আপ করা হয়নি';
+
+  @override
   String get problem_offline =>
       'এখন ইন্টারনেট সংযোগ নেই। আপনার কাজ এই ফোনে নিরাপদ আছে, সিগন্যাল ফিরলে পাঠানো হবে।';
 
@@ -943,6 +1082,50 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get problem_passwordChangedSignInAgain =>
       'আপনার নতুন পাসওয়ার্ড সেভ হয়েছে। নতুন পাসওয়ার্ড দিয়ে আবার সাইন ইন করুন।';
+
+  @override
+  String get problem_deviceNotEnrolled =>
+      'এই ফোনটি এখনো আপনার প্রতিষ্ঠানের সার্ভারের সঙ্গে সেট আপ করা হয়নি। ইন্টারনেটে যুক্ত হয়ে অ্যাপটি খুলুন, এটি নিজে থেকেই সেট আপ হবে। আপনার কাজ এই ফোনে নিরাপদ আছে।';
+
+  @override
+  String get problem_deviceSignatureInvalid =>
+      'সার্ভার এই ফোনের অনুরোধটি যাচাই করতে পারেনি। আমরা নিজে থেকেই আবার চেষ্টা করব। বারবার এমন হলে সাইন আউট করে আবার সাইন ইন করুন।';
+
+  @override
+  String get problem_deviceUnknown =>
+      'আপনার প্রতিষ্ঠানের সার্ভার এই ফোনটিকে আর চিনতে পারেনি, তাই একই নম্বর দিয়ে ফোনটি আবার সেট আপ করা হচ্ছে, আর এটির আবার অনুমোদন লাগবে। আপনার ফর্মগুলো এই ফোনেই থাকবে।';
+
+  @override
+  String get problem_deviceClockWrong =>
+      'এই ফোনের তারিখ বা সময় ভুল, তাই সার্ভার তা গ্রহণ করতে পারছে না। ফোনের সেটিংসে গিয়ে স্বয়ংক্রিয় তারিখ ও সময় চালু করুন, তারপর অ্যাপে ফিরে আবার চেষ্টা করুন। আপনার ফর্ম এই ফোনে রাখা আছে।';
+
+  @override
+  String get problem_deviceNotApproved =>
+      'এই ফোনটি আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনের অনুমোদনের অপেক্ষায় আছে। আপনার ফর্মগুলো রাখা আছে, অনুমোদনের পরে পাঠানো হবে।';
+
+  @override
+  String get problem_deviceApprovalExpired =>
+      'এই ফোনের অনুমোদনের মেয়াদ শেষ হয়ে গেছে। আবার অনুমোদন করতে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে বলুন। আপনার ফর্মগুলো রাখা আছে।';
+
+  @override
+  String get problem_deviceRevoked =>
+      'আপনার প্রতিষ্ঠান অভিযাত্রার জন্য এই ফোনটি বন্ধ করে দিয়েছে। আপনার ফর্মগুলো এই ফোনেই থাকবে। কী করতে হবে, তা আপনার প্রতিষ্ঠানের অ্যাডমিনের কাছে জেনে নিন।';
+
+  @override
+  String get problem_sessionEnded =>
+      'আপনার সাইন-ইনের মেয়াদ শেষ হয়েছে। ফর্ম পাঠাতে আবার সাইন ইন করুন। আপনার উত্তরগুলো এই ফোনেই থাকবে।';
+
+  @override
+  String get problem_sessionOnOtherDevice =>
+      'এই সাইন-ইনটি অন্য একটি ফোনের। এই ফোনে আবার সাইন ইন করুন। আপনার উত্তরগুলো এই ফোনেই থাকবে।';
+
+  @override
+  String get problem_deviceKeyInUse =>
+      'এই ফোনের নম্বরগুলো আগে থেকেই ব্যবহার হচ্ছে, তাই ফোনটি সেট আপ করা যায়নি। আবার চেষ্টা করুন। আবারও এমন হলে আপনার প্রতিষ্ঠানের অ্যাডমিনকে জানান।';
+
+  @override
+  String get problem_tooManyDevicesWaiting =>
+      'আপনার তিনটি ফোন আগে থেকেই অনুমোদনের অপেক্ষায় আছে। সেগুলো অনুমোদন বা বন্ধ করতে আপনার ব্রাঞ্চ ম্যানেজার বা প্রতিষ্ঠানের একজন অ্যাডমিনকে বলুন, তারপর আবার চেষ্টা করুন।';
 
   @override
   String get problem_unknown =>

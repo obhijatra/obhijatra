@@ -8,11 +8,13 @@ import 'package:obhijatra_field/l10n/app_localizations.dart';
 import 'package:obhijatra_field/src/forms/form_entry_controller.dart';
 import 'package:obhijatra_field/src/l10n/problem_text.dart';
 import 'package:obhijatra_field/src/providers/data_providers.dart';
+import 'package:obhijatra_field/src/providers/device_providers.dart';
 import 'package:obhijatra_field/src/providers/locale_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
 import 'package:obhijatra_field/src/providers/sync_providers.dart';
 import 'package:obhijatra_field/src/screens/change_password_screen.dart';
+import 'package:obhijatra_field/src/screens/device_screen.dart';
 import 'package:obhijatra_field/src/screens/form_entry_screen.dart';
 import 'package:obhijatra_field/src/util/bangla.dart' as fmt;
 import 'package:obhijatra_field/src/widgets/bottom_nav.dart';
@@ -68,6 +70,10 @@ class TodayScreen extends ConsumerWidget {
     final mustChangePassword =
         status.blockedBy == ProblemCode.passwordChangeRequired ||
         refresh.problem == ProblemCode.passwordChangeRequired;
+    // The phone is not approved (the person fills in forms meanwhile).
+    final devicePhase =
+        ref.watch(deviceTrustProvider).value?.phase ?? DevicePhase.approved;
+    final blockedBy = status.blockedBy;
     final scale = MediaQuery.textScalerOf(context).scale(16) / 16;
 
     final stats = <Widget>[
@@ -116,10 +122,36 @@ class TodayScreen extends ConsumerWidget {
               style: text.bodySmall!.copyWith(color: p.textMuted),
             ),
             const SizedBox(height: Spacing.space3),
-            if (status.blockedBy == ProblemCode.signInRequired)
+            if (devicePhase != DevicePhase.approved)
+              _Notice(
+                icon: switch (devicePhase) {
+                  DevicePhase.switchedOff => LucideIcons.ban,
+                  DevicePhase.renewal => LucideIcons.calendarClock,
+                  _ => LucideIcons.hourglass,
+                },
+                text: switch (devicePhase) {
+                  DevicePhase.settingUp => l.deviceNoticeSettingUp,
+                  DevicePhase.renewal => l.deviceNoticeRenewal,
+                  DevicePhase.switchedOff => l.deviceNoticeSwitchedOff,
+                  _ => l.deviceNoticeWaiting,
+                },
+                color: p.warning,
+                background: p.warningSubtle,
+                action: PrimaryButton(
+                  label:
+                      devicePhase == DevicePhase.waiting ||
+                          devicePhase == DevicePhase.renewal
+                      ? l.deviceShowCode
+                      : l.deviceSeeWhatToDo,
+                  onPressed: () => openDeviceScreen(context),
+                ),
+              )
+            else if (blockedBy != null && blockedBy.needsSignInAgain)
               _Notice(
                 icon: LucideIcons.logIn,
-                text: l.signInAgainBanner,
+                text: blockedBy == ProblemCode.signInRequired
+                    ? l.signInAgainBanner
+                    : problemText(l, blockedBy),
                 color: p.warning,
                 background: p.warningSubtle,
                 action: PrimaryButton(
@@ -138,12 +170,23 @@ class TodayScreen extends ConsumerWidget {
                   onPressed: () => openPasswordChange(context),
                 ),
               )
-            else if (status.blockedBy != null)
+            else if (blockedBy != null)
               _Notice(
                 icon: LucideIcons.triangleAlert,
-                text: problemText(l, status.blockedBy!),
+                text: problemText(l, blockedBy),
                 color: p.warning,
                 background: p.warningSubtle,
+                // Once the date and time are set, the person tries again.
+                action:
+                    blockedBy == ProblemCode.clockSkew ||
+                        blockedBy == ProblemCode.deviceClockWrong
+                    ? PrimaryButton(
+                        label: l.actionTryAgain,
+                        icon: LucideIcons.refreshCw,
+                        variant: PrimaryButtonVariant.secondary,
+                        onPressed: () => syncNow(ref, ignoreBackoff: true),
+                      )
+                    : null,
               ),
             if (scale >= 1.4)
               Column(
@@ -233,8 +276,10 @@ class TodayScreen extends ConsumerWidget {
             if (refresh.problem != null &&
                 refresh.problem != ProblemCode.offline &&
                 refresh.problem != ProblemCode.timeout &&
-                refresh.problem !=
-                    ProblemCode.passwordChangeRequired) ...<Widget>[
+                refresh.problem != ProblemCode.passwordChangeRequired &&
+                // The device notice above says it already.
+                !(devicePhase != DevicePhase.approved &&
+                    refresh.problem!.isDeviceProblem)) ...<Widget>[
               const SizedBox(height: Spacing.space3),
               _Notice(
                 icon: LucideIcons.triangleAlert,

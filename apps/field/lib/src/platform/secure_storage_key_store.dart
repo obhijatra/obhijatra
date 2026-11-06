@@ -44,6 +44,49 @@ final class SecureStorageKeyStore implements KeyStore {
   }
 }
 
+/// Keeps this phone's device identity (docs/decisions/0008-device-trust.md)
+/// in the same protected storage as the database key: the secret seeds of
+/// its two key pairs, and its enrolment (device id, account, last status;
+/// nothing secret). Read before the database opens, so a sign-in from a
+/// lock screen is signed too.
+final class SecureStorageDeviceKeyStore implements DeviceKeyStore {
+  /// Creates the store. Pass [storage] only in tests.
+  SecureStorageDeviceKeyStore({FlutterSecureStorage? storage})
+    : _storage = storage ?? protectedStorage;
+
+  final FlutterSecureStorage _storage;
+
+  /// The entry that holds the key seeds (128 hexadecimal digits).
+  static const String seedsEntry = 'obhijatra.device_keys.v1';
+
+  /// The entry that holds the enrolment (JSON).
+  static const String enrolmentEntry = 'obhijatra.device_enrolment.v1';
+
+  @override
+  Future<DeviceKeySeeds?> readKeySeeds() async =>
+      // Unreadable seeds are as good as none: the core then makes new keys,
+      // which must be enrolled and approved again.
+      DeviceKeySeeds.fromText(await _storage.read(key: seedsEntry));
+
+  @override
+  Future<void> writeKeySeeds(DeviceKeySeeds seeds) =>
+      _storage.write(key: seedsEntry, value: seeds.toText());
+
+  @override
+  Future<DeviceEnrolment?> readEnrolment() async =>
+      DeviceEnrolment.decode(await _storage.read(key: enrolmentEntry));
+
+  @override
+  Future<void> writeEnrolment(DeviceEnrolment enrolment) =>
+      _storage.write(key: enrolmentEntry, value: enrolment.encode());
+
+  @override
+  Future<void> clear() async {
+    await _storage.delete(key: enrolmentEntry);
+    await _storage.delete(key: seedsEntry);
+  }
+}
+
 /// Keeps the app lock's small values (the app PIN's hash, wrong-PIN count,
 /// last online sign-in, server address) in the same protected storage as
 /// the database key, so they can be read before the database is opened.

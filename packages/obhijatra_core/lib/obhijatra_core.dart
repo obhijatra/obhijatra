@@ -8,8 +8,11 @@
 ///   from an app-supplied [KeyStore] and [DeviceDatabaseOpener].
 /// - Forms: [FormRepository], [FormEntrySession], [DraftRepository].
 /// - Server: [ObhijatraServer] (handshake, sign-in by email and password,
-///   SMS code or Google, replacing a one-time password, forms,
-///   submissions); [parsePhoneNumber] reads a typed mobile number.
+///   SMS code or Google, replacing a one-time password, device enrolment
+///   and status, forms, submissions); [parsePhoneNumber] reads a typed
+///   mobile number.
+/// - Device trust: [DeviceIdentity] (keys, enrolment, request signing)
+///   over an app-supplied [DeviceKeyStore].
 /// - Sync: [OutboxRepository] and [SyncEngine] with its [SyncStatus].
 /// - Problems: every failure carries a plain-language [ProblemCode].
 /// - App lock: [AppLock] (app PIN, wrong-PIN waits, offline limit) over an
@@ -34,6 +37,7 @@ export 'src/forms/xform_info.dart';
 export 'src/phone_number.dart';
 export 'src/problem.dart';
 export 'src/security/app_lock.dart';
+export 'src/security/device_identity.dart';
 export 'src/security/field_protector.dart';
 export 'src/security/key_store.dart';
 export 'src/server/obhijatra_server.dart';

@@ -8,8 +8,8 @@ import 'package:obhijatra_field/src/providers/locale_provider.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
 import 'package:obhijatra_field/src/screens/connect_screen.dart';
+import 'package:obhijatra_field/src/screens/device_screen.dart';
 import 'package:obhijatra_field/src/screens/lock_screens.dart';
-import 'package:obhijatra_field/src/screens/main_shell.dart';
 import 'package:obhijatra_field/src/screens/sign_in_screen.dart';
 import 'package:obhijatra_field/src/screens/splash_screen.dart';
 import 'package:obhijatra_field/src/screens/startup_problem_screen.dart';
@@ -49,8 +49,9 @@ class ObhijatraFieldApp extends ConsumerWidget {
 
 /// Decides what to show once the app lock lets the data open: the splash
 /// while the saved data opens, then the connect screen, the sign-in screen
-/// or the app itself. On first use ([LockFresh]) the person always signs in
-/// online before anything else.
+/// or the app itself behind the [DeviceGate] (this phone's approval). On
+/// first use ([LockFresh]) the person always signs in online before
+/// anything else.
 class AppGate extends ConsumerWidget {
   /// Creates the gate.
   const AppGate({super.key});
@@ -77,7 +78,7 @@ class AppGate extends ConsumerWidget {
             final fresh = ref.watch(appLockProvider).value is LockFresh;
             return fresh || ref.watch(sessionProvider) == null
                 ? const SignInScreen()
-                : const MainShell();
+                : const DeviceGate();
           },
         );
       },

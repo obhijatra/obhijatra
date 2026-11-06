@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_field/src/app_info.dart';
 import 'package:obhijatra_field/src/providers/app_lock_provider.dart';
+import 'package:obhijatra_field/src/providers/device_providers.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 
 /// Reads and writes this device's settings.
@@ -41,18 +42,23 @@ class ServerNotifier extends AsyncNotifier<ServerConnection?> {
     final uri = Uri.parse(address);
     // The app lock needs the address to sign in before the database opens.
     await ref.read(appLockProvider.notifier).rememberServerAddress(uri);
-    return _connection = await _create(uri, settings);
+    final identity = await ref.watch(deviceIdentityProvider.future);
+    return _connection = await _create(uri, settings, identity);
   }
 
+  /// A client for [address] that keeps its session in [settings] and signs
+  /// every request with this phone's [identity] once it is enrolled.
   Future<ServerConnection> _create(
     Uri address,
     SettingsRepository settings,
+    DeviceIdentity identity,
   ) async {
     return ServerConnection(
       ObhijatraServer(
         baseUrl: address,
         appVersion: appReleaseVersion,
         authStore: await settings.authStore(),
+        signer: identity,
         httpClientFactory: ref.read(httpClientFactoryProvider),
       ),
       address,
@@ -64,7 +70,11 @@ class ServerNotifier extends AsyncNotifier<ServerConnection?> {
     final settings = await ref.read(settingsRepositoryProvider.future);
     await settings.write(serverUrlSettingKey, address.toString());
     await ref.read(appLockProvider.notifier).rememberServerAddress(address);
-    final next = await _create(address, settings);
+    final next = await _create(
+      address,
+      settings,
+      await readDeviceIdentity(ref),
+    );
     _connection?.server.close();
     _connection = next;
     state = AsyncData<ServerConnection?>(next);
@@ -104,17 +114,33 @@ class SessionNotifier extends Notifier<SignedInUser?> {
 
   /// Signs in by [method] (email and password, SMS code or Google) on the
   /// saved server. Throws an [ObhijatraException] with a plain-language
-  /// code. Every method ends the same way: the app lock records the online
-  /// sign-in (and may ask for an app PIN).
+  /// code. Every method ends the same way: the phone enrols for device
+  /// trust if it is not enrolled for this person (a failure does not stop
+  /// the sign-in: the device screen shows it and tries again), and the app
+  /// lock records the online sign-in (and may ask for an app PIN).
   ///
   /// An account with a one-time password throws [PasswordChangeNeeded] and
   /// records nothing: the person chooses their own password with
-  /// [changePassword] first.
+  /// [changePassword] first, from the enrolled (perhaps still waiting)
+  /// phone.
   Future<void> signInWith(
     Future<SignedInUser> Function(ObhijatraServer server) method,
   ) async {
     final server = ref.read(serverProvider).requireValue!.server;
-    final user = await method(server);
+    final SignedInUser user;
+    try {
+      user = await method(server);
+    } on ObhijatraException catch (e) {
+      // For example, a phone the server no longer knows enrols again, so
+      // trying again works.
+      await recordDeviceProblem(ref, e, server);
+      rethrow;
+    }
+    try {
+      await enrolThisPhone(ref, server);
+    } on ObhijatraException {
+      // Not a sign-in failure: the device screen shows it and tries again.
+    }
     if (user.mustChangePassword) throw PasswordChangeNeeded(user);
     state = user;
     await ref.read(appLockProvider.notifier).signedInOnline(user);
@@ -123,17 +149,19 @@ class SessionNotifier extends Notifier<SignedInUser?> {
   /// Chooses the person's own password in place of a one-time password,
   /// then carries on exactly as a sign-in does (see [signInWith]): the new
   /// password signs in again, because the change ends every session.
+  /// The phone must be enrolled first (it may still wait for approval).
   /// Throws an [ObhijatraException]; after
   /// [ProblemCode.passwordChangedSignInAgain] no session is left.
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
-  }) => signInWith(
-    (server) => server.changePassword(
+  }) => signInWith((server) async {
+    await enrolThisPhone(ref, server);
+    return server.changePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
-    ),
-  );
+    );
+  });
 
   /// Forgets the session on this phone. Unsent forms stay.
   void signOut() {

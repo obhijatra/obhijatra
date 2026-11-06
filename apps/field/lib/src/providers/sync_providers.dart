@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
+import 'package:obhijatra_field/src/providers/device_providers.dart';
 import 'package:obhijatra_field/src/providers/platform_providers.dart';
 import 'package:obhijatra_field/src/providers/session_providers.dart';
 
@@ -16,6 +17,8 @@ final syncEngineProvider = FutureProvider<SyncEngine?>((ref) async {
     database: db,
     server: connection.server,
     attachments: attachments,
+    // Nothing is sent without an approved device.
+    device: await ref.watch(deviceIdentityProvider.future),
     autoRetry: ref.watch(syncAutoRetryProvider),
   );
   ref.onDispose(() => unawaited(engine.dispose()));
@@ -64,6 +67,11 @@ class FormsRefreshNotifier extends Notifier<FormsRefreshState> {
   FormsRefreshState build() => const FormsRefreshState();
 
   /// Downloads every published form version not yet on the phone.
+  ///
+  /// While the phone is not known to be approved, it first asks the server
+  /// where it stands (an approval may have come meanwhile), and asks for no
+  /// forms unless it is approved; a device refusal is kept on the phone's
+  /// identity.
   Future<void> refresh() async {
     if (state.isRefreshing) return;
     final server = ref.read(serverProvider).value?.server;
@@ -71,14 +79,31 @@ class FormsRefreshNotifier extends Notifier<FormsRefreshState> {
     state = const FormsRefreshState(isRefreshing: true);
     ProblemCode? problem;
     try {
-      final db = await ref.read(deviceDatabaseProvider.future);
-      await FormRepository(db).refreshFromServer(server);
-    } on ObhijatraException catch (e) {
-      problem = e.code;
+      final identity = await readDeviceIdentity(ref);
+      final user = server.currentUser;
+      problem = user == null ? null : identity.knownBlocker(user.id);
+      if (problem == ProblemCode.deviceNotApproved ||
+          problem == ProblemCode.deviceApprovalExpired) {
+        try {
+          final status = await identity.refresh(server);
+          problem = status.blockerAt(ref.read(nowProvider)());
+        } on ObhijatraException catch (e) {
+          problem = e.code;
+        }
+      }
+      if (problem == null) {
+        try {
+          final db = await ref.read(deviceDatabaseProvider.future);
+          await FormRepository(db).refreshFromServer(server);
+        } on ObhijatraException catch (e) {
+          problem = e.code;
+          await identity.recordProblem(e.code, server: server);
+        }
+      }
     } on Object {
-      problem = ProblemCode.unknown;
+      problem ??= ProblemCode.unknown;
     }
-    state = FormsRefreshState(problem: problem);
+    if (ref.mounted) state = FormsRefreshState(problem: problem);
   }
 }
 

@@ -270,3 +270,181 @@ final class SubmissionReceipt {
   /// Whether this try stored it or an earlier one did.
   final ReceiptStatus status;
 }
+
+/// The kinds of device the server enrols (docs/decisions/0008-device-trust.md).
+/// Each is sent by its [name].
+enum DevicePlatform {
+  /// An Android phone or tablet.
+  android,
+
+  /// An iPhone or iPad.
+  ios,
+
+  /// A Windows computer.
+  windows,
+
+  /// A Mac.
+  macos,
+
+  /// A Linux computer.
+  linux,
+
+  /// A web browser.
+  web,
+}
+
+/// The most characters a device label may have (the server's limit).
+const int maxDeviceLabelLength = 100;
+
+/// Where a device stands with the server.
+enum DeviceState {
+  /// Enrolled and waiting for a branch manager or an organisation admin to
+  /// approve it (or, for an organisation admin's device, a second admin).
+  pending,
+
+  /// Approved: it may get and send data until its approval runs out.
+  active,
+
+  /// It was approved, but the approval (365 days) has run out. It must be
+  /// approved again with the same check code.
+  expired,
+
+  /// Switched off for good; the person must set the device up again as a
+  /// new device.
+  revoked,
+}
+
+/// What the server says about one device: the answer to enrolling it and
+/// to `GET /api/obhijatra/v1/devices/me`. The check code is never sent:
+/// both sides work it out from the keys.
+final class DeviceStatus {
+  /// Creates the status.
+  const DeviceStatus({
+    required this.id,
+    required this.state,
+    this.label = '',
+    this.platform = '',
+    this.expires,
+    this.approvedAt,
+    this.needsSecondApproval = false,
+  });
+
+  /// Reads the server's device view: `{id, status, label, platform,
+  /// expires, approved_at, needs_second_approval, approval_expired}`. An
+  /// `active` device whose approval ran out is [DeviceState.expired].
+  factory DeviceStatus.fromJson(Map<String, Object?> json) {
+    final id = json['id'];
+    final status = json['status'];
+    if (id is! String || id.isEmpty || status is! String) {
+      throw const ObhijatraException(ProblemCode.unexpectedResponse);
+    }
+    final state = switch (status) {
+      'pending' => DeviceState.pending,
+      'active' when json['approval_expired'] == true => DeviceState.expired,
+      'active' => DeviceState.active,
+      'revoked' => DeviceState.revoked,
+      _ => throw const ObhijatraException(ProblemCode.unexpectedResponse),
+    };
+    return DeviceStatus(
+      id: id,
+      state: state,
+      label: json['label'] is String ? json['label']! as String : '',
+      platform: json['platform'] is String ? json['platform']! as String : '',
+      expires: _dateOf(json['expires']),
+      approvedAt: _dateOf(json['approved_at']),
+      needsSecondApproval: json['needs_second_approval'] == true,
+    );
+  }
+
+  /// Reads what [toStored] wrote; `null` when it cannot.
+  static DeviceStatus? fromStored(Object? json) {
+    if (json is! Map<String, Object?>) return null;
+    final id = json['id'];
+    final state = DeviceState.values
+        .where((s) => s.name == json['state'])
+        .firstOrNull;
+    if (id is! String || id.isEmpty || state == null) return null;
+    return DeviceStatus(
+      id: id,
+      state: state,
+      label: json['label'] is String ? json['label']! as String : '',
+      platform: json['platform'] is String ? json['platform']! as String : '',
+      expires: _dateOf(json['expires']),
+      approvedAt: _dateOf(json['approved_at']),
+      needsSecondApproval: json['needs_second_approval'] == true,
+    );
+  }
+
+  /// The device id the server gave at enrolment.
+  final String id;
+
+  /// Where the device stands.
+  final DeviceState state;
+
+  /// The device's name, as the approver sees it.
+  final String label;
+
+  /// The device's platform, as the server holds it (see [DevicePlatform]).
+  final String platform;
+
+  /// When the approval runs out (UTC), if approved.
+  final DateTime? expires;
+
+  /// When the device was approved (UTC), if approved.
+  final DateTime? approvedAt;
+
+  /// Whether an organisation admin's device has its first approval and
+  /// waits for a second admin.
+  final bool needsSecondApproval;
+
+  /// Whether the device may get and send data at [now]: approved, and the
+  /// approval has not run out by the phone's clock (the server decides; this
+  /// only says when to ask it again).
+  bool usableAt(DateTime now) {
+    final until = expires;
+    return state == DeviceState.active &&
+        (until == null || until.isAfter(now.toUtc()));
+  }
+
+  /// Why the device may not get or send data at [now], or `null` when it
+  /// may (see [usableAt]).
+  ProblemCode? blockerAt(DateTime now) => switch (state) {
+    DeviceState.pending => ProblemCode.deviceNotApproved,
+    DeviceState.expired => ProblemCode.deviceApprovalExpired,
+    DeviceState.revoked => ProblemCode.deviceRevoked,
+    DeviceState.active =>
+      usableAt(now) ? null : ProblemCode.deviceApprovalExpired,
+  };
+
+  /// A copy in [state].
+  DeviceStatus withState(DeviceState state) => DeviceStatus(
+    id: id,
+    state: state,
+    label: label,
+    platform: platform,
+    expires: expires,
+    approvedAt: approvedAt,
+    needsSecondApproval: needsSecondApproval && state == DeviceState.pending,
+  );
+
+  /// The status as JSON, for the phone's own record (see [fromStored]).
+  Map<String, Object?> toStored() => {
+    'id': id,
+    'state': state.name,
+    'label': label,
+    'platform': platform,
+    'expires': ?expires?.toUtc().toIso8601String(),
+    'approved_at': ?approvedAt?.toUtc().toIso8601String(),
+    'needs_second_approval': needsSecondApproval,
+  };
+
+  @override
+  String toString() => 'DeviceStatus($id, ${state.name})';
+
+  /// A server or stored time; `null` when empty or unreadable. PocketBase
+  /// writes `2027-11-06 05:24:35.123Z`, which [DateTime.tryParse] reads.
+  static DateTime? _dateOf(Object? value) {
+    if (value is! String || value.trim().isEmpty) return null;
+    return DateTime.tryParse(value.trim())?.toUtc();
+  }
+}
