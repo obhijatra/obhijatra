@@ -260,7 +260,7 @@ class AppLockController extends AsyncNotifier<AppLockState> {
       // Keychain outlives the app) must not lock an empty database, and its
       // device keys are not this installation's: it makes its own.
       await _lock.reset();
-      await ref.read(deviceKeyStoreProvider).clear();
+      await ref.read(deviceKeyStoreProvider).clearAll();
       // Anything opened from the old keys reopens with new ones.
       ref.invalidate(deviceIdentityProvider);
       return const LockFresh();

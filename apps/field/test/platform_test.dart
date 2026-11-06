@@ -39,6 +39,91 @@ class _PlainSqlite implements Database {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('SecureStorageDeviceKeyStore', () {
+    final seeds = DeviceKeySeeds(
+      List<int>.filled(32, 1),
+      List<int>.filled(32, 2),
+    ).toText();
+    final enrolment = const DeviceEnrolment(
+      deviceId: 'device000000001',
+      userId: 'fielduser1abcde',
+    ).encode();
+
+    test("an earlier version's single identity becomes the identity of the "
+        'person it was enrolled for', () async {
+      FlutterSecureStorage.setMockInitialValues(<String, String>{
+        SecureStorageDeviceKeyStore.legacySeedsEntry: seeds,
+        SecureStorageDeviceKeyStore.legacyEnrolmentEntry: enrolment,
+        SecureStorageKeyStore.entryName: 'the database key stays',
+      });
+      final store = SecureStorageDeviceKeyStore();
+      final identity = await DeviceIdentity.open(store);
+      addTearDown(identity.close);
+      expect(identity.userId, 'fielduser1abcde');
+      expect(identity.deviceId, 'device000000001');
+      expect((await store.readKeySeeds('fielduser1abcde'))!.toText(), seeds);
+      final all = await const FlutterSecureStorage().readAll();
+      expect(
+        all.containsKey(SecureStorageDeviceKeyStore.legacySeedsEntry),
+        isFalse,
+      );
+      expect(
+        all.containsKey(SecureStorageDeviceKeyStore.legacyEnrolmentEntry),
+        isFalse,
+      );
+      expect(all[SecureStorageKeyStore.entryName], 'the database key stays');
+      // Moved once: a new store finds the same.
+      expect(
+        await SecureStorageDeviceKeyStore().readCurrentAccount(),
+        'fielduser1abcde',
+      );
+    });
+
+    test(
+      'seeds an earlier version never enrolled belong to nobody and go',
+      () async {
+        FlutterSecureStorage.setMockInitialValues(<String, String>{
+          SecureStorageDeviceKeyStore.legacySeedsEntry: seeds,
+        });
+        final store = SecureStorageDeviceKeyStore();
+        expect(await store.readCurrentAccount(), isNull);
+        expect(await const FlutterSecureStorage().readAll(), isEmpty);
+      },
+    );
+
+    test(
+      'each person keeps their own; clearing all keeps everything else',
+      () async {
+        FlutterSecureStorage.setMockInitialValues(<String, String>{
+          SecureStorageKeyStore.entryName: 'the database key stays',
+        });
+        final store = SecureStorageDeviceKeyStore();
+        final one = DeviceKeySeeds.fromText(seeds)!;
+        final two = DeviceKeySeeds(
+          List<int>.filled(32, 3),
+          List<int>.filled(32, 4),
+        );
+        await store.writeKeySeeds('fielduser1abcde', one);
+        await store.writeKeySeeds('fielduser2abcde', two);
+        await store.writeCurrentAccount('fielduser2abcde');
+        expect(await store.readCurrentAccount(), 'fielduser2abcde');
+        expect(
+          (await store.readKeySeeds('fielduser1abcde'))!.toText(),
+          one.toText(),
+        );
+        await store.clear('fielduser2abcde');
+        expect(await store.readKeySeeds('fielduser2abcde'), isNull);
+        expect(await store.readKeySeeds('fielduser1abcde'), isNotNull);
+        await store.clearAll();
+        expect(await store.readCurrentAccount(), isNull);
+        expect(await store.readKeySeeds('fielduser1abcde'), isNull);
+        expect(await const FlutterSecureStorage().readAll(), <String, String>{
+          SecureStorageKeyStore.entryName: 'the database key stays',
+        });
+      },
+    );
+  });
+
   group('SecureStorageKeyStore', () {
     test('creates a key once and reads the same key back', () async {
       FlutterSecureStorage.setMockInitialValues(<String, String>{});

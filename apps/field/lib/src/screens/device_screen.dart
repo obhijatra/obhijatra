@@ -70,8 +70,8 @@ Future<void> openDeviceScreen(BuildContext context) => Navigator.of(context)
 /// - switched off: what happened, and "Set up this phone again" after a
 ///   confirmation.
 ///
-/// Every state offers "Sign out", and "Fill in forms on this phone for
-/// now" when there are forms on the phone.
+/// Every state offers "Sign out"; all but switched off offer "Fill in
+/// forms on this phone for now" when there are forms on the phone.
 class DeviceTrustScreen extends ConsumerStatefulWidget {
   /// Creates the screen; [pushed] when it was opened over the app.
   const DeviceTrustScreen({this.pushed = false, super.key});
@@ -363,7 +363,10 @@ class _DeviceTrustState extends ConsumerState<DeviceTrustScreen> {
       bottom: BottomActions(
         children: <Widget>[
           main,
-          if (hasForms && !widget.pushed)
+          // Not on a phone that was switched off: it may not be used.
+          if (hasForms &&
+              !widget.pushed &&
+              state.phase != DevicePhase.switchedOff)
             PrimaryButton(
               label: l.deviceFillInForms,
               icon: LucideIcons.clipboardList,

@@ -63,8 +63,9 @@ final class ObhijatraServer {
     Duration timeout = const Duration(seconds: 60),
   }) {
     final innerFactory = httpClientFactory ?? http.Client.new;
-    http.Client signing() =>
-        SigningHttpClient(innerFactory(), signer: signer, timeout: timeout);
+    http.Client signing() => _SignatureRetry(
+      SigningHttpClient(innerFactory(), signer: signer, timeout: timeout),
+    );
     _newClient = signing;
     _pb = PocketBase(
       baseUrl.toString(),
@@ -1027,4 +1028,63 @@ final class ObhijatraServer {
       publishedAt: publishedAt,
     );
   }
+}
+
+/// Sends a request once more, signed afresh (a new time and nonce), when
+/// the server refused its device signature (HTTP 403 with the reason
+/// `device_signature_invalid`). A server that has just restarted refuses
+/// signatures made in the second it started, so one immediate retry is
+/// enough (docs/decisions/0008-device-trust.md). Never more than once, and
+/// never for any other answer.
+///
+/// The body is buffered (the signing client buffers it anyway), so the
+/// retry sends exactly the same bytes.
+final class _SignatureRetry extends http.BaseClient {
+  _SignatureRetry(this._inner);
+
+  final http.Client _inner;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final body = await request.finalize().toBytes();
+    http.Request copy() {
+      final again = http.Request(request.method, request.url)
+        ..followRedirects = request.followRedirects
+        ..maxRedirects = request.maxRedirects
+        ..persistentConnection = request.persistentConnection
+        ..bodyBytes = body;
+      // After the body: setting it may add a charset to the content type.
+      return again..headers.addAll(request.headers);
+    }
+
+    final first = await _inner.send(copy());
+    if (first.statusCode != 403) return first;
+    final bytes = await first.stream.toBytes();
+    if (_reasonOf(_decode(bytes)) == DeviceReason.signatureInvalid) {
+      return _inner.send(copy());
+    }
+    return http.StreamedResponse(
+      http.ByteStream.fromBytes(bytes),
+      first.statusCode,
+      contentLength: bytes.length,
+      request: first.request,
+      headers: first.headers,
+      isRedirect: first.isRedirect,
+      persistentConnection: first.persistentConnection,
+      reasonPhrase: first.reasonPhrase,
+    );
+  }
+
+  static Object? _decode(List<int> bytes) {
+    try {
+      return jsonDecode(utf8.decode(bytes));
+    } on FormatException {
+      return null;
+    }
+  }
+
+  static String? _reasonOf(Object? json) => ObhijatraServer._reasonOf(json);
+
+  @override
+  void close() => _inner.close();
 }

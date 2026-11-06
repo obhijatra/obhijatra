@@ -81,14 +81,14 @@ void main() {
       xform: householdVisitXForm,
     );
 
-    // ---- First life of the app. Its device keys are made before the
-    // ---- first sign-in.
+    // ---- First life of the app. The person's device keys are made when
+    // ---- they first enrol on it.
     final keys = MemoryKeyStore();
     final deviceStore = MemoryDeviceKeyStore();
     final dbFile = File('${work.path}/device/device.sqlite');
     await dbFile.parent.create();
     var phone = await _Phone.open(server.baseUrl, keys, dbFile, deviceStore);
-    expect(deviceStore.seedsText, isNotNull);
+    expect(deviceStore.seedsText, isNull);
 
     final meta = await phone.server.fetchMeta();
     expect(meta.syncBlocker('0.1.0'), isNull);
@@ -104,6 +104,7 @@ void main() {
       _problem(ProblemCode.deviceNotEnrolled),
     );
     final enrolled = await phone.enrol();
+    expect(deviceStore.seedsText, isNotNull);
     expect(enrolled.state, DeviceState.pending);
     expect(enrolled.platform, 'linux');
     expect(phone.identity.deviceId, enrolled.id);
@@ -121,7 +122,7 @@ void main() {
     // The approver reads the code aloud; it is typed in Bangla digits.
     await server.approveDevice(
       enrolled.id,
-      toBanglaDigits(groupCheckCode(phone.identity.checkCode)),
+      toBanglaDigits(groupCheckCode(phone.identity.checkCode!)),
     );
     final approved = await phone.identity.refresh(phone.server);
     expect(approved.state, DeviceState.active);
@@ -338,7 +339,7 @@ void main() {
       problem(ProblemCode.deviceNotApproved),
     );
     // ---- Then it is approved, and works.
-    await server.approveDevice(enrolled.id, identity.checkCode);
+    await server.approveDevice(enrolled.id, identity.checkCode!);
     expect((await identity.refresh(client)).state, DeviceState.active);
     await client.listPublishedFormVersions(); // no longer refused
 
@@ -378,9 +379,7 @@ void main() {
       'active': true,
       'must_change_password': true,
     });
-    final secondIdentity = await DeviceIdentity.open(
-      MemoryDeviceKeyStore(),
-    );
+    final secondIdentity = await DeviceIdentity.open(MemoryDeviceKeyStore());
     addTearDown(secondIdentity.close);
     final secondClient = ObhijatraServer(
       baseUrl: server.baseUrl,
@@ -398,7 +397,7 @@ void main() {
       label: 'E2E field phone two',
       platform: DevicePlatform.ios,
     );
-    await server.approveDevice(secondDevice.id, secondIdentity.checkCode);
+    await server.approveDevice(secondDevice.id, secondIdentity.checkCode!);
     await expectLater(
       secondClient.listPublishedFormVersions(),
       problem(ProblemCode.passwordChangeRequired),

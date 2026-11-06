@@ -154,33 +154,45 @@ void main() {
   });
 
   group('the identity', () {
-    test('makes its keys once and keeps them in the store', () async {
+    late FakeObhijatraServer fake;
+    setUp(() => fake = FakeObhijatraServer(requireDevices: true));
+
+    test("makes a person's keys on their first enrolment here, once, and "
+        'keeps them', () async {
       final store = MemoryDeviceKeyStore();
-      final first = await DeviceIdentity.open(store);
-      final again = await DeviceIdentity.open(store);
+      final p = await _Phone.open(fake, store: store);
+      addTearDown(p.close);
+      // Nobody has keys before anyone signs in; nothing is signed.
+      expect(p.identity.checkCode, isNull);
+      expect(store.seedWrites, 0);
+      await p.signIn();
+      final status = await p.enrol();
       expect(store.seedWrites, 1);
+      expect(store.currentAccount, 'fielduser1abcde');
       expect(store.seedsText, matches(RegExp(r'^[0-9a-f]{128}$')));
-      expect(again.checkCode, first.checkCode);
-      expect(first.checkCode, matches(RegExp(r'^\d{18}$')));
-      expect(
-        first.checkCode,
-        deviceCheckCode(first.signPublicKey, first.encPublicKey),
-      );
-      expect(first.deviceId, isNull);
-      await first.close();
-      await again.close();
+      expect(p.identity.checkCode, matches(RegExp(r'^\d{18}$')));
+      expect(p.identity.checkCode, fake.devices[status.id]!.checkCode);
+
+      final again = await DeviceIdentity.open(store);
+      addTearDown(again.close);
+      expect(again.checkCode, p.identity.checkCode);
+      expect(again.deviceId, status.id);
+      expect(again.userId, 'fielduser1abcde');
+      expect(store.seedWrites, 1);
     });
 
     test('never shows its secrets in text', () async {
       final store = MemoryDeviceKeyStore();
-      final identity = await DeviceIdentity.open(store);
-      addTearDown(identity.close);
-      final seeds = (await store.readKeySeeds())!;
+      final p = await _Phone.open(fake, store: store);
+      addTearDown(p.close);
+      await p.signIn();
+      await p.enrol();
+      final seeds = (await store.readKeySeeds('fielduser1abcde'))!;
       final secret = store.seedsText!;
       for (final text in [
         '$seeds',
-        '$identity',
-        '${await store.readEnrolment()}',
+        '${p.identity}',
+        '${await store.readEnrolment('fielduser1abcde')}',
       ]) {
         expect(text, isNot(contains(secret.substring(0, 16))));
         expect(text, isNot(contains(secret.substring(64, 80))));
@@ -190,17 +202,21 @@ void main() {
 
     test('unreadable seeds count as none: new keys, and the enrolment of '
         'the old keys is forgotten', () async {
-      final store = MemoryDeviceKeyStore()
-        ..seedsText = 'not seeds'
-        ..enrolmentText = const DeviceEnrolment(
-          deviceId: 'device000000001',
-          userId: 'fielduser1abcde',
-        ).encode();
-      final identity = await DeviceIdentity.open(store);
-      addTearDown(identity.close);
-      expect(identity.deviceId, isNull);
-      expect(store.enrolmentText, isNull);
+      final store = MemoryDeviceKeyStore()..currentAccount = 'fielduser1abcde';
+      store.seeds['fielduser1abcde'] = 'not seeds';
+      store.enrolmentText = const DeviceEnrolment(
+        deviceId: 'device000000001',
+        userId: 'fielduser1abcde',
+      ).encode();
+      final p = await _Phone.open(fake, store: store);
+      addTearDown(p.close);
+      expect(p.identity.deviceId, isNull);
+      expect(p.identity.checkCode, isNull);
+      await p.signIn();
+      final status = await p.enrol();
+      expect(status.id, isNot('device000000001'));
       expect(store.seedsText, matches(RegExp(r'^[0-9a-f]{128}$')));
+      expect(DeviceEnrolment.decode(store.enrolmentText)!.deviceId, status.id);
     });
   });
 
@@ -252,7 +268,7 @@ void main() {
       expect(fake.deviceOfSession(p.auth.token), status.id);
       // The approver's code is the phone's code.
       final device = fake.devices[status.id]!;
-      expect(device.checkCode, p.identity.checkCode);
+      expect(device.checkCode, p.identity.checkCode!);
       expect(device.platform, 'android');
 
       // Waiting: only its status.
@@ -264,7 +280,7 @@ void main() {
 
       fake.approveDevice(
         status.id,
-        toBanglaDigits(groupCheckCode(p.identity.checkCode)),
+        toBanglaDigits(groupCheckCode(p.identity.checkCode!)),
       );
       final approved = await p.identity.refresh(p.server);
       expect(approved.state, DeviceState.active);
@@ -286,12 +302,12 @@ void main() {
       final p = await phone(store: store, auth: auth);
       await p.signIn();
       final status = await p.enrol();
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
 
       final later = await phone(store: store, auth: auth);
       expect(later.identity.deviceId, status.id);
-      expect(later.identity.checkCode, p.identity.checkCode);
+      expect(later.identity.checkCode!, p.identity.checkCode!);
       expect(later.identity.status!.state, DeviceState.active);
       expect(later.identity.knownBlocker('fielduser1abcde'), isNull);
       expect(await later.server.listPublishedFormVersions(), hasLength(1));
@@ -309,8 +325,8 @@ void main() {
       // device.
       final direct = await p.server.enrolDevice(
         keys: await SoftwareDeviceKeys.fromSeeds(
-          (await p.store.readKeySeeds())!.signSeed,
-          (await p.store.readKeySeeds())!.encSeed,
+          (await p.store.readKeySeeds('fielduser1abcde'))!.signSeed,
+          (await p.store.readKeySeeds('fielduser1abcde'))!.encSeed,
         ),
         label: _label,
         platform: DevicePlatform.android,
@@ -338,7 +354,7 @@ void main() {
       await p.signIn();
       final status = await p.enrol();
       fake
-        ..approveDevice(status.id, p.identity.checkCode)
+        ..approveDevice(status.id, p.identity.checkCode!)
         ..revokeDevice(status.id);
       await expectLater(
         p.server.listPublishedFormVersions(),
@@ -361,7 +377,7 @@ void main() {
       final p = await phone();
       await p.signIn();
       final status = await p.enrol();
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
       fake.expireDevice(status.id);
       await expectLater(
@@ -369,7 +385,7 @@ void main() {
         _problem(ProblemCode.deviceApprovalExpired),
       );
       expect((await p.identity.refresh(p.server)).state, DeviceState.expired);
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       expect((await p.identity.refresh(p.server)).state, DeviceState.active);
     });
 
@@ -462,7 +478,7 @@ void main() {
       final p = await phone();
       await p.signIn();
       final status = await p.enrol();
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       final version = (await p.server.listPublishedFormVersions()).single;
       expect(await p.server.downloadXForm(version), contains('<h:html'));
 
@@ -492,11 +508,11 @@ void main() {
       final later = await phone(store: p.store);
       await later.signIn();
       expect(later.identity.deviceId, isNull);
-      final code = later.identity.checkCode;
+      final code = later.identity.checkCode!;
       final status = await later.enrol();
       expect(status.id, isNot(first.id));
       expect(status.state, DeviceState.pending);
-      expect(later.identity.checkCode, isNot(code));
+      expect(later.identity.checkCode!, isNot(code));
       expect(fake.devices, hasLength(2));
     });
 
@@ -520,9 +536,9 @@ void main() {
       final p = await phone();
       final user = await p.signIn();
       final first = await p.enrol();
-      fake.approveDevice(first.id, p.identity.checkCode);
+      fake.approveDevice(first.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
-      final code = p.identity.checkCode;
+      final code = p.identity.checkCode!;
       final seeds = p.store.seedsText;
       expect(p.identity.serverForgot, isFalse);
 
@@ -540,7 +556,7 @@ void main() {
       expect(p.identity.knownBlocker(user.id), ProblemCode.deviceNotApproved);
       // The same keys, so the same numbers for the approver.
       expect(p.store.seedsText, seeds);
-      expect(p.identity.checkCode, code);
+      expect(p.identity.checkCode!, code);
       expect(fake.devices[again.id]!.checkCode, code);
       expect(fake.devices[again.id]!.label, _label);
       expect(fake.devices[again.id]!.platform, 'android');
@@ -563,9 +579,9 @@ void main() {
       final p = await phone();
       final user = await p.signIn();
       final first = await p.enrol();
-      fake.approveDevice(first.id, p.identity.checkCode);
+      fake.approveDevice(first.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
-      final code = p.identity.checkCode;
+      final code = p.identity.checkCode!;
       fake.forgetDevice(first.id);
 
       // Without a server (and not enrolled again yet), nothing is signed
@@ -575,7 +591,7 @@ void main() {
       expect(p.identity.isEnrolledFor(user.id), isFalse);
       expect(p.identity.serverForgot, isTrue);
       expect(p.identity.knownBlocker(user.id), ProblemCode.deviceNotEnrolled);
-      expect(p.identity.checkCode, code);
+      expect(p.identity.checkCode!, code);
 
       // Kept across a restart, then enrolled again after the sign-in.
       final later = await phone(store: p.store, auth: p.auth);
@@ -583,7 +599,7 @@ void main() {
       expect(later.identity.serverForgot, isTrue);
       final again = await later.enrol();
       expect(again.state, DeviceState.pending);
-      expect(later.identity.checkCode, code);
+      expect(later.identity.checkCode!, code);
       expect(later.identity.serverForgot, isTrue);
       expect(fake.devices.keys, [again.id]);
 
@@ -596,7 +612,7 @@ void main() {
       final third = later.identity.status!;
       expect(third.id, isNot(again.id));
       expect(third.state, DeviceState.pending);
-      expect(later.identity.checkCode, code);
+      expect(later.identity.checkCode!, code);
     });
 
     test(
@@ -606,31 +622,62 @@ void main() {
         final p = await phone();
         await p.signIn();
         final first = await p.enrol();
-        final firstCode = p.identity.checkCode;
+        final firstCode = p.identity.checkCode!;
         fake.forgetDevice(first.id);
         await p.identity.recordProblem(ProblemCode.deviceUnknown);
         p.server.signOut();
         await p.signIn(_secondEmail);
         final second = await p.enrol();
-        expect(p.identity.checkCode, isNot(firstCode));
+        expect(p.identity.checkCode!, isNot(firstCode));
         expect(p.identity.serverForgot, isFalse);
         expect(fake.devices[second.id]!.userId, 'fielduser2abcde');
       },
     );
 
-    test('another person on the same phone gets new keys', () async {
+    test("a shared phone keeps each person's own keys: switching back "
+        'uses their approved device again, with no new approval', () async {
       fake.users[_secondEmail] = const FakeFieldUser(id: 'fielduser2abcde');
-      final p = await phone();
+      final store = MemoryDeviceKeyStore();
+      final p = await phone(store: store);
       await p.signIn();
       final first = await p.enrol();
-      final firstCode = p.identity.checkCode;
+      final firstCode = p.identity.checkCode!;
+      fake.approveDevice(first.id, firstCode);
+      await p.identity.refresh(p.server);
+
+      // The second person gets keys of their own, and waits.
       p.server.signOut();
       await p.signIn(_secondEmail);
       final second = await p.enrol();
       expect(second.id, isNot(first.id));
+      expect(second.state, DeviceState.pending);
       expect(p.identity.isEnrolledFor('fielduser2abcde'), isTrue);
-      expect(p.identity.checkCode, isNot(firstCode));
+      expect(p.identity.isEnrolledFor('fielduser1abcde'), isFalse);
+      expect(p.identity.checkCode!, isNot(firstCode));
       expect(fake.devices[second.id]!.userId, 'fielduser2abcde');
+
+      // Back and forth: each time their own device, nothing enrolled anew,
+      // the first person's still approved (no waiting limit reached).
+      for (var i = 0; i < 4; i++) {
+        p.server.signOut();
+        await p.signIn();
+        fake.log.clear();
+        final again = await p.enrol();
+        expect(again.id, first.id);
+        expect(again.state, DeviceState.active);
+        expect(fake.log, isEmpty);
+        expect(p.identity.checkCode!, firstCode);
+        expect(await p.server.listPublishedFormVersions(), hasLength(1));
+        p.server.signOut();
+        await p.signIn(_secondEmail);
+        expect((await p.enrol()).id, second.id);
+      }
+      expect(fake.devices, hasLength(2));
+
+      // After a restart: the person who signed in last.
+      final later = await phone(store: store, auth: p.auth);
+      expect(later.identity.userId, 'fielduser2abcde');
+      expect(later.identity.deviceId, second.id);
     });
 
     test('a one-time password: enrol, choose the new password from the '
@@ -656,7 +703,7 @@ void main() {
         p.server.listPublishedFormVersions(),
         _problem(ProblemCode.deviceNotApproved),
       );
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
       expect(await p.server.listPublishedFormVersions(), hasLength(1));
     });
@@ -682,7 +729,7 @@ void main() {
         final p = await phone();
         await p.signIn();
         final first = await p.enrol();
-        final code = p.identity.checkCode;
+        final code = p.identity.checkCode!;
         final changes = <void>[];
         final listening = p.identity.changes.listen(changes.add);
         addTearDown(listening.cancel);
@@ -691,7 +738,7 @@ void main() {
         expect(changes, isNotEmpty);
         expect(p.identity.deviceId, isNull);
         expect(p.identity.status, isNull);
-        expect(p.identity.checkCode, isNot(code));
+        expect(p.identity.checkCode!, isNot(code));
         expect(p.store.enrolmentText, isNull);
         // Nothing is signed until the new keys are enrolled.
         await expectLater(
@@ -732,6 +779,71 @@ void main() {
         _problem(ProblemCode.deviceNotEnrolled),
       );
       expect(fake.log, isEmpty);
+    });
+  });
+
+  group('a refused signature', () {
+    late FakeObhijatraServer fake;
+    late _Phone p;
+
+    setUp(() async {
+      fake = FakeObhijatraServer(
+        xform: householdVisitXForm,
+        requireDevices: true,
+      );
+      p = await _Phone.open(fake);
+      await p.signIn();
+      final status = await p.enrol();
+      fake.approveDevice(status.id, p.identity.checkCode!);
+      await p.identity.refresh(p.server);
+      fake
+        ..log.clear()
+        ..signatures.clear();
+    });
+
+    tearDown(() => p.close());
+
+    Iterable<String> formRequests() =>
+        fake.log.where((l) => l.contains('form_versions'));
+
+    test('is sent again at once, signed afresh (new time and nonce), and '
+        'works', () async {
+      fake.refuseSignatures = 1;
+      expect(await p.server.listPublishedFormVersions(), hasLength(1));
+      expect(formRequests(), hasLength(2));
+      expect(fake.signatures, hasLength(2));
+      expect(fake.signatures.toSet(), hasLength(2));
+      expect(fake.signatures.every((s) => s.isNotEmpty), isTrue);
+    });
+
+    test('is sent again only once', () async {
+      fake.refuseSignatures = 2;
+      await expectLater(
+        p.server.listPublishedFormVersions(),
+        _problem(ProblemCode.deviceSignatureInvalid),
+      );
+      expect(formRequests(), hasLength(2));
+      // The next request is new, and works.
+      expect(await p.server.listPublishedFormVersions(), hasLength(1));
+    });
+
+    test('no other refusal is sent again', () async {
+      fake.clockOffset = const Duration(minutes: 6);
+      await expectLater(
+        p.server.listPublishedFormVersions(),
+        _problem(ProblemCode.deviceClockWrong),
+      );
+      expect(formRequests(), hasLength(1));
+      fake
+        ..clockOffset = Duration.zero
+        ..submissionGlitches.add(
+          const DeviceRefusal(403, DeviceReason.notApproved),
+        );
+      await expectLater(
+        p.server.submit(instanceXml: (await fillHouseholdVisit()).xml),
+        _problem(ProblemCode.deviceNotApproved),
+      );
+      expect(fake.log.where((l) => l.contains('submissions')), hasLength(1));
     });
   });
 
@@ -865,7 +977,7 @@ void main() {
       await expectKept(id);
       expect(fake.log.where((l) => l.contains('submissions')), isEmpty);
 
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       // The next run asks the server, which now says yes.
       final after = await sync.syncNow();
       expect(after.sent, 1, reason: '${after.stoppedBy}');
@@ -878,7 +990,7 @@ void main() {
       'an approved phone is not asked about again before each run',
       () async {
         final status = await p.enrol();
-        fake.approveDevice(status.id, p.identity.checkCode);
+        fake.approveDevice(status.id, p.identity.checkCode!);
         await p.identity.refresh(p.server);
         await queueOne();
         fake.log.clear();
@@ -890,9 +1002,9 @@ void main() {
     test('a device the server no longer knows: forms stay queued, the phone '
         'enrols again with the same keys, and sends once approved', () async {
       final status = await p.enrol();
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
-      final code = p.identity.checkCode;
+      final code = p.identity.checkCode!;
       final id = await queueOne();
       fake.forgetDevice(status.id);
 
@@ -906,7 +1018,7 @@ void main() {
       final again = p.identity.status!;
       expect(again.id, isNot(status.id));
       expect(again.state, DeviceState.pending);
-      expect(p.identity.checkCode, code);
+      expect(p.identity.checkCode!, code);
       expect(p.identity.serverForgot, isTrue);
 
       expect((await sync.syncNow()).stoppedBy, ProblemCode.deviceNotApproved);
@@ -920,7 +1032,7 @@ void main() {
     test('switched off while forms wait: they stay queued and the phone '
         'remembers', () async {
       final status = await p.enrol();
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
       final a = await queueOne();
       final b = await queueOne();
@@ -935,7 +1047,7 @@ void main() {
 
     test('a refusal of a submission keeps it as it was', () async {
       final status = await p.enrol();
-      fake.approveDevice(status.id, p.identity.checkCode);
+      fake.approveDevice(status.id, p.identity.checkCode!);
       await p.identity.refresh(p.server);
       final id = await queueOne();
       for (final (refusal, code) in [
@@ -961,16 +1073,40 @@ void main() {
         expect(sync.status.blockedBy, code);
         await expectKept(id);
       }
-      // A signature that did not check out: tried again later by itself,
-      // not counted against the submission.
-      fake.submissionGlitches.add(
-        const DeviceRefusal(403, DeviceReason.signatureInvalid),
-      );
+      // A signature that did not check out twice in a row (sent again once
+      // at once): tried again later by itself, not counted against the
+      // submission.
+      fake.submissionGlitches.addAll(const [
+        DeviceRefusal(403, DeviceReason.signatureInvalid),
+        DeviceRefusal(403, DeviceReason.signatureInvalid),
+      ]);
       final report = await sync.syncNow();
       expect(report.stoppedBy, ProblemCode.deviceSignatureInvalid);
       expect(sync.status.blockedBy, isNull);
       await expectKept(id);
+      // Once: the immediate second try works.
+      fake.submissionGlitches.add(
+        const DeviceRefusal(403, DeviceReason.signatureInvalid),
+      );
       expect((await sync.syncNow()).sent, 1);
+    });
+
+    test('a submission whose signature a restarted server refused is sent '
+        'again at once, and the server keeps it once', () async {
+      final status = await p.enrol();
+      fake.approveDevice(status.id, p.identity.checkCode!);
+      await p.identity.refresh(p.server);
+      final id = await queueOne();
+      fake
+        ..submissionGlitches.add(
+          const DeviceRefusal(403, DeviceReason.signatureInvalid),
+        )
+        ..log.clear();
+      final report = await sync.syncNow();
+      expect(report.sent, 1, reason: '${report.stoppedBy}');
+      expect((await outbox.find(id))!.state, OutboxState.sent);
+      expect(fake.submissions, hasLength(1));
+      expect(fake.log.where((l) => l.contains('submissions')), hasLength(2));
     });
 
     test('an unknown answer about the phone stops the run without '

@@ -239,7 +239,7 @@ class TestEnv {
       );
       server.approveDevicesAtOnce = atOnce;
       if (deviceApproved && status.state != DeviceState.active) {
-        server.approveDevice(status.id, identity.checkCode);
+        server.approveDevice(status.id, identity.checkCode!);
         await identity.refresh(client);
       }
       client.close();

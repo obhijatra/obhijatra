@@ -140,7 +140,8 @@ class DeviceTrustState {
   /// Where the phone stands.
   final DevicePhase phase;
 
-  /// The phone's 18-digit check code.
+  /// The phone's 18-digit check code for the signed-in person (empty
+  /// before they have keys on it).
   final String code;
 
   /// The last status the server reported, if any.
@@ -197,7 +198,7 @@ class DeviceTrustNotifier extends AsyncNotifier<DeviceTrustState> {
     final user = ref.read(sessionProvider);
     return DeviceTrustState(
       phase: _phaseOf(identity, user),
-      code: identity.checkCode,
+      code: identity.checkCode ?? '',
       status: identity.status,
       checkedAt: identity.checkedAt,
       problem: _problem,
@@ -286,15 +287,18 @@ class DeviceTrustNotifier extends AsyncNotifier<DeviceTrustState> {
     }
   }
 
-  /// The person chose to fill in forms before the phone is approved.
+  /// The person chose to fill in forms before the phone is approved (not
+  /// on a phone that was switched off).
   void fillInFormsMeanwhile() {
+    if (state.value?.phase == DevicePhase.switchedOff) return;
     _deferred = true;
     _publish();
   }
 
-  /// "Set up this phone again": forgets this phone's keys, enrolment and
-  /// session, and makes new keys. The person then signs in, and the phone
-  /// enrols as a new device. Unsent forms and drafts stay.
+  /// "Set up this phone again": forgets the signed-in person's keys,
+  /// enrolment and session on this phone, and makes new keys (other
+  /// people's keys stay). The person then signs in, and the phone enrols as
+  /// a new device. Unsent forms and drafts stay.
   Future<void> setUpAgain() async {
     final identity = await readDeviceIdentity(ref);
     await identity.reset();

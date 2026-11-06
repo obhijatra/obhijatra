@@ -365,6 +365,15 @@ final class FakeObhijatraServer {
   /// The headers of the last request that reached the fake.
   Map<String, String> lastHeaders = const {};
 
+  /// The device signature of every request that reached the fake, in order
+  /// (empty for an unsigned one).
+  final List<String> signatures = [];
+
+  /// How many of the next signed requests to refuse with the reason
+  /// `device_signature_invalid` before checking them, as a server that has
+  /// just restarted refuses signatures made in the second it started.
+  int refuseSignatures = 0;
+
   /// Glitches for the next device requests (enrolment and status), used up
   /// one per request.
   final List<Glitch> deviceGlitches = [];
@@ -632,6 +641,12 @@ final class FakeObhijatraServer {
       );
     }
     lastHeaders = request.headers;
+    signatures.add(request.headers[DeviceHeaders.signature] ?? '');
+    if (refuseSignatures > 0 &&
+        (request.headers[DeviceHeaders.signature] ?? '').isNotEmpty) {
+      refuseSignatures--;
+      return _withDate(_deviceRefusal(403, DeviceReason.signatureInvalid));
+    }
     FakeDevice? verified;
     if (requireDevices) {
       final gate = _deviceGate(request);

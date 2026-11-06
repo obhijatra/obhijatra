@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:obhijatra_core/obhijatra_core.dart';
 import 'package:obhijatra_core/testing.dart';
 import 'package:obhijatra_field/l10n/app_localizations.dart';
+import 'package:obhijatra_field/src/providers/session_providers.dart';
 import 'package:obhijatra_field/src/providers/sync_providers.dart';
 import 'package:obhijatra_field/src/screens/change_password_screen.dart';
 import 'package:obhijatra_field/src/screens/device_screen.dart';
@@ -32,6 +33,9 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await settleApp(tester);
 }
 
+/// A colleague who shares the phone.
+const String _secondEmail = 'field2@example.org';
+
 /// The one-time password an organisation admin gives.
 const String _oneTime = 'kfmw-tqzp-hrvx';
 
@@ -42,11 +46,12 @@ const String _own = 'river tea mango kite';
 Future<void> _signIn(
   WidgetTester tester,
   AppLocalizations l, {
+  String email = fakeEmail,
   String password = fakePassword,
 }) async {
   await tester.enterText(
     await reveal(tester, find.byKey(const Key('email-field'))),
-    fakeEmail,
+    email,
   );
   await tester.enterText(
     await reveal(tester, find.byKey(const Key('password-field'))),
@@ -172,14 +177,16 @@ void main() {
     await tester.runAsync(() => env.seedSignedIn(signedIn: false));
     await pumpApp(tester, env, language: 'en');
     final l = wordsFor('en');
-    final code = (await tester.runAsync(
-      () => DeviceIdentity.open(env.deviceStore),
-    ))!.checkCode;
-    expect(env.deviceStore.seedsText, isNotNull); // made before sign-in
+    // Keys are the person's own, made when they first enrol here.
+    expect(env.deviceStore.currentAccount, isNull);
 
     await _signIn(tester, l);
 
     expect(find.text(l.deviceWaitingTitle), findsOneWidget);
+    expect(env.deviceStore.currentAccount, 'fielduser1abcde');
+    final code = (await tester.runAsync(
+      () => DeviceIdentity.open(env.deviceStore),
+    ))!.checkCode;
     final device = env.phoneDevice!;
     expect(device.status, 'pending');
     expect(device.checkCode, code);
@@ -320,6 +327,52 @@ void main() {
     await endTest(tester, env);
   }, scales: const <double>[1.0, 2.0]);
 
+  testWidgets("a shared phone keeps each person's own approval: switching "
+      'back needs no new approval, and nothing waiting is lost', (
+    tester,
+  ) async {
+    final env = TestEnv(xform: householdVisitXForm);
+    env.server.users[_secondEmail] = const FakeFieldUser(id: 'fielduser2abcde');
+    await tester.runAsync(() async {
+      await env.seedSignedIn();
+      await env.storeForm(householdVisitXForm);
+      await OutboxRepository(env.db).enqueue(_waiting);
+    });
+    final first = env.phoneDevice!;
+    env.server
+      ..approveDevicesAtOnce = false
+      ..submissionGlitch = const NoConnection();
+    await pumpApp(tester, env, language: 'en');
+    final l = wordsFor('en');
+    expect(find.text(l.todayTitle), findsWidgets);
+
+    // A colleague signs in on the same phone: their own keys, and they wait.
+    containerOf(tester).read(sessionProvider.notifier).signOut();
+    await settleApp(tester);
+    await _signIn(tester, l, email: _secondEmail);
+    expect(find.text(l.deviceWaitingTitle), findsOneWidget);
+    final second = env.phoneDevice!;
+    expect(second.id, isNot(first.id));
+    expect(second.userId, 'fielduser2abcde');
+    expect(second.checkCode, isNot(first.checkCode));
+
+    // Back to the first person: still approved, at once; nothing new on
+    // the server, and the form that waited is still there.
+    containerOf(tester).read(sessionProvider.notifier).signOut();
+    await settleApp(tester);
+    await _signIn(tester, l);
+    expect(find.text(l.todayTitle), findsWidgets);
+    expect(_anywhere(l.deviceWaitingTitle), findsNothing);
+    expect(env.phoneDevice!.id, first.id);
+    expect(env.server.devices, hasLength(2));
+    expect(first.status, 'active');
+    final entry = await tester.runAsync(
+      () => OutboxRepository(env.db).find(_waiting.instanceId),
+    );
+    expect(entry!.state, isNot(OutboxState.problem));
+    await endTest(tester, env);
+  });
+
   matrix('switched off: explained; set up again only after a confirmation, '
       'with new numbers; unsent forms stay', (
     tester,
@@ -339,6 +392,8 @@ void main() {
 
     expect(find.text(l.deviceSwitchedOffTitle), findsOneWidget);
     expect(await reveal(tester, find.text(l.deviceSwitchedOffKept)), findsOne);
+    // Forms are on the phone, but a switched-off phone is not used for them.
+    expect(_button(l.deviceFillInForms), findsNothing);
     // The waiting form was not sent, and is not marked as failed.
     var entries = await tester.runAsync(
       () => OutboxRepository(env.db).entries(),

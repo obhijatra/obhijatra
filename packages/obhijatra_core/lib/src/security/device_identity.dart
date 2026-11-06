@@ -4,15 +4,17 @@
 ///
 /// The order the apps follow:
 ///
-/// 1. [DeviceIdentity.open] once at start, before any sign-in: it makes the
-///    keys on first use (once per installation) and keeps them in the
-///    app's [DeviceKeyStore] (the platform's protected storage).
+/// 1. [DeviceIdentity.open] once at start, before any sign-in: it reads the
+///    keys of the person who signed in last from the app's
+///    [DeviceKeyStore] (the platform's protected storage). Each person has
+///    their own keys on the device.
 /// 2. Every `ObhijatraServer` gets the identity as its signer. Before
 ///    enrolment nothing is signed; afterwards every request is, the
 ///    sign-in too, so a new session belongs to this device at once.
-/// 3. Right after a sign-in, [DeviceIdentity.ensureEnrolled]. A person with
-///    a one-time password enrols first, then chooses a new password from
-///    the waiting device.
+/// 3. Right after a sign-in, [DeviceIdentity.ensureEnrolled]: it switches to
+///    that person's keys (made on their first enrolment here) and enrols
+///    them if they are not enrolled yet. A person with a one-time password
+///    enrols first, then chooses a new password from the waiting device.
 /// 4. [DeviceIdentity.refresh] asks the server again (the waiting screen,
 ///    and sync while the device is not known to be approved);
 ///    [DeviceIdentity.recordProblem] keeps a refusal seen elsewhere.
@@ -20,8 +22,8 @@
 ///    example after it was restored from an older backup), both forget the
 ///    device id, keep the keys and enrol again with them: a new device that
 ///    waits for approval ([DeviceIdentity.serverForgot]).
-/// 5. [DeviceIdentity.reset] forgets everything and makes new keys ("Set up
-///    this phone again").
+/// 5. [DeviceIdentity.reset] forgets the current person's keys and makes new
+///    ones ("Set up this phone again").
 library;
 
 import 'dart:async';
@@ -179,54 +181,63 @@ final class DeviceEnrolment {
       '${status?.state.name})';
 }
 
-/// Keeps a [DeviceIdentity] (its key seeds and its enrolment: the device id
-/// the server gave) in the platform's protected storage (Android Keystore,
-/// iOS Keychain; this device only, never in backups), implemented by the
-/// app, for example with `flutter_secure_storage`, next to the database key
-/// ([KeyStore]). The seeds never leave it except to sign on this device.
+/// Keeps device identities in the platform's protected storage (Android
+/// Keystore, iOS Keychain; this device only, never in backups), one per
+/// person (their field user id): their key seeds and their enrolment, and
+/// which person signs now. Implemented by the app, for example with
+/// `flutter_secure_storage`, next to the database key ([KeyStore]). The
+/// seeds never leave it except to sign on this device.
+///
+/// A phone shared by several people keeps each person's keys, so switching
+/// back to someone uses their approved device again.
 abstract interface class DeviceKeyStore {
-  /// The stored key seeds, or `null` when none have been made (or what is
+  /// The person whose keys sign now (the last one enrolled or signed in),
+  /// or `null`.
+  Future<String?> readCurrentAccount();
+
+  /// Records [account] as the person whose keys sign now.
+  Future<void> writeCurrentAccount(String account);
+
+  /// [account]'s key seeds, or `null` when none have been made (or what is
   /// stored is unreadable).
-  Future<DeviceKeySeeds?> readKeySeeds();
+  Future<DeviceKeySeeds?> readKeySeeds(String account);
 
-  /// Stores [seeds]. Called only after [clear], so it never replaces keys
-  /// that are still enrolled.
-  Future<void> writeKeySeeds(DeviceKeySeeds seeds);
+  /// Stores [account]'s [seeds]. Called only after [clear] of that account,
+  /// so it never replaces keys that are still enrolled.
+  Future<void> writeKeySeeds(String account, DeviceKeySeeds seeds);
 
-  /// The stored enrolment, or `null`.
-  Future<DeviceEnrolment?> readEnrolment();
+  /// [account]'s enrolment, or `null`.
+  Future<DeviceEnrolment?> readEnrolment(String account);
 
-  /// Stores [enrolment], replacing the earlier one.
-  Future<void> writeEnrolment(DeviceEnrolment enrolment);
+  /// Stores [account]'s [enrolment], replacing the earlier one.
+  Future<void> writeEnrolment(String account, DeviceEnrolment enrolment);
 
-  /// Removes the seeds and the enrolment.
-  Future<void> clear();
+  /// Removes [account]'s seeds and enrolment; other people's stay.
+  Future<void> clear(String account);
+
+  /// Removes every person's seeds and enrolment, and the current person (a
+  /// new installation).
+  Future<void> clearAll();
 }
 
-/// This device's keys and enrolment, and the [RequestSigner] that signs
-/// with them (see the library documentation for the order of use).
+/// This device's keys and enrolment for the person who signs now, and the
+/// [RequestSigner] that signs with them (see the library documentation for
+/// the order of use).
+///
+/// Each person has keys of their own on this device, made the first time
+/// they enrol here and kept for them ([DeviceKeyStore]); signing in as
+/// someone else switches to that person's keys ([ensureEnrolled]), so a
+/// shared phone needs one approval per person, not one per switch.
 ///
 /// One instance lives as long as the app; pass it as the signer of every
-/// `ObhijatraServer`. After [reset] it signs with the new keys, so the
-/// clients made before keep working.
+/// `ObhijatraServer`. After a switch or a [reset] it signs with the keys of
+/// the moment, so the clients made before keep working.
 final class DeviceIdentity implements RequestSigner {
-  DeviceIdentity._(
-    this._store,
-    this._now,
-    this._random,
-    SoftwareDeviceKeys keys,
-    this._enrolment,
-  ) : _keys = keys,
-      _signer = DeviceRequestSigner(
-        keys,
-        deviceId: _enrolment?.deviceId,
-        now: _now,
-        random: _random,
-      );
+  DeviceIdentity._(this._store, this._now, this._random);
 
-  /// Reads the identity from [store], making and storing new keys when
-  /// there are none (first use of this installation). Without keys, any
-  /// stored enrolment belongs to keys that are gone and is forgotten.
+  /// Reads the identity of the person who signed last from [store]. Keys
+  /// are made only when a person first enrols on this device. A stored
+  /// enrolment without its keys (or of someone else) is ignored.
   ///
   /// [now] is the clock signatures use (default: `clock.now()`); [random]
   /// makes keys and nonces (default: the platform's secure generator).
@@ -235,23 +246,14 @@ final class DeviceIdentity implements RequestSigner {
     DateTime Function()? now,
     Random? random,
   }) async {
-    final source = random ?? Random.secure();
-    final seeds = await store.readKeySeeds();
-    if (seeds == null) {
-      final keys = await _makeKeys(store, source);
-      return DeviceIdentity._(store, now ?? _clockNow, source, keys, null);
-    }
-    final keys = await SoftwareDeviceKeys.fromSeeds(
-      seeds.signSeed,
-      seeds.encSeed,
-    );
-    return DeviceIdentity._(
+    final identity = DeviceIdentity._(
       store,
       now ?? _clockNow,
-      source,
-      keys,
-      await store.readEnrolment(),
+      random ?? Random.secure(),
     );
+    final account = await store.readCurrentAccount();
+    if (account != null) await identity._load(account);
+    return identity;
   }
 
   static DateTime _clockNow() => clock.now();
@@ -259,31 +261,32 @@ final class DeviceIdentity implements RequestSigner {
   final DeviceKeyStore _store;
   final DateTime Function() _now;
   final Random _random;
-  SoftwareDeviceKeys _keys;
-  DeviceRequestSigner _signer;
+  String? _account;
+  SoftwareDeviceKeys? _keys;
+  DeviceRequestSigner? _signer;
   DeviceEnrolment? _enrolment;
-  Future<DeviceStatus>? _enrolling;
+  ({String account, Future<DeviceStatus> future})? _enrolling;
   final StreamController<void> _changes = StreamController<void>.broadcast();
 
-  /// This device's 18-digit check code, worked out from its public keys
-  /// ([deviceCheckCode]). It is not secret: the approver compares it with
-  /// the code their own app works out from the keys the server holds.
-  String get checkCode =>
-      deviceCheckCode(_keys.signPublicKey, _keys.encPublicKey);
+  /// The 18-digit check code of the current person's keys
+  /// ([deviceCheckCode]), or `null` before they have keys here. It is not
+  /// secret: the approver compares it with the code their own app works out
+  /// from the keys the server holds.
+  String? get checkCode {
+    final keys = _keys;
+    return keys == null
+        ? null
+        : deviceCheckCode(keys.signPublicKey, keys.encPublicKey);
+  }
 
-  /// The device's Ed25519 public key (32 bytes). The private keys never
-  /// leave the device and are not offered here.
-  Uint8List get signPublicKey => Uint8List.fromList(_keys.signPublicKey);
+  /// The person whose keys sign now (the last one enrolled or signed in),
+  /// or `null`.
+  String? get userId => _account;
 
-  /// The device's X25519 public key (32 bytes).
-  Uint8List get encPublicKey => Uint8List.fromList(_keys.encPublicKey);
-
-  /// The id the server gave this device, or `null` before enrolment (and
-  /// after the server no longer knew it, until it is enrolled again).
+  /// The id the server gave the current person's device, or `null` before
+  /// enrolment (and after the server no longer knew it, until it is
+  /// enrolled again).
   String? get deviceId => _enrolment?.deviceId;
-
-  /// The field user this device is enrolled for, or `null`.
-  String? get userId => _enrolment?.userId;
 
   /// The last status the server reported, or `null`.
   DeviceStatus? get status => _enrolment?.status;
@@ -291,14 +294,11 @@ final class DeviceIdentity implements RequestSigner {
   /// When the server last confirmed [status].
   DateTime? get checkedAt => _enrolment?.checkedAt;
 
-  /// Whether this device is enrolled for the field user [userId] (with an
-  /// id the server knows, as far as the phone can tell).
-  bool isEnrolledFor(String userId) {
-    final current = _enrolment;
-    return current != null &&
-        current.userId == userId &&
-        current.deviceId != null;
-  }
+  /// Whether this device is enrolled for the field user [userId] and signs
+  /// for them now (with an id the server knows, as far as the phone can
+  /// tell).
+  bool isEnrolledFor(String userId) =>
+      _account == userId && _enrolment?.deviceId != null;
 
   /// Whether the server no longer knew this device's earlier enrolment (for
   /// example after it was restored from an older backup), so it is set up
@@ -316,51 +316,60 @@ final class DeviceIdentity implements RequestSigner {
     return known.blockerAt(_now());
   }
 
-  /// Fires after every change of the keys, the enrolment or the status.
+  /// Fires after every change of the person, the keys, the enrolment or the
+  /// status.
   Stream<void> get changes => _changes.stream;
 
   @override
   Future<Map<String, String>> signatureHeaders(SignableRequest request) =>
-      _signer.signatureHeaders(request);
+      _signer?.signatureHeaders(request) ??
+      Future<Map<String, String>>.value(const {});
 
   /// Makes sure this device is enrolled for the person signed in on
   /// [server], enrolling it under [label] and [platform] when it is not;
   /// returns its status. When it is enrolled for them already, returns the
   /// status the phone knows without asking the server.
   ///
-  /// A device enrolled for someone else gets new keys first: one person's
-  /// keys are never used for another. When the server says the keys are in
-  /// use ([ProblemCode.deviceKeyInUse]: switched off, or someone else's),
-  /// new keys are made and enrolled once more.
+  /// First switches to that person's own keys (making them if this is their
+  /// first time on this device); every later request is signed with them.
+  /// Someone who used this device before gets their own device again, as
+  /// approved as it was. When the server says the keys are in use
+  /// ([ProblemCode.deviceKeyInUse]: switched off, or someone else's), new
+  /// keys are made for this person and enrolled once more.
   ///
   /// Throws an [ObhijatraException] (see `ObhijatraServer.enrolDevice`);
-  /// [ProblemCode.signInRequired] when nobody is signed in. Calls made while
-  /// one runs share it.
+  /// [ProblemCode.signInRequired] when nobody is signed in. Calls for the
+  /// same person made while one runs share it.
   Future<DeviceStatus> ensureEnrolled(
     ObhijatraServer server, {
     required String label,
     required DevicePlatform platform,
   }) {
+    final user = server.currentUser;
+    if (user == null || !server.hasValidSession) {
+      return Future<DeviceStatus>.error(
+        const ObhijatraException(ProblemCode.signInRequired),
+      );
+    }
     final running = _enrolling;
-    if (running != null) return running;
-    final enrolling = _ensureEnrolled(server, label, platform);
-    _enrolling = enrolling;
-    return enrolling.whenComplete(() => _enrolling = null);
+    if (running != null && running.account == user.id) return running.future;
+    final future = _ensureEnrolled(server, user.id, label, platform);
+    final entry = (account: user.id, future: future);
+    _enrolling = entry;
+    return future.whenComplete(() {
+      if (identical(_enrolling, entry)) _enrolling = null;
+    });
   }
 
   Future<DeviceStatus> _ensureEnrolled(
     ObhijatraServer server,
+    String account,
     String label,
     DevicePlatform platform,
   ) async {
-    final user = server.currentUser;
-    if (user == null || !server.hasValidSession) {
-      throw const ObhijatraException(ProblemCode.signInRequired);
-    }
+    await _use(account);
     var current = _enrolment;
-    if (current != null &&
-        current.userId == user.id &&
-        current.deviceId != null) {
+    if (current != null && current.deviceId != null) {
       final known = current.status;
       if (known != null) return known;
       try {
@@ -371,60 +380,61 @@ final class DeviceIdentity implements RequestSigner {
       }
     }
     // The server no longer knew this person's device: the same keys again.
-    final again = current != null && current.userId == user.id;
-    if (current != null && !again) await _replaceKeys();
+    final again = current?.serverForgot ?? false;
     try {
-      return await _enrol(
-        server,
-        user.id,
-        label,
-        platform,
-        serverForgot: again,
-      );
+      return await _enrol(server, account, label, platform, again: again);
     } on ObhijatraException catch (e) {
-      if (e.code != ProblemCode.deviceKeyInUse) rethrow;
-      await _replaceKeys();
-      return _enrol(server, user.id, label, platform, serverForgot: again);
+      if (e.code != ProblemCode.deviceKeyInUse || _account != account) {
+        rethrow;
+      }
+      await _newKeys(account);
+      return _enrol(server, account, label, platform, again: again);
     }
   }
 
   Future<DeviceStatus> _enrol(
     ObhijatraServer server,
-    String userId,
+    String account,
     String label,
     DevicePlatform platform, {
-    required bool serverForgot,
+    required bool again,
   }) async {
+    final keys = _keys;
+    if (keys == null || _account != account) {
+      throw const ObhijatraException(ProblemCode.deviceNotEnrolled);
+    }
     final status = await server.enrolDevice(
-      keys: _keys,
+      keys: keys,
       label: label,
       platform: platform,
     );
     await _save(
+      account,
       DeviceEnrolment(
         deviceId: status.id,
-        userId: userId,
+        userId: account,
         status: status,
         checkedAt: _now().toUtc(),
         label: label.trim(),
         platform: platform,
-        serverForgot: serverForgot && status.state == DeviceState.pending,
+        serverForgot: again && status.state == DeviceState.pending,
       ),
     );
     return status;
   }
 
-  /// Asks the server where this device stands, keeps the answer and
-  /// returns it. A device that was switched off returns a
+  /// Asks the server where the current person's device stands, keeps the
+  /// answer and returns it. A device that was switched off returns a
   /// [DeviceState.revoked] status. A device the server no longer knows
   /// ([ProblemCode.deviceUnknown]) is enrolled again with the same keys
   /// (see [recordProblem]), and its new status is returned.
   ///
   /// Throws [ProblemCode.deviceNotEnrolled] without asking when the device
-  /// has no id yet, and otherwise what `ObhijatraServer.deviceStatus` (or,
-  /// for a device the server no longer knows, `enrolDevice`) throws, for
-  /// example [ProblemCode.offline] or [ProblemCode.sessionEnded]; the kept
-  /// status is then unchanged.
+  /// has no id yet, or [server] is signed in as someone else, and otherwise
+  /// what `ObhijatraServer.deviceStatus` (or, for a device the server no
+  /// longer knows, `enrolDevice`) throws, for example
+  /// [ProblemCode.offline] or [ProblemCode.sessionEnded]; the kept status
+  /// is then unchanged.
   Future<DeviceStatus> refresh(ObhijatraServer server) =>
       _refresh(server, enrolAgain: true);
 
@@ -435,9 +445,13 @@ final class DeviceIdentity implements RequestSigner {
     ObhijatraServer server, {
     required bool enrolAgain,
   }) async {
+    final account = _account;
     final current = _enrolment;
     final id = current?.deviceId;
-    if (current == null || id == null) {
+    if (account == null ||
+        current == null ||
+        id == null ||
+        server.currentUser?.id != account) {
       throw const ObhijatraException(ProblemCode.deviceNotEnrolled);
     }
     DeviceStatus status;
@@ -457,13 +471,14 @@ final class DeviceIdentity implements RequestSigner {
     }
     // The enrolment may have changed meanwhile (for example a reset).
     if (!identical(_enrolment, current)) return status;
-    await _save(_withStatus(current, status, _now().toUtc()));
+    await _save(account, _withStatus(current, status, _now().toUtc()));
     return status;
   }
 
   /// Keeps what a refusal seen elsewhere (a submission, a form download, a
-  /// password change) says about this device: [ProblemCode.deviceNotApproved],
-  /// [ProblemCode.deviceApprovalExpired] or [ProblemCode.deviceRevoked].
+  /// password change) says about the current person's device:
+  /// [ProblemCode.deviceNotApproved], [ProblemCode.deviceApprovalExpired]
+  /// or [ProblemCode.deviceRevoked].
   ///
   /// [ProblemCode.deviceUnknown]: the server no longer knows this device.
   /// Its id is forgotten (the keys stay) and, with [server], it is enrolled
@@ -471,13 +486,16 @@ final class DeviceIdentity implements RequestSigner {
   /// ([serverForgot]). If that does not work now (no connection, for
   /// example), [ensureEnrolled] does it later. Unsent work is never touched.
   ///
-  /// Any other code changes nothing. Never throws an [ObhijatraException].
+  /// Any other code changes nothing, and so does a refusal on a [server]
+  /// signed in as someone else. Never throws an [ObhijatraException].
   Future<void> recordProblem(
     ProblemCode code, {
     ObhijatraServer? server,
   }) async {
+    final account = _account;
     final current = _enrolment;
-    if (current == null) return;
+    if (account == null || current == null) return;
+    if (server != null && server.currentUser?.id != account) return;
     if (code == ProblemCode.deviceUnknown) {
       try {
         await _enrolAgain(server, current);
@@ -498,6 +516,7 @@ final class DeviceIdentity implements RequestSigner {
       return;
     }
     await _save(
+      account,
       _withStatus(current, _statusIn(current, state), current.checkedAt),
     );
   }
@@ -524,42 +543,78 @@ final class DeviceIdentity implements RequestSigner {
     return ensureEnrolled(server, label: now.label, platform: platform);
   }
 
-  /// Forgets this device: removes its keys and enrolment from the store and
-  /// makes new keys, which must be enrolled and approved again ("Set up
-  /// this phone again"). The old device stays on the server until someone
+  /// Forgets the current person's device on this phone: removes their keys
+  /// and enrolment from the store and makes new keys, which must be
+  /// enrolled and approved again ("Set up this phone again"). Other
+  /// people's keys stay. The old device stays on the server until someone
   /// switches it off; without its keys it can never be used again.
-  Future<void> reset() => _replaceKeys();
+  Future<void> reset() async {
+    final account = _account;
+    if (account != null) await _newKeys(account);
+  }
 
   /// Stops [changes].
   Future<void> close() => _changes.close();
 
-  Future<void> _replaceKeys() async {
-    final keys = await _makeKeys(_store, _random);
+  /// Makes [account] the person who signs now, with their own keys (made
+  /// now if they have none on this device).
+  Future<void> _use(String account) async {
+    if (_account != account) {
+      await _store.writeCurrentAccount(account);
+      await _load(account);
+      _changed();
+    }
+    if (_keys == null && _account == account) await _newKeys(account);
+  }
+
+  /// Reads [account]'s keys and enrolment into this identity.
+  Future<void> _load(String account) async {
+    final seeds = await _store.readKeySeeds(account);
+    final keys = seeds == null
+        ? null
+        : await SoftwareDeviceKeys.fromSeeds(seeds.signSeed, seeds.encSeed);
+    final stored = keys == null ? null : await _store.readEnrolment(account);
+    final enrolment = stored?.userId == account ? stored : null;
+    _account = account;
+    _keys = keys;
+    _enrolment = enrolment;
+    _signer = keys == null
+        ? null
+        : DeviceRequestSigner(
+            keys,
+            deviceId: enrolment?.deviceId,
+            now: _now,
+            random: _random,
+          );
+  }
+
+  /// Replaces [account]'s keys (and forgets their enrolment) with new ones.
+  Future<void> _newKeys(String account) async {
+    await _store.clear(account);
+    final keys = await SoftwareDeviceKeys.generate(_random);
+    await _store.writeKeySeeds(
+      account,
+      DeviceKeySeeds(keys.signSeed, keys.encSeed),
+    );
+    if (_account != account) return;
     _keys = keys;
     _signer = DeviceRequestSigner(keys, now: _now, random: _random);
     _enrolment = null;
     _changed();
   }
 
-  /// Clears [store] and stores new keys.
-  static Future<SoftwareDeviceKeys> _makeKeys(
-    DeviceKeyStore store,
-    Random random,
-  ) async {
-    await store.clear();
-    final keys = await SoftwareDeviceKeys.generate(random);
-    await store.writeKeySeeds(DeviceKeySeeds(keys.signSeed, keys.encSeed));
-    return keys;
-  }
-
   /// Forgets the device id of [forgotten] (if it is still the current
   /// enrolment), keeping the person, label and platform, and noting that
   /// the server no longer knew the device. The keys stay.
   Future<void> _forget(DeviceEnrolment forgotten) async {
-    if (!identical(_enrolment, forgotten) || forgotten.deviceId == null) {
+    final account = _account;
+    if (account == null ||
+        !identical(_enrolment, forgotten) ||
+        forgotten.deviceId == null) {
       return;
     }
     await _save(
+      account,
       DeviceEnrolment(
         deviceId: null,
         userId: forgotten.userId,
@@ -590,10 +645,13 @@ final class DeviceIdentity implements RequestSigner {
     serverForgot: current.serverForgot && status.state == DeviceState.pending,
   );
 
-  Future<void> _save(DeviceEnrolment enrolment) async {
-    await _store.writeEnrolment(enrolment);
+  /// Stores [enrolment] for [account]; it becomes this identity's only if
+  /// [account] still signs now (someone else may have signed in meanwhile).
+  Future<void> _save(String account, DeviceEnrolment enrolment) async {
+    await _store.writeEnrolment(account, enrolment);
+    if (_account != account) return;
     _enrolment = enrolment;
-    _signer.deviceId = enrolment.deviceId;
+    _signer?.deviceId = enrolment.deviceId;
     _changed();
   }
 
