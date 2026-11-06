@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:obhijatra_device/obhijatra_device.dart' show DeviceKeys;
 import 'package:obhijatra_manager/src/data/devices.dart';
+import 'package:obhijatra_manager/src/data/export.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
 import 'package:obhijatra_manager/src/data/places.dart';
@@ -179,6 +180,26 @@ abstract interface class ManagerApi {
 
   /// How many organisation admins are active.
   Future<int> countActiveOrgAdmins();
+
+  // ------------------------------------------------------------- export
+
+  /// Downloads [export]'s submissions as a zip package
+  /// (docs/decisions/0009-data-export.md), signed like every request. The
+  /// bytes go to [onChunk] as they arrive, so they can be written straight
+  /// to a file. When [stop] completes, the download ends at once, also
+  /// while the server is still preparing the file, with [DownloadStopped].
+  /// Returns the file name the server gave, when it can be read.
+  ///
+  /// Refusals: [ProblemKind.recentSignInRequired] (the last sign-in was more
+  /// than 15 minutes ago), [ProblemKind.notAllowed],
+  /// [ProblemKind.formUnavailable], [ProblemKind.exportNoVersion],
+  /// [ProblemKind.detailsInvalid] and the usual session and device ones;
+  /// [ProblemKind.saveFailed] when [onChunk] could not write.
+  Future<String?> downloadSubmissions(
+    SubmissionExport export, {
+    required Future<void> Function(List<int> chunk) onChunk,
+    Future<void>? stop,
+  });
 
   // ------------------------------------------------------------ devices
 

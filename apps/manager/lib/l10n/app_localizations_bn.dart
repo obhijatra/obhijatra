@@ -2659,4 +2659,151 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get deviceIdCopied => 'ডিভাইসের আইডি কপি হয়েছে।';
+
+  @override
+  String get actionDownload => 'ডাউনলোড';
+
+  @override
+  String get actionStop => 'থামান';
+
+  @override
+  String get downloadTitle => 'জমা পড়া তথ্য ডাউনলোড';
+
+  @override
+  String get downloadIntro =>
+      'আপনি একটি জিপ ফাইল পাবেন: উত্তরগুলো স্প্রেডশিট (CSV) হিসেবে, প্রতিটি জমা যেমন এসেছিল তেমন, আর ফর্মটি।';
+
+  @override
+  String get downloadNoForms => 'ডাউনলোড করার মতো কোনো ফর্ম এখনও নেই।';
+
+  @override
+  String get downloadFirstDay => 'যেদিন থেকে';
+
+  @override
+  String get downloadLastDay => 'যেদিন পর্যন্ত (এই দিনসহ)';
+
+  @override
+  String get downloadAnyDay => 'যেকোনো দিন';
+
+  @override
+  String get downloadClearDay => 'তারিখ মুছুন';
+
+  @override
+  String get downloadDaysHelp =>
+      'দিনগুলো এই কম্পিউটারের টাইম জোন অনুযায়ী। সব জমা ডাউনলোড করতে দুটোই “যেকোনো দিন” রাখুন।';
+
+  @override
+  String get downloadDaysWrong => 'শেষ দিনটি প্রথম দিনের সমান বা পরে হতে হবে।';
+
+  @override
+  String get downloadStates => 'পর্যালোচনার অবস্থা';
+
+  @override
+  String get downloadStatesNone => 'অন্তত একটি পর্যালোচনার অবস্থা বেছে নিন।';
+
+  @override
+  String get downloadMedia => 'ছবি ও অন্যান্য ফাইলও নিন';
+
+  @override
+  String get downloadMediaNote => 'এতে ডাউনলোড বড় হয়।';
+
+  @override
+  String get downloadPersonalData =>
+      'এই ফাইলে ব্যক্তিগত তথ্য আছে। এটি নিরাপদ কম্পিউটারে রাখুন, শুধু যাঁদের দরকার তাঁদের সাথে শেয়ার করুন, আর দরকার শেষ হলে মুছে ফেলুন।';
+
+  @override
+  String get downloadBrowserMemory =>
+      'ওয়েব ব্রাউজারে পুরো ফাইলটি সেভ হওয়া পর্যন্ত মেমোরিতে থাকে। ছবিসহ খুব বড় ডাউনলোডের জন্য ডেস্কটপ অ্যাপ ব্যবহার করুন, অথবা ছবি বাদ দিন।';
+
+  @override
+  String get downloadPreparing => 'সার্ভার ফাইলটি তৈরি করছে…';
+
+  @override
+  String downloadReceived(String size) {
+    return '$size এসেছে';
+  }
+
+  @override
+  String get downloadDoneTitle => 'ডাউনলোড শেষ';
+
+  @override
+  String downloadSaved(String name) {
+    return '$name নামে সেভ হয়েছে।';
+  }
+
+  @override
+  String downloadSavedBrowser(String name) {
+    return 'আপনার ব্রাউজার $name তার ডাউনলোড ফোল্ডারে সেভ করছে।';
+  }
+
+  @override
+  String get downloadDoneReminder =>
+      'এতে ব্যক্তিগত তথ্য আছে: নিরাপদে রাখুন, আর দরকার শেষ হলে মুছে ফেলুন।';
+
+  @override
+  String get confirmTitle => 'নিশ্চিত করুন যে এটি আপনি';
+
+  @override
+  String get confirmIntro =>
+      'তথ্য ডাউনলোড করতে গত ১৫ মিনিটের মধ্যে সাইন ইন থাকতে হয়। এটি আপনি তা নিশ্চিত করুন, তাহলে ডাউনলোড আবার শুরু হবে।';
+
+  @override
+  String get confirmPassword => 'আপনার পাসওয়ার্ড';
+
+  @override
+  String get confirmButton => 'নিশ্চিত করুন';
+
+  @override
+  String get confirmWorking => 'নিশ্চিত করা হচ্ছে…';
+
+  @override
+  String get confirmGoogle => 'গুগল দিয়ে নিশ্চিত করুন';
+
+  @override
+  String get confirmGoogleWaiting =>
+      'যে ব্রাউজার ট্যাবটি খুলেছে সেখানে গুগল দিয়ে সাইন ইন শেষ করুন, তারপর এখানে ফিরে আসুন।';
+
+  @override
+  String confirmSms(String phone) {
+    return '$phone নম্বরে কোড পাঠান';
+  }
+
+  @override
+  String confirmSmsSent(String phone) {
+    return '$phone নম্বরে কোড পাঠানো হয়েছে।';
+  }
+
+  @override
+  String get confirmNoWay =>
+      'নিশ্চিত করতে সাইন আউট করুন, আবার সাইন ইন করুন, তারপর আবার ডাউনলোড করুন।';
+
+  @override
+  String get problemRecentSignIn =>
+      'তথ্য ডাউনলোড করতে নিশ্চিত করুন যে এটি আপনি: আপনার শেষ সাইন ইন ১৫ মিনিটের বেশি আগে হয়েছে।';
+
+  @override
+  String get problemExportNoVersion =>
+      'এই ফর্মের এখনও কোনো সংস্করণ নেই, তাই ডাউনলোড করার কিছু নেই।';
+
+  @override
+  String get problemSaveFailed =>
+      'ফাইলটি সেখানে সেভ করা যায়নি। আবার চেষ্টা করুন এবং অন্য একটি ফোল্ডার বেছে নিন।';
+
+  @override
+  String sizeKb(String size) {
+    return '$size কেবি';
+  }
+
+  @override
+  String sizeMb(String size) {
+    return '$size এমবি';
+  }
+
+  @override
+  String sizeGb(String size) {
+    return '$size জিবি';
+  }
+
+  @override
+  String get downloadChooseForm => 'একটি ফর্ম বেছে নিন।';
 }

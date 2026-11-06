@@ -4081,6 +4081,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Device id copied.'**
   String get deviceIdCopied;
+
+  /// Button: download submissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get actionDownload;
+
+  /// Button: stop a download that is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get actionStop;
+
+  /// Download dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Download submissions'**
+  String get downloadTitle;
+
+  /// What the download holds.
+  ///
+  /// In en, this message translates to:
+  /// **'You get a zip file with the answers as a spreadsheet (CSV), each submission as it arrived, and the form.'**
+  String get downloadIntro;
+
+  /// Shown when there are no forms.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no form to download yet.'**
+  String get downloadNoForms;
+
+  /// Label: the first day to include.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get downloadFirstDay;
+
+  /// Label: the last day to include.
+  ///
+  /// In en, this message translates to:
+  /// **'To (this day included)'**
+  String get downloadLastDay;
+
+  /// No date chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Any day'**
+  String get downloadAnyDay;
+
+  /// Tooltip: clear a chosen day.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the date'**
+  String get downloadClearDay;
+
+  /// Help under the days.
+  ///
+  /// In en, this message translates to:
+  /// **'Days follow this computer’s time zone. Leave both as “Any day” to download every submission.'**
+  String get downloadDaysHelp;
+
+  /// Problem: the days are the wrong way round.
+  ///
+  /// In en, this message translates to:
+  /// **'The last day must be the same as or after the first day.'**
+  String get downloadDaysWrong;
+
+  /// Label: which review states to include.
+  ///
+  /// In en, this message translates to:
+  /// **'Review states'**
+  String get downloadStates;
+
+  /// Problem: no review state chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one review state.'**
+  String get downloadStatesNone;
+
+  /// Switch: put the submissions’ files in the download.
+  ///
+  /// In en, this message translates to:
+  /// **'Include photos and other files'**
+  String get downloadMedia;
+
+  /// Note under the photos switch.
+  ///
+  /// In en, this message translates to:
+  /// **'This makes the download larger.'**
+  String get downloadMediaNote;
+
+  /// Reminder before downloading.
+  ///
+  /// In en, this message translates to:
+  /// **'This file holds personal data. Keep it on a safe computer, share it only with people who need it, and delete it when you no longer need it.'**
+  String get downloadPersonalData;
+
+  /// Note in the web app only.
+  ///
+  /// In en, this message translates to:
+  /// **'In a web browser, the whole file is held in memory until it is saved. For a very large download with photos, use the desktop app or leave photos out.'**
+  String get downloadBrowserMemory;
+
+  /// Shown before the first bytes arrive.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is preparing the file…'**
+  String get downloadPreparing;
+
+  /// How much has arrived so far.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} received'**
+  String downloadReceived(String size);
+
+  /// Result title.
+  ///
+  /// In en, this message translates to:
+  /// **'Download complete'**
+  String get downloadDoneTitle;
+
+  /// Result on the desktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as {name}.'**
+  String downloadSaved(String name);
+
+  /// Result in the web app.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser is saving {name} to its downloads folder.'**
+  String downloadSavedBrowser(String name);
+
+  /// Reminder after downloading.
+  ///
+  /// In en, this message translates to:
+  /// **'It holds personal data: keep it safe, and delete it when you no longer need it.'**
+  String get downloadDoneReminder;
+
+  /// Title: sign in again before downloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it’s you'**
+  String get confirmTitle;
+
+  /// Why the person must confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading data needs a sign-in within the last 15 minutes. Confirm it’s you, and the download starts again.'**
+  String get confirmIntro;
+
+  /// Label: password to confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password'**
+  String get confirmPassword;
+
+  /// Button: confirm with the password or code.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmButton;
+
+  /// Button while confirming.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming…'**
+  String get confirmWorking;
+
+  /// Button: confirm by signing in with Google.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm with Google'**
+  String get confirmGoogle;
+
+  /// Shown while Google sign-in runs in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish signing in with Google in the browser tab that opened, then come back here.'**
+  String get confirmGoogleWaiting;
+
+  /// Button: send an SMS code to the person’s own number.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a code to {phone}'**
+  String confirmSms(String phone);
+
+  /// After the code was sent.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a code to {phone}.'**
+  String confirmSmsSent(String phone);
+
+  /// When no way to confirm is offered here.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm, sign out, sign in again, then download again.'**
+  String get confirmNoWay;
+
+  /// Problem: a recent sign-in is needed.
+  ///
+  /// In en, this message translates to:
+  /// **'To download data, confirm it’s you: your last sign-in was more than 15 minutes ago.'**
+  String get problemRecentSignIn;
+
+  /// Problem: the form has no version.
+  ///
+  /// In en, this message translates to:
+  /// **'This form has no version yet, so there is nothing to download.'**
+  String get problemExportNoVersion;
+
+  /// Problem: writing the downloaded file failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The file could not be saved there. Try again and choose another folder.'**
+  String get problemSaveFailed;
+
+  /// A size in kilobytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} KB'**
+  String sizeKb(String size);
+
+  /// A size in megabytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String sizeMb(String size);
+
+  /// A size in gigabytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} GB'**
+  String sizeGb(String size);
+
+  /// Problem: no form chosen for the download.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a form.'**
+  String get downloadChooseForm;
 }
 
 class _AppLocalizationsDelegate

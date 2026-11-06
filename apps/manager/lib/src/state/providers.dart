@@ -280,6 +280,47 @@ class SessionNotifier extends Notifier<StaffUser?> {
     return true;
   }
 
+  // "Confirm it's you": some actions need a sign-in within the last 15
+  // minutes (downloading data, docs/decisions/0009-data-export.md). The
+  // person signs in again while signed in; the new session replaces the
+  // old one. Unlike a sign-in from the sign-in screen, the device signer is
+  // kept as it is, so the new session is this device's at once. On a
+  // refusal the old session stays. Each returns the person signed in now
+  // (null when they cancelled), who is the same person unless they chose
+  // another Google account.
+
+  /// Confirms with the signed-in person's password. Nothing keeps it.
+  Future<StaffUser> confirmWithPassword(String password) async {
+    final email = state?.email ?? '';
+    if (email.isEmpty) throw const AppProblem(ProblemKind.signInRequired);
+    final user = await _tracked(
+      () => ref.read(apiProvider).signIn(email, password),
+    );
+    return state = user;
+  }
+
+  /// Confirms with the code from an SMS sent to the person's own number.
+  Future<StaffUser> confirmWithPhoneCode(String codeId, String code) async {
+    final user = await _tracked(
+      () => ref.read(apiProvider).signInWithPhoneCode(codeId, code),
+    );
+    return state = user;
+  }
+
+  /// Confirms with Google in the web browser.
+  Future<StaffUser?> confirmWithGoogle({
+    required FutureOr<void> Function(Uri url) openUrl,
+    required Future<void> cancelled,
+  }) async {
+    final user = await _tracked(
+      () => ref
+          .read(apiProvider)
+          .signInWithGoogle(openUrl: openUrl, cancelled: cancelled),
+    );
+    if (user != null) state = user;
+    return user;
+  }
+
   /// Ends the session and forgets everything loaded for it. The device's
   /// keys stay, for the next sign-in.
   void signOut() {

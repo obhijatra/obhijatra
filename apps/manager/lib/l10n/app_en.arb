@@ -3263,5 +3263,205 @@
   "deviceIdCopied": "Device id copied.",
   "@deviceIdCopied": {
     "description": "Message after copying the device id."
+  },
+  "actionDownload": "Download",
+  "@actionDownload": {
+    "description": "Button: download submissions."
+  },
+  "actionStop": "Stop",
+  "@actionStop": {
+    "description": "Button: stop a download that is running."
+  },
+  "downloadTitle": "Download submissions",
+  "@downloadTitle": {
+    "description": "Download dialog title."
+  },
+  "downloadIntro": "You get a zip file with the answers as a spreadsheet (CSV), each submission as it arrived, and the form.",
+  "@downloadIntro": {
+    "description": "What the download holds."
+  },
+  "downloadNoForms": "There is no form to download yet.",
+  "@downloadNoForms": {
+    "description": "Shown when there are no forms."
+  },
+  "downloadFirstDay": "From",
+  "@downloadFirstDay": {
+    "description": "Label: the first day to include."
+  },
+  "downloadLastDay": "To (this day included)",
+  "@downloadLastDay": {
+    "description": "Label: the last day to include."
+  },
+  "downloadAnyDay": "Any day",
+  "@downloadAnyDay": {
+    "description": "No date chosen."
+  },
+  "downloadClearDay": "Clear the date",
+  "@downloadClearDay": {
+    "description": "Tooltip: clear a chosen day."
+  },
+  "downloadDaysHelp": "Days follow this computer’s time zone. Leave both as “Any day” to download every submission.",
+  "@downloadDaysHelp": {
+    "description": "Help under the days."
+  },
+  "downloadDaysWrong": "The last day must be the same as or after the first day.",
+  "@downloadDaysWrong": {
+    "description": "Problem: the days are the wrong way round."
+  },
+  "downloadStates": "Review states",
+  "@downloadStates": {
+    "description": "Label: which review states to include."
+  },
+  "downloadStatesNone": "Choose at least one review state.",
+  "@downloadStatesNone": {
+    "description": "Problem: no review state chosen."
+  },
+  "downloadMedia": "Include photos and other files",
+  "@downloadMedia": {
+    "description": "Switch: put the submissions’ files in the download."
+  },
+  "downloadMediaNote": "This makes the download larger.",
+  "@downloadMediaNote": {
+    "description": "Note under the photos switch."
+  },
+  "downloadPersonalData": "This file holds personal data. Keep it on a safe computer, share it only with people who need it, and delete it when you no longer need it.",
+  "@downloadPersonalData": {
+    "description": "Reminder before downloading."
+  },
+  "downloadBrowserMemory": "In a web browser, the whole file is held in memory until it is saved. For a very large download with photos, use the desktop app or leave photos out.",
+  "@downloadBrowserMemory": {
+    "description": "Note in the web app only."
+  },
+  "downloadPreparing": "The server is preparing the file…",
+  "@downloadPreparing": {
+    "description": "Shown before the first bytes arrive."
+  },
+  "downloadReceived": "{size} received",
+  "@downloadReceived": {
+    "description": "How much has arrived so far.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadDoneTitle": "Download complete",
+  "@downloadDoneTitle": {
+    "description": "Result title."
+  },
+  "downloadSaved": "Saved as {name}.",
+  "@downloadSaved": {
+    "description": "Result on the desktop.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadSavedBrowser": "Your browser is saving {name} to its downloads folder.",
+  "@downloadSavedBrowser": {
+    "description": "Result in the web app.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadDoneReminder": "It holds personal data: keep it safe, and delete it when you no longer need it.",
+  "@downloadDoneReminder": {
+    "description": "Reminder after downloading."
+  },
+  "confirmTitle": "Confirm it’s you",
+  "@confirmTitle": {
+    "description": "Title: sign in again before downloading."
+  },
+  "confirmIntro": "Downloading data needs a sign-in within the last 15 minutes. Confirm it’s you, and the download starts again.",
+  "@confirmIntro": {
+    "description": "Why the person must confirm."
+  },
+  "confirmPassword": "Your password",
+  "@confirmPassword": {
+    "description": "Label: password to confirm."
+  },
+  "confirmButton": "Confirm",
+  "@confirmButton": {
+    "description": "Button: confirm with the password or code."
+  },
+  "confirmWorking": "Confirming…",
+  "@confirmWorking": {
+    "description": "Button while confirming."
+  },
+  "confirmGoogle": "Confirm with Google",
+  "@confirmGoogle": {
+    "description": "Button: confirm by signing in with Google."
+  },
+  "confirmGoogleWaiting": "Finish signing in with Google in the browser tab that opened, then come back here.",
+  "@confirmGoogleWaiting": {
+    "description": "Shown while Google sign-in runs in the browser."
+  },
+  "confirmSms": "Send a code to {phone}",
+  "@confirmSms": {
+    "description": "Button: send an SMS code to the person’s own number.",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmSmsSent": "We sent a code to {phone}.",
+  "@confirmSmsSent": {
+    "description": "After the code was sent.",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmNoWay": "To confirm, sign out, sign in again, then download again.",
+  "@confirmNoWay": {
+    "description": "When no way to confirm is offered here."
+  },
+  "problemRecentSignIn": "To download data, confirm it’s you: your last sign-in was more than 15 minutes ago.",
+  "@problemRecentSignIn": {
+    "description": "Problem: a recent sign-in is needed."
+  },
+  "problemExportNoVersion": "This form has no version yet, so there is nothing to download.",
+  "@problemExportNoVersion": {
+    "description": "Problem: the form has no version."
+  },
+  "problemSaveFailed": "The file could not be saved there. Try again and choose another folder.",
+  "@problemSaveFailed": {
+    "description": "Problem: writing the downloaded file failed."
+  },
+  "sizeKb": "{size} KB",
+  "@sizeKb": {
+    "description": "A size in kilobytes.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeMb": "{size} MB",
+  "@sizeMb": {
+    "description": "A size in megabytes.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sizeGb": "{size} GB",
+  "@sizeGb": {
+    "description": "A size in gigabytes.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadChooseForm": "Choose a form.",
+  "@downloadChooseForm": {
+    "description": "Problem: no form chosen for the download."
   }
 }

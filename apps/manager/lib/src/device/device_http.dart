@@ -46,9 +46,13 @@ class DeviceSigner implements RequestSigner {
 /// second the request was signed (ADR 8: "a restart costs at most one
 /// retry"). A second refusal is returned as it is.
 final class DeviceHttpClient extends http.BaseClient {
-  /// Sends through [inner], signing with [signer].
-  DeviceHttpClient(http.Client inner, {required RequestSigner signer})
-    : _signing = SigningHttpClient(inner, signer: signer);
+  /// Sends through [inner], signing with [signer], and waits at most
+  /// [timeout] for the answer to start.
+  DeviceHttpClient(
+    http.Client inner, {
+    required RequestSigner signer,
+    Duration timeout = const Duration(seconds: 60),
+  }) : _signing = SigningHttpClient(inner, signer: signer, timeout: timeout);
 
   final SigningHttpClient _signing;
 

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:obhijatra_device/obhijatra_device.dart';
 import 'package:obhijatra_manager/src/data/devices.dart';
+import 'package:obhijatra_manager/src/data/export.dart';
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
@@ -1009,6 +1010,55 @@ class FakeManagerApi implements ManagerApi {
     // The real server ends every session; the app signs in again.
     signIns.add((me.email, newPassword));
     return user = me.copyWith(mustChangePassword: false);
+  }
+
+  // ------------------------------------------------------------ export
+
+  /// Every download asked for, in order.
+  final List<SubmissionExport> exports = <SubmissionExport>[];
+
+  /// The parts of the file a download sends.
+  List<List<int>> exportChunks = <List<int>>[
+    <int>[0x50, 0x4B, 0x03, 0x04],
+    List<int>.filled(2048, 7),
+  ];
+
+  /// The name the server gives the file.
+  String? exportFileName = 'household_survey_2026-11-06.zip';
+
+  /// Problems the next downloads answer with, one each, before any works.
+  final List<AppProblem> exportFailures = <AppProblem>[];
+
+  /// While not null, a download waits for it before its first part.
+  Completer<void>? exportGate;
+
+  /// While not null, a download waits for it after its first part.
+  Completer<void>? exportPause;
+
+  @override
+  Future<String?> downloadSubmissions(
+    SubmissionExport export, {
+    required Future<void> Function(List<int> chunk) onChunk,
+    Future<void>? stop,
+  }) async {
+    exports.add(export);
+    if (exportFailures.isNotEmpty) throw exportFailures.removeAt(0);
+    var stopped = false;
+    unawaited(stop?.then((_) => stopped = true));
+    final waitFor = exportGate;
+    if (waitFor != null) {
+      await Future.any<void>(<Future<void>>[waitFor.future, ?stop]);
+    }
+    for (final (index, chunk) in exportChunks.indexed) {
+      if (stopped) throw const DownloadStopped();
+      await onChunk(chunk);
+      final pause = exportPause;
+      if (index == 0 && pause != null) {
+        await Future.any<void>(<Future<void>>[pause.future, ?stop]);
+      }
+    }
+    if (stopped) throw const DownloadStopped();
+    return exportFileName;
   }
 
   // ----------------------------------------------------------- devices

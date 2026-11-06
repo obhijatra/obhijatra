@@ -44,6 +44,18 @@ abstract final class Format {
   static String shortDay(BuildContext context, DateTime moment) =>
       DateFormat('d MMM y', _locale(context)).format(moment);
 
+  /// A file size such as "340 KB", "12.4 MB" or "1.2 GB", with the
+  /// language's digits (1 KB is 1,024 bytes).
+  static String bytes(BuildContext context, int bytes) {
+    final l10n = AppLocalizations.of(context);
+    final number = NumberFormat('#,##0.#', _locale(context));
+    final kb = bytes / 1024;
+    if (kb < 1024) return l10n.sizeKb(number.format(kb));
+    final mb = kb / 1024;
+    if (mb < 1024) return l10n.sizeMb(number.format(mb));
+    return l10n.sizeGb(number.format(mb / 1024));
+  }
+
   /// A whole number with the language's digits and separators.
   static String number(BuildContext context, int value) =>
       NumberFormat.decimalPattern(_locale(context)).format(value);

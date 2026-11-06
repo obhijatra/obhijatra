@@ -107,6 +107,12 @@ class StaffUser {
   bool get canApproveDevices =>
       active && !mustChangePassword && (isOrgAdmin || role == 'branch_manager');
 
+  /// Organisation admins download every submission, and M&E staff those of
+  /// their part of the organisation (the server decides; this only hides
+  /// the button from everyone else).
+  bool get canDownloadSubmissions =>
+      active && !mustChangePassword && (isOrgAdmin || role == 'me');
+
   /// Whether the server lets this role change a submission's review state.
   bool get canReview =>
       role == 'org_admin' || role == 'supervisor' || role == 'branch_manager';

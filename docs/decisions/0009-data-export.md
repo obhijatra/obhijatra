@@ -89,5 +89,9 @@ Both writes are entries in the audit chain, so a package can be matched to its e
 - Any tool that reads Central's zip can read Obhijatra's CSV files, for example R's `ruODK`, Python scripts written for Central, or Power BI templates. Tools that read the first header must accept a byte-order mark; almost all do.
 - The original XML and the forms make the data readable without Obhijatra. The checksums prove that nothing in the package changed after it left the server.
 - People who sign in only with Google or an SMS code confirm a download by signing in again the same way.
-- A download is held in the browser's memory before it is saved. Very large downloads with media should use a desktop manager app, or leave media out.
+- **The manager app's Download** (Submissions screen, org admins and M&E staff only):
+  - Days are turned into these times in the computer's time zone.
+  - When the last sign-in is too old, a "Confirm it's you" step signs in again by password, Google or an SMS code (never an SMS code for org admins), then retries once.
+  - On Windows and macOS the file streams straight into the place the person chose, and a stopped or failed download is deleted. In a browser the whole file is held in memory first, so very large downloads with media should use a desktop app or leave media out.
+  - The app waits up to 10 minutes for the first byte (the server builds the tables first), then 2 minutes between parts.
 - Not yet: protected fields (Phase 3; they will export as envelopes, with `obhijatra-decrypt`), splitting select-multiples into one column per option, case and entity exports, the audit log as CSV, the data dictionary and OData (v1.1).

@@ -24,8 +24,9 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final text = Theme.of(context).textTheme;
+    // Scrolls when the room is short (for example with large text).
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(Spacing.space6),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: Sizes.content),

@@ -2657,4 +2657,152 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deviceIdCopied => 'Device id copied.';
+
+  @override
+  String get actionDownload => 'Download';
+
+  @override
+  String get actionStop => 'Stop';
+
+  @override
+  String get downloadTitle => 'Download submissions';
+
+  @override
+  String get downloadIntro =>
+      'You get a zip file with the answers as a spreadsheet (CSV), each submission as it arrived, and the form.';
+
+  @override
+  String get downloadNoForms => 'There is no form to download yet.';
+
+  @override
+  String get downloadFirstDay => 'From';
+
+  @override
+  String get downloadLastDay => 'To (this day included)';
+
+  @override
+  String get downloadAnyDay => 'Any day';
+
+  @override
+  String get downloadClearDay => 'Clear the date';
+
+  @override
+  String get downloadDaysHelp =>
+      'Days follow this computer’s time zone. Leave both as “Any day” to download every submission.';
+
+  @override
+  String get downloadDaysWrong =>
+      'The last day must be the same as or after the first day.';
+
+  @override
+  String get downloadStates => 'Review states';
+
+  @override
+  String get downloadStatesNone => 'Choose at least one review state.';
+
+  @override
+  String get downloadMedia => 'Include photos and other files';
+
+  @override
+  String get downloadMediaNote => 'This makes the download larger.';
+
+  @override
+  String get downloadPersonalData =>
+      'This file holds personal data. Keep it on a safe computer, share it only with people who need it, and delete it when you no longer need it.';
+
+  @override
+  String get downloadBrowserMemory =>
+      'In a web browser, the whole file is held in memory until it is saved. For a very large download with photos, use the desktop app or leave photos out.';
+
+  @override
+  String get downloadPreparing => 'The server is preparing the file…';
+
+  @override
+  String downloadReceived(String size) {
+    return '$size received';
+  }
+
+  @override
+  String get downloadDoneTitle => 'Download complete';
+
+  @override
+  String downloadSaved(String name) {
+    return 'Saved as $name.';
+  }
+
+  @override
+  String downloadSavedBrowser(String name) {
+    return 'Your browser is saving $name to its downloads folder.';
+  }
+
+  @override
+  String get downloadDoneReminder =>
+      'It holds personal data: keep it safe, and delete it when you no longer need it.';
+
+  @override
+  String get confirmTitle => 'Confirm it’s you';
+
+  @override
+  String get confirmIntro =>
+      'Downloading data needs a sign-in within the last 15 minutes. Confirm it’s you, and the download starts again.';
+
+  @override
+  String get confirmPassword => 'Your password';
+
+  @override
+  String get confirmButton => 'Confirm';
+
+  @override
+  String get confirmWorking => 'Confirming…';
+
+  @override
+  String get confirmGoogle => 'Confirm with Google';
+
+  @override
+  String get confirmGoogleWaiting =>
+      'Finish signing in with Google in the browser tab that opened, then come back here.';
+
+  @override
+  String confirmSms(String phone) {
+    return 'Send a code to $phone';
+  }
+
+  @override
+  String confirmSmsSent(String phone) {
+    return 'We sent a code to $phone.';
+  }
+
+  @override
+  String get confirmNoWay =>
+      'To confirm, sign out, sign in again, then download again.';
+
+  @override
+  String get problemRecentSignIn =>
+      'To download data, confirm it’s you: your last sign-in was more than 15 minutes ago.';
+
+  @override
+  String get problemExportNoVersion =>
+      'This form has no version yet, so there is nothing to download.';
+
+  @override
+  String get problemSaveFailed =>
+      'The file could not be saved there. Try again and choose another folder.';
+
+  @override
+  String sizeKb(String size) {
+    return '$size KB';
+  }
+
+  @override
+  String sizeMb(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String sizeGb(String size) {
+    return '$size GB';
+  }
+
+  @override
+  String get downloadChooseForm => 'Choose a form.';
 }

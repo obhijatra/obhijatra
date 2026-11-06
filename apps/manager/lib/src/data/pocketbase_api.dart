@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:obhijatra_device/obhijatra_device.dart';
 import 'package:obhijatra_manager/src/data/devices.dart';
+import 'package:obhijatra_manager/src/data/export.dart';
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/people.dart';
@@ -1067,6 +1068,89 @@ class PocketBaseApi implements ManagerApi {
         );
     return result.totalItems;
   });
+
+  // ------------------------------------------------------------- export
+
+  /// How long a download may wait for its first byte: the server builds
+  /// the CSV tables before it sends anything.
+  static const Duration _exportStart = Duration(minutes: 10);
+
+  /// How long a download may wait for its next part once it is flowing.
+  static const Duration _exportStall = Duration(minutes: 2);
+
+  @override
+  Future<String?> downloadSubmissions(
+    SubmissionExport export, {
+    required Future<void> Function(List<int> chunk) onChunk,
+    Future<void>? stop,
+  }) async {
+    // Not through the SDK, which reads every answer as text: the bytes go
+    // to [onChunk] as they arrive. Signed like every other request.
+    final client = DeviceHttpClient(
+      _newInner(),
+      signer: _signer,
+      timeout: _exportStart,
+    );
+    // Closing the client ends the request at once, wherever it is.
+    var stopped = false;
+    unawaited(
+      stop?.then((_) {
+        stopped = true;
+        client.close();
+      }),
+    );
+    try {
+      final request = http.Request('POST', _pb.buildURL(exportSubmissionsPath))
+        ..headers['Authorization'] = _pb.authStore.token
+        ..headers['Content-Type'] = 'application/json'
+        ..body = jsonEncode(export.toJson());
+      final response = await client.send(request);
+      if (response.statusCode != 200) {
+        throw _exportProblem(
+          response.statusCode,
+          await response.stream.toBytes(),
+        );
+      }
+      await for (final chunk in response.stream.timeout(_exportStall)) {
+        if (stopped) throw const DownloadStopped();
+        await onChunk(chunk);
+      }
+      if (stopped) throw const DownloadStopped();
+      return exportFileName(response.headers['content-disposition']);
+    } on AppProblem {
+      rethrow;
+    } on Object catch (error) {
+      if (stopped || error is DownloadStopped) throw const DownloadStopped();
+      // The connection failed or broke off part way.
+      if (error is http.ClientException) {
+        throw const AppProblem(ProblemKind.offline);
+      }
+      throw problemFrom(error);
+    } finally {
+      // Also ends a download stopped part way.
+      client.close();
+    }
+  }
+
+  /// The problem in a refused download's JSON answer.
+  static AppProblem _exportProblem(int status, List<int> body) {
+    Map<String, dynamic> json;
+    try {
+      json = jsonDecode(utf8.decode(body)) as Map<String, dynamic>;
+    } on Object {
+      json = const <String, dynamic>{};
+    }
+    final error = ClientException(statusCode: status, response: json);
+    if (status == 400) {
+      final codes = fieldCodes(error);
+      return AppProblem(switch (codes['form']) {
+        'validation_form_not_found' => ProblemKind.formUnavailable,
+        'validation_form_has_no_version' => ProblemKind.exportNoVersion,
+        _ => ProblemKind.detailsInvalid,
+      }, statusCode: 400);
+    }
+    return problemFrom(error);
+  }
 
   // ------------------------------------------------------------ devices
 

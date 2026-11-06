@@ -7,6 +7,7 @@ import 'package:obhijatra_manager/l10n/app_localizations.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
+import 'package:obhijatra_manager/src/ui/download_dialog.dart';
 import 'package:obhijatra_manager/src/ui/format.dart';
 import 'package:obhijatra_manager/src/ui/page_scaffold.dart';
 import 'package:obhijatra_manager/src/ui/shell.dart';
@@ -39,18 +40,37 @@ class SubmissionsScreen extends ConsumerWidget {
     final query = filter.query;
     final page = ref.watch(submissionsProvider(query));
     final total = page.asData?.value.totalItems;
+    // Only org admins and M&E staff may download; the server decides.
+    final canDownload = ref.watch(
+      sessionProvider.select((user) => user?.canDownloadSubmissions ?? false),
+    );
     return PageScaffold(
       title: l10n.subsTitle,
       subtitle: total == null ? null : l10n.subsCount(total),
-      trailing: IconButton.outlined(
-        tooltip: l10n.refresh,
-        icon: const Icon(Icons.refresh),
-        onPressed: () {
-          ref.read(submissionFilterProvider.notifier).refreshDates();
-          ref
-            ..invalidate(submissionsProvider)
-            ..invalidate(submissionCountsProvider);
-        },
+      trailing: Wrap(
+        spacing: Spacing.space2,
+        runSpacing: Spacing.space2,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          if (canDownload)
+            FilledButton.tonalIcon(
+              key: const ValueKey<String>('subs-download'),
+              onPressed: () =>
+                  unawaited(showDownloadDialog(context, query: query)),
+              icon: const Icon(Icons.download_outlined),
+              label: Text(l10n.actionDownload),
+            ),
+          IconButton.outlined(
+            tooltip: l10n.refresh,
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.read(submissionFilterProvider.notifier).refreshDates();
+              ref
+                ..invalidate(submissionsProvider)
+                ..invalidate(submissionCountsProvider);
+            },
+          ),
+        ],
       ),
       child: _Body(page: page),
     );

@@ -159,6 +159,17 @@ enum ProblemKind {
   /// approver (approved already, or needing a different org admin).
   deviceNotWaiting,
 
+  /// HTTP 403 `recent_sign_in_required`: downloading data needs a sign-in
+  /// within the last 15 minutes (docs/decisions/0009-data-export.md).
+  recentSignInRequired,
+
+  /// HTTP 400 `validation_form_has_no_version` on a download: the form has
+  /// no version, so it has no submissions.
+  exportNoVersion,
+
+  /// The downloaded file could not be written where the person chose.
+  saveFailed,
+
   /// Anything else.
   unknown,
 }
@@ -226,6 +237,7 @@ class AppProblem implements Exception {
     ProblemKind.deviceKeysUnavailable ||
     ProblemKind.deviceKeyInUse ||
     ProblemKind.tooManyWaitingDevices ||
+    ProblemKind.saveFailed ||
     ProblemKind.unknown => ProblemAction.tryAgain,
     ProblemKind.signInRequired ||
     ProblemKind.sessionOtherDevice ||
@@ -254,7 +266,9 @@ class AppProblem implements Exception {
     ProblemKind.tooManyTests ||
     ProblemKind.settingsInvalid ||
     ProblemKind.detailsInvalid ||
-    ProblemKind.deviceCodeMismatch => ProblemAction.close,
+    ProblemKind.deviceCodeMismatch ||
+    ProblemKind.recentSignInRequired ||
+    ProblemKind.exportNoVersion => ProblemAction.close,
   };
 
   @override
@@ -290,6 +304,7 @@ AppProblem problemFrom(Object error) {
             : ProblemKind.signInRequired,
       403 => switch (_reasonCode(error)) {
         passwordChangeRequiredReason => ProblemKind.passwordChangeRequired,
+        recentSignInRequiredReason => ProblemKind.recentSignInRequired,
         DeviceReason.signatureRequired => ProblemKind.deviceNotSetUp,
         DeviceReason.signatureInvalid => ProblemKind.deviceCheckFailed,
         DeviceReason.unknown => ProblemKind.deviceUnknown,
@@ -349,6 +364,10 @@ bool isDeviceRefusal(ProblemKind kind) =>
     kind == ProblemKind.deviceNotApproved ||
     kind == ProblemKind.deviceRevoked ||
     kind == ProblemKind.deviceExpired;
+
+/// `data.reason.code` of a 403 answer when downloading data needs a sign-in
+/// within the last 15 minutes (a session refresh does not count).
+const String recentSignInRequiredReason = 'recent_sign_in_required';
 
 /// `data.reason.code` of an error answer, or an empty string.
 String _reasonCode(ClientException error) => switch (error.response['data']) {

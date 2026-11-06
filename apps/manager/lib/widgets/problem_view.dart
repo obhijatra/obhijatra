@@ -52,6 +52,9 @@ String problemMessage(AppLocalizations l10n, ProblemKind kind) =>
       ProblemKind.tooManyWaitingDevices => l10n.problemTooManyWaitingDevices,
       ProblemKind.deviceCodeMismatch => l10n.problemDeviceCodeMismatch,
       ProblemKind.deviceNotWaiting => l10n.problemDeviceNotWaiting,
+      ProblemKind.recentSignInRequired => l10n.problemRecentSignIn,
+      ProblemKind.exportNoVersion => l10n.problemExportNoVersion,
+      ProblemKind.saveFailed => l10n.problemSaveFailed,
       ProblemKind.unknown => l10n.problemUnknown,
     };
 
