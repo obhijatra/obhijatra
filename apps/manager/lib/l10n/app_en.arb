@@ -3463,5 +3463,9 @@
   "downloadChooseForm": "Choose a form.",
   "@downloadChooseForm": {
     "description": "Problem: no form chosen for the download."
+  },
+  "problemDownloadIncomplete": "The download was not complete. Try again.",
+  "@problemDownloadIncomplete": {
+    "description": "Problem: the download stopped before the whole file arrived."
   }
 }

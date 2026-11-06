@@ -2806,4 +2806,8 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get downloadChooseForm => 'একটি ফর্ম বেছে নিন।';
+
+  @override
+  String get problemDownloadIncomplete =>
+      'ডাউনলোড পুরো হয়নি। আবার চেষ্টা করুন।';
 }

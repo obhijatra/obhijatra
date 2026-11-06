@@ -62,6 +62,7 @@ Future<void> openDownload(
   Size size = const Size(1280, 900),
   String? form = 'f1',
   ReviewState? state,
+  SignInWay? way,
 }) async {
   await pumpManager(
     tester,
@@ -79,6 +80,7 @@ Future<void> openDownload(
   containerOf(tester).read(submissionFilterProvider.notifier)
     ..setForm(form)
     ..setState(state);
+  containerOf(tester).read(signInWayProvider.notifier).set(way);
   await tester.pumpAndSettle();
   await tapAndSettle(tester, find.byKey(const ValueKey('subs-download')));
   expect(find.byKey(const ValueKey('download-dialog')), findsOneWidget);
@@ -390,7 +392,13 @@ void main() {
             const AppProblem(ProblemKind.recentSignInRequired, statusCode: 403),
           );
         final saver = FakeDownloadSaver();
-        await openDownload(tester, api, saver, lang: lang);
+        await openDownload(
+          tester,
+          api,
+          saver,
+          lang: lang,
+          way: SignInWay.google,
+        );
         final l10n = l10nOf(tester);
         await startDownload(tester);
         expect(find.byKey(const ValueKey('confirm-sms')), findsNothing);
@@ -404,6 +412,117 @@ void main() {
         await tester.pumpAndSettle();
         expect(api.exports, hasLength(2));
         expect(find.byKey(const ValueKey('download-done')), findsOneWidget);
+      });
+
+      for (final inMemory in <bool>[false, true]) {
+        testWidgets('a download cut short is thrown away, never "done" '
+            '(${inMemory ? 'browser' : 'desktop'})', (tester) async {
+          final api = exportApi(staff('org_admin'))
+            ..exportBreak = const AppProblem(ProblemKind.downloadIncomplete);
+          final saver = FakeDownloadSaver(holdsInMemory: inMemory);
+          await openDownload(tester, api, saver, lang: lang);
+          final l10n = l10nOf(tester);
+          await startDownload(tester);
+          final first = saver.targets.single;
+          expect(first.discarded, isTrue);
+          expect(first.finished, isFalse);
+          expect(find.byKey(const ValueKey('download-done')), findsNothing);
+          expect(find.text(l10n.problemDownloadIncomplete), findsOneWidget);
+
+          final dialog = find.byKey(const ValueKey('download-dialog'));
+          await tapAndSettle(
+            tester,
+            find.descendant(
+              of: dialog,
+              matching: find.text(l10n.actionTryAgain),
+            ),
+          );
+          expect(find.byKey(const ValueKey('download-done')), findsOneWidget);
+          expect(saver.targets.last.finished, isTrue);
+        });
+      }
+
+      testWidgets('confirming: the password first, then an SMS code, and no '
+          'Google for someone who signed in with a password', (tester) async {
+        const user = StaffUser(
+          id: 'u1',
+          name: 'Tania Rahman',
+          email: 'tania@example.org',
+          phone: '+8801700000001',
+          role: 'me',
+        );
+        final api = exportApi(user)
+          ..methods = const SignInMethods(google: true, phone: true)
+          ..exportFailures.add(
+            const AppProblem(ProblemKind.recentSignInRequired, statusCode: 403),
+          );
+        await openDownload(
+          tester,
+          api,
+          FakeDownloadSaver(),
+          lang: lang,
+          way: SignInWay.password,
+        );
+        await startDownload(tester);
+        final password = find.byKey(const ValueKey('confirm-password'));
+        final sms = find.byKey(const ValueKey('confirm-sms'));
+        expect(password, findsOneWidget);
+        expect(sms, findsOneWidget);
+        expect(
+          tester.getTopLeft(password).dy,
+          lessThan(tester.getTopLeft(sms).dy),
+        );
+        expect(find.byKey(const ValueKey('confirm-google')), findsNothing);
+      });
+
+      testWidgets('Google, last, only for someone who signed in with Google '
+          'and has no SMS code', (tester) async {
+        for (final (phone, way, offered) in <(String, SignInWay?, bool)>[
+          ('', SignInWay.google, true),
+          ('+8801700000001', SignInWay.google, false),
+          ('', SignInWay.password, false),
+          ('', null, false),
+        ]) {
+          final user = StaffUser(
+            id: 'u1',
+            name: 'Tania Rahman',
+            email: 'tania@example.org',
+            phone: phone,
+            role: 'me',
+          );
+          final api = exportApi(user)
+            ..methods = const SignInMethods(google: true, phone: true)
+            ..exportFailures.add(
+              const AppProblem(
+                ProblemKind.recentSignInRequired,
+                statusCode: 403,
+              ),
+            );
+          await openDownload(
+            tester,
+            api,
+            FakeDownloadSaver(),
+            lang: lang,
+            way: way,
+          );
+          await startDownload(tester);
+          final google = find.byKey(const ValueKey('confirm-google'));
+          expect(
+            google,
+            offered ? findsOneWidget : findsNothing,
+            reason: '$phone $way',
+          );
+          if (offered) {
+            expect(
+              tester
+                  .getTopLeft(find.byKey(const ValueKey('confirm-password')))
+                  .dy,
+              lessThan(tester.getTopLeft(google).dy),
+            );
+          }
+          // A fresh app for the next case, with no dialog left open.
+          await tester.pumpWidget(const SizedBox());
+        }
       });
 
       testWidgets('problems are plain words with a way on', (tester) async {

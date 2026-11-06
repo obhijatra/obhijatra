@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_device/obhijatra_device.dart' show normaliseCheckCode;
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
+import 'package:obhijatra_manager/src/data/calendar.dart';
 import 'package:obhijatra_manager/src/data/export.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
@@ -83,7 +84,10 @@ class _DownloadDialogState extends ConsumerState<DownloadDialog> {
     final query = widget.query;
     _formRecordId = query.formRecordId;
     _firstDay = query.from;
-    _lastDay = query.to?.subtract(const Duration(days: 1));
+    _lastDay = switch (query.to) {
+      final DateTime end => addDays(end, -1),
+      null => null,
+    };
     _states = query.state == null
         ? <ReviewState>{...ReviewState.values}
         : <ReviewState>{query.state!};
@@ -690,10 +694,19 @@ class _ConfirmSignInState extends ConsumerState<ConfirmSignIn> {
         ref.watch(signInMethodsProvider).asData?.value ??
         SignInMethods.passwordOnly;
     if (user == null) return const SizedBox.shrink();
+    // Strongest first: the password, then an SMS code, Google last.
     final password = user.email.isNotEmpty;
-    final google = methods.google && user.email.isNotEmpty;
     // The server refuses SMS sign-in to org admins.
     final sms = methods.phone && user.phone.isNotEmpty && !user.isOrgAdmin;
+    // Google proves less: a browser already signed in to Google may need
+    // only a click on an account. It is offered only to someone with no
+    // SMS code who signed in with Google this time, whose account may have
+    // no password they know.
+    final google =
+        methods.google &&
+        user.email.isNotEmpty &&
+        !sms &&
+        ref.watch(signInWayProvider) == SignInWay.google;
     final waitingForGoogle = _googleCancel != null;
 
     return Column(
@@ -742,18 +755,6 @@ class _ConfirmSignInState extends ConsumerState<ConfirmSignIn> {
               ),
             ),
           ],
-          if (google) ...<Widget>[
-            const SizedBox(height: Spacing.space3),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
-                key: const ValueKey<String>('confirm-google'),
-                onPressed: _busy ? null : () => unawaited(_google()),
-                icon: const Icon(Icons.open_in_new),
-                label: Text(l10n.confirmGoogle),
-              ),
-            ),
-          ],
           if (sms) ...<Widget>[
             const SizedBox(height: Spacing.space3),
             if (_codeSent case final PhoneCodeRequest sent) ...<Widget>[
@@ -796,6 +797,18 @@ class _ConfirmSignInState extends ConsumerState<ConfirmSignIn> {
                   label: Text(l10n.confirmSms(user.phone)),
                 ),
               ),
+          ],
+          if (google) ...<Widget>[
+            const SizedBox(height: Spacing.space3),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                key: const ValueKey<String>('confirm-google'),
+                onPressed: _busy ? null : () => unawaited(_google()),
+                icon: const Icon(Icons.open_in_new),
+                label: Text(l10n.confirmGoogle),
+              ),
+            ),
           ],
           if (!password && !google && !sms) ...<Widget>[
             Text(l10n.confirmNoWay, style: text.bodyMedium),

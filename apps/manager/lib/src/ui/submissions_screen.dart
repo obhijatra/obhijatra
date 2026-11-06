@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
+import 'package:obhijatra_manager/src/data/calendar.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
 import 'package:obhijatra_manager/src/state/providers.dart';
@@ -222,10 +223,7 @@ class _Filters extends ConsumerWidget {
             query.to != null
         ? l10n.filterRange(
             Format.shortDay(context, query.from!),
-            Format.shortDay(
-              context,
-              query.to!.subtract(const Duration(days: 1)),
-            ),
+            Format.shortDay(context, addDays(query.to!, -1)),
           )
         : l10n.filterChoose;
 
@@ -239,10 +237,7 @@ class _Filters extends ConsumerWidget {
             filter.preset == DatePreset.custom &&
                 query.from != null &&
                 query.to != null
-            ? DateTimeRange(
-                start: query.from!,
-                end: query.to!.subtract(const Duration(days: 1)),
-              )
+            ? DateTimeRange(start: query.from!, end: addDays(query.to!, -1))
             : null,
       );
       if (range != null) notifier.setRange(range.start, range.end);

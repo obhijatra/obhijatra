@@ -15,6 +15,19 @@ import 'package:obhijatra_manager/src/data/problem.dart';
 import 'device_api_test.dart'
     show deviceId, expectSigned, json, problem, refusal, signedApi, testKeys;
 
+/// A small complete zip file: [body], then the end record with [comment].
+List<int> zipFile({
+  List<int> body = const <int>[0x50, 0x4B, 0x03, 0x04, 1, 2, 3],
+  String comment = '',
+}) {
+  final text = utf8.encode(comment);
+  return <int>[
+    ...body,
+    0x50, 0x4B, 0x05, 0x06, ...List<int>.filled(16, 0), //
+    text.length & 0xFF, text.length >> 8, ...text,
+  ];
+}
+
 const SubmissionExport november = SubmissionExport(
   formRecordId: 'form000000001',
   formId: 'household_survey',
@@ -131,13 +144,11 @@ void main() {
         'hands over the file part by part', () async {
       final keys = await testKeys();
       final seen = <http.Request>[];
+      final zip = zipFile();
       final (api, _) = await signedApi(
         exportServer(
           seen,
-          chunks: <List<int>>[
-            <int>[0x50, 0x4B, 0x03, 0x04],
-            <int>[1, 2, 3],
-          ],
+          chunks: <List<int>>[zip.sublist(0, 4), zip.sublist(4)],
         ),
         keys,
       );
@@ -151,10 +162,7 @@ void main() {
       final name = await download(api, received, export: export);
 
       expect(name, 'household_survey_2026-11-06.zip');
-      expect(received, <List<int>>[
-        <int>[0x50, 0x4B, 0x03, 0x04],
-        <int>[1, 2, 3],
-      ]);
+      expect(received, <List<int>>[zip.sublist(0, 4), zip.sublist(4)]);
       final request = seen.single;
       expect(request.method, 'POST');
       expect(request.url.path, exportSubmissionsPath);
@@ -219,7 +227,8 @@ void main() {
       }
     });
 
-    test('a connection that breaks off part way is "offline"', () async {
+    test('a connection that breaks off part way, or a server that cuts a '
+        'failed download short, is "not complete"', () async {
       final keys = await testKeys();
       final (api, _) = await signedApi(
         exportServer(
@@ -233,8 +242,91 @@ void main() {
       );
       await expectLater(
         download(api, <List<int>>[]),
-        problem(ProblemKind.offline),
+        problem(ProblemKind.downloadIncomplete),
       );
+      // A reset that is not package:http's own error.
+      final (reset, _) = await signedApi(
+        exportServer(
+          <http.Request>[],
+          stream: () async* {
+            yield <int>[1, 2];
+            throw Exception('connection reset by peer');
+          },
+        ),
+        keys,
+      );
+      await expectLater(
+        download(reset, <List<int>>[]),
+        problem(ProblemKind.downloadIncomplete),
+      );
+    });
+
+    test('a download that ends cleanly but without a zip file\'s end '
+        'record is "not complete"', () async {
+      final keys = await testKeys();
+      final (api, _) = await signedApi(
+        exportServer(
+          <http.Request>[],
+          chunks: <List<int>>[
+            <int>[0x50, 0x4B, 0x03, 0x04, 1, 2, 3],
+          ],
+        ),
+        keys,
+      );
+      final received = <List<int>>[];
+      await expectLater(
+        download(api, received),
+        problem(ProblemKind.downloadIncomplete),
+      );
+      // The caller has the part that came, and throws it away.
+      expect(received, hasLength(1));
+    });
+
+    test('the end record check', () {
+      bool complete(List<List<int>> parts) {
+        final check = ZipEndCheck();
+        parts.forEach(check.add);
+        return check.complete;
+      }
+
+      final zip = zipFile();
+      expect(complete(<List<int>>[zip]), isTrue);
+      // Split anywhere, also inside the end record.
+      for (var i = 1; i < zip.length; i++) {
+        expect(
+          complete(<List<int>>[zip.sublist(0, i), zip.sublist(i)]),
+          isTrue,
+          reason: 'split at $i',
+        );
+      }
+      expect(complete(<List<int>>[zipFile(comment: 'Sample export')]), isTrue);
+      expect(complete(<List<int>>[<int>[]]), isFalse);
+      // Cut short inside the end record, or with bytes after it.
+      expect(complete(<List<int>>[zip.sublist(0, zip.length - 1)]), isFalse);
+      expect(
+        complete(<List<int>>[
+          <int>[...zip, 0],
+        ]),
+        isFalse,
+      );
+      // An end-record-like run in the middle of a file that goes on.
+      expect(
+        complete(<List<int>>[
+          <int>[...zip, 9, 9, 9, 9],
+        ]),
+        isFalse,
+      );
+      // A large file, in many parts: only its end counts.
+      final big = zipFile(body: List<int>.filled(300000, 7));
+      expect(
+        complete(<List<int>>[
+          for (var i = 0; i < big.length; i += 4096)
+            big.sublist(i, i + 4096 > big.length ? big.length : i + 4096),
+        ]),
+        isTrue,
+      );
+      // The longest comment a zip file can have.
+      expect(complete(<List<int>>[zipFile(comment: 'x' * 65535)]), isTrue);
     });
 
     test('a file that cannot be written stops the download', () async {
@@ -316,10 +408,7 @@ void main() {
             headers: answer.headers,
           );
         }
-        return http.StreamedResponse(
-          Stream<List<int>>.value(<int>[0x50, 0x4B]),
-          200,
-        );
+        return http.StreamedResponse(Stream<List<int>>.value(zipFile()), 200);
       });
       final (api, _) = await signedApi(client, keys);
 
@@ -333,9 +422,7 @@ void main() {
       expect(user.id, 'u1');
       final received = <List<int>>[];
       await download(api, received);
-      expect(received, <List<int>>[
-        <int>[0x50, 0x4B],
-      ]);
+      expect(received, <List<int>>[zipFile()]);
 
       expect(seen, hasLength(3));
       final signIn = seen[1];

@@ -39,6 +39,9 @@ jobs:
       - name: Test manager app
         working-directory: apps/manager
         run: flutter test
+      - name: Test day arithmetic where clocks change (New York)
+        working-directory: apps/manager
+        run: TZ=America/New_York flutter test test/calendar_test.dart
 
   core:
     name: Core tests (dart test)

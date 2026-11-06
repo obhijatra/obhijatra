@@ -3,6 +3,7 @@ import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart' show immutable, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:obhijatra_manager/src/data/calendar.dart';
 import 'package:obhijatra_manager/src/data/manager_api.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 import 'package:obhijatra_manager/src/data/pocketbase_api.dart';
@@ -223,8 +224,12 @@ class SessionNotifier extends Notifier<StaffUser?> {
     ref
         .read(typedOneTimePasswordProvider.notifier)
         .keep(user.mustChangePassword ? password : null);
+    _signedInWith(SignInWay.password);
     state = user;
   }
+
+  void _signedInWith(SignInWay way) =>
+      ref.read(signInWayProvider.notifier).set(way);
 
   /// Shows the "choose your own password" step: the server refused a
   /// request until the person replaces their one-time password.
@@ -250,6 +255,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
           ),
     );
     ref.read(typedOneTimePasswordProvider.notifier).keep(null);
+    _signedInWith(SignInWay.password);
     state = user;
   }
 
@@ -260,6 +266,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
     final user = await _tracked(
       () => ref.read(apiProvider).signInWithPhoneCode(codeId, code),
     );
+    _signedInWith(SignInWay.phoneCode);
     state = user;
   }
 
@@ -276,6 +283,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
           .signInWithGoogle(openUrl: openUrl, cancelled: cancelled),
     );
     if (user == null) return false;
+    _signedInWith(SignInWay.google);
     state = user;
     return true;
   }
@@ -296,6 +304,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
     final user = await _tracked(
       () => ref.read(apiProvider).signIn(email, password),
     );
+    _signedInWith(SignInWay.password);
     return state = user;
   }
 
@@ -304,6 +313,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
     final user = await _tracked(
       () => ref.read(apiProvider).signInWithPhoneCode(codeId, code),
     );
+    _signedInWith(SignInWay.phoneCode);
     return state = user;
   }
 
@@ -317,7 +327,10 @@ class SessionNotifier extends Notifier<StaffUser?> {
           .read(apiProvider)
           .signInWithGoogle(openUrl: openUrl, cancelled: cancelled),
     );
-    if (user != null) state = user;
+    if (user != null) {
+      _signedInWith(SignInWay.google);
+      state = user;
+    }
     return user;
   }
 
@@ -327,6 +340,7 @@ class SessionNotifier extends Notifier<StaffUser?> {
     ref.read(apiProvider).signOut();
     ref.read(deviceSignerProvider).clear();
     ref.read(typedOneTimePasswordProvider.notifier).keep(null);
+    ref.read(signInWayProvider.notifier).set(null);
     state = null;
   }
 }
@@ -345,6 +359,33 @@ class TypedOneTimePasswordNotifier extends Notifier<String?> {
   /// Keeps [password], or forgets it with null.
   void keep(String? password) => state = password;
 }
+
+/// How the person signed in this time. Sessions live in memory only, so
+/// each one starts with a sign-in in this app.
+enum SignInWay {
+  /// Email and password (also choosing a new password).
+  password,
+
+  /// A code sent by SMS.
+  phoneCode,
+
+  /// Google, in the web browser.
+  google,
+}
+
+/// Remembers how the person signed in this time; null when not known.
+class SignInWayNotifier extends Notifier<SignInWay?> {
+  @override
+  SignInWay? build() => null;
+
+  /// Records [way].
+  void set(SignInWay? way) => state = way;
+}
+
+/// How the person signed in this time, or null.
+final signInWayProvider = NotifierProvider<SignInWayNotifier, SignInWay?>(
+  SignInWayNotifier.new,
+);
 
 /// Holds the one-time password just typed, or null.
 final typedOneTimePasswordProvider =
@@ -463,14 +504,8 @@ class SubmissionFilterNotifier extends Notifier<SubmissionFilter> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     return switch (preset) {
-      DatePreset.last7 => base.copyWith(
-        from: today.subtract(const Duration(days: 6)),
-        page: 1,
-      ),
-      DatePreset.last30 => base.copyWith(
-        from: today.subtract(const Duration(days: 29)),
-        page: 1,
-      ),
+      DatePreset.last7 => base.copyWith(from: addDays(today, -6), page: 1),
+      DatePreset.last30 => base.copyWith(from: addDays(today, -29), page: 1),
       DatePreset.allTime ||
       DatePreset.custom => base.copyWith(clearDates: true, page: 1),
     };

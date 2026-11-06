@@ -170,6 +170,11 @@ enum ProblemKind {
   /// The downloaded file could not be written where the person chose.
   saveFailed,
 
+  /// A download ended before the whole file arrived (the connection broke
+  /// off, or the server cut it short), or what arrived is not a whole zip
+  /// file.
+  downloadIncomplete,
+
   /// Anything else.
   unknown,
 }
@@ -238,6 +243,7 @@ class AppProblem implements Exception {
     ProblemKind.deviceKeyInUse ||
     ProblemKind.tooManyWaitingDevices ||
     ProblemKind.saveFailed ||
+    ProblemKind.downloadIncomplete ||
     ProblemKind.unknown => ProblemAction.tryAgain,
     ProblemKind.signInRequired ||
     ProblemKind.sessionOtherDevice ||

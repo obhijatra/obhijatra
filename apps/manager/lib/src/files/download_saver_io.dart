@@ -28,27 +28,45 @@ class FileDownloadSaver implements DownloadSaver {
       acceptedTypeGroups: <XTypeGroup>[zip],
     );
     if (location == null) return null;
-    // Written exactly where the person chose: on macOS the app may write
-    // only that file, not one beside it.
-    final file = File(location.path);
+    return FileTarget(location.path);
+  }
+}
+
+/// The file at a path the person chose in the Save dialog.
+///
+/// Nothing touches it until the first part of the download arrives: a
+/// file the person chose to replace keeps its contents if the download
+/// fails before then. After a failure it is deleted only if this download
+/// had already created or emptied it. It is written exactly where the
+/// person chose: on macOS the app may write only that file, not one beside
+/// it.
+class FileTarget implements DownloadTarget {
+  /// The target for the file at [path].
+  FileTarget(String path) : _file = File(path);
+
+  final File _file;
+  RandomAccessFile? _open;
+
+  /// Whether this download has created or emptied the file.
+  bool _written = false;
+
+  Future<RandomAccessFile> _opened() async {
+    final open = _open;
+    if (open != null) return open;
     try {
-      return _FileTarget(file, await file.open(mode: FileMode.write));
+      final opened = await _file.open(mode: FileMode.write);
+      _written = true;
+      return _open = opened;
     } on FileSystemException {
       throw const AppProblem(ProblemKind.saveFailed);
     }
   }
-}
-
-class _FileTarget implements DownloadTarget {
-  _FileTarget(this._file, this._open);
-
-  final File _file;
-  final RandomAccessFile _open;
 
   @override
   Future<void> add(List<int> chunk) async {
+    final open = await _opened();
     try {
-      await _open.writeFrom(chunk);
+      await open.writeFrom(chunk);
     } on FileSystemException {
       throw const AppProblem(ProblemKind.saveFailed);
     }
@@ -56,12 +74,14 @@ class _FileTarget implements DownloadTarget {
 
   @override
   Future<String> finish({String? serverName}) async {
+    final open = await _opened();
     try {
-      await _open.flush();
-      await _open.close();
+      await open.flush();
+      await open.close();
     } on FileSystemException {
       throw const AppProblem(ProblemKind.saveFailed);
     }
+    _open = null;
     return _file.uri.pathSegments.lastWhere(
       (segment) => segment.isNotEmpty,
       orElse: () => _file.path,
@@ -70,11 +90,16 @@ class _FileTarget implements DownloadTarget {
 
   @override
   Future<void> discard() async {
-    try {
-      await _open.close();
-    } on Object {
-      // Already closed.
+    final open = _open;
+    _open = null;
+    if (open != null) {
+      try {
+        await open.close();
+      } on Object {
+        // Already closed.
+      }
     }
+    if (!_written) return; // Never touched: left as it was.
     try {
       if (_file.existsSync()) await _file.delete();
     } on Object {

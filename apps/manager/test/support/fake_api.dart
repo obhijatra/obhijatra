@@ -1035,6 +1035,9 @@ class FakeManagerApi implements ManagerApi {
   /// While not null, a download waits for it after its first part.
   Completer<void>? exportPause;
 
+  /// Set to make the next download break off after its first part.
+  AppProblem? exportBreak;
+
   @override
   Future<String?> downloadSubmissions(
     SubmissionExport export, {
@@ -1052,6 +1055,11 @@ class FakeManagerApi implements ManagerApi {
     for (final (index, chunk) in exportChunks.indexed) {
       if (stopped) throw const DownloadStopped();
       await onChunk(chunk);
+      final broken = exportBreak;
+      if (broken != null) {
+        exportBreak = null;
+        throw broken;
+      }
       final pause = exportPause;
       if (index == 0 && pause != null) {
         await Future.any<void>(<Future<void>>[pause.future, ?stop]);

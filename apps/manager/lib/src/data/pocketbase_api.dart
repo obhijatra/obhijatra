@@ -1111,11 +1111,28 @@ class PocketBaseApi implements ManagerApi {
           await response.stream.toBytes(),
         );
       }
-      await for (final chunk in response.stream.timeout(_exportStall)) {
+      final end = ZipEndCheck();
+      try {
+        await for (final chunk in response.stream.timeout(_exportStall)) {
+          if (stopped) throw const DownloadStopped();
+          end.add(chunk);
+          await onChunk(chunk);
+        }
+      } on DownloadStopped {
+        rethrow;
+      } on AppProblem {
+        rethrow; // The file could not be written.
+      } on Object {
         if (stopped) throw const DownloadStopped();
-        await onChunk(chunk);
+        // The connection broke off, stalled, or the server cut short a
+        // download that failed after it had started.
+        throw const AppProblem(ProblemKind.downloadIncomplete);
       }
       if (stopped) throw const DownloadStopped();
+      // A second safety net: a complete zip file ends with its end record.
+      if (!end.complete) {
+        throw const AppProblem(ProblemKind.downloadIncomplete);
+      }
       return exportFileName(response.headers['content-disposition']);
     } on AppProblem {
       rethrow;

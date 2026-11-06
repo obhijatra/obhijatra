@@ -4321,6 +4321,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a form.'**
   String get downloadChooseForm;
+
+  /// Problem: the download stopped before the whole file arrived.
+  ///
+  /// In en, this message translates to:
+  /// **'The download was not complete. Try again.'**
+  String get problemDownloadIncomplete;
 }
 
 class _AppLocalizationsDelegate

@@ -2805,4 +2805,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get downloadChooseForm => 'Choose a form.';
+
+  @override
+  String get problemDownloadIncomplete =>
+      'The download was not complete. Try again.';
 }

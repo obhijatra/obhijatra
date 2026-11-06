@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show immutable;
+import 'package:obhijatra_manager/src/data/calendar.dart';
 import 'package:obhijatra_manager/src/data/models.dart';
 
 // Downloading a form's submissions as a zip package in ODK Central's layout
@@ -43,14 +44,14 @@ class SubmissionExport {
 
   /// The start: [firstDay] at 00:00 local time, or null.
   DateTime? get from => switch (firstDay) {
-    final DateTime day => DateTime(day.year, day.month, day.day),
+    final DateTime day => addDays(day, 0),
     null => null,
   };
 
   /// The end, exclusive: the day after [lastDay] at 00:00 local time, so
   /// "to 30 November" means "before 1 December 00:00", or null.
   DateTime? get to => switch (lastDay) {
-    final DateTime day => DateTime(day.year, day.month, day.day + 1),
+    final DateTime day => addDays(day, 1),
     null => null,
   };
 
@@ -114,4 +115,39 @@ class DownloadStopped implements Exception {
 
   @override
   String toString() => 'DownloadStopped';
+}
+
+/// Watches the end of a download and says whether it ends as every
+/// complete zip file does: with its "end of central directory" record.
+/// That is the signature 0x06054b50 (the bytes 50 4B 05 06), 18 more
+/// bytes, the last two the length of the comment that ends the file. A
+/// download cut short almost never ends like that.
+class ZipEndCheck {
+  /// The longest end a zip file can have: the 22-byte record and a
+  /// comment of up to 65,535 bytes.
+  static const int maxEnd = 65557;
+
+  final List<int> _end = <int>[];
+
+  /// Takes the next part of the download.
+  void add(List<int> chunk) {
+    _end.addAll(chunk);
+    // Trimmed now and then, not on every part.
+    if (_end.length > 2 * maxEnd) _end.removeRange(0, _end.length - maxEnd);
+  }
+
+  /// Whether what arrived ends with a zip file's end record.
+  bool get complete {
+    final start = _end.length > maxEnd ? _end.length - maxEnd : 0;
+    for (var i = _end.length - 22; i >= start; i--) {
+      if (_end[i] == 0x50 &&
+          _end[i + 1] == 0x4B &&
+          _end[i + 2] == 0x05 &&
+          _end[i + 3] == 0x06) {
+        final comment = _end[i + 20] | (_end[i + 21] << 8);
+        if (i + 22 + comment == _end.length) return true;
+      }
+    }
+    return false;
+  }
 }

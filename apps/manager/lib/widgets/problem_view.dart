@@ -55,6 +55,7 @@ String problemMessage(AppLocalizations l10n, ProblemKind kind) =>
       ProblemKind.recentSignInRequired => l10n.problemRecentSignIn,
       ProblemKind.exportNoVersion => l10n.problemExportNoVersion,
       ProblemKind.saveFailed => l10n.problemSaveFailed,
+      ProblemKind.downloadIncomplete => l10n.problemDownloadIncomplete,
       ProblemKind.unknown => l10n.problemUnknown,
     };
 
