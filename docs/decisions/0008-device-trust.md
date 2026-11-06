@@ -207,9 +207,25 @@ An independent security review on 6 November 2026 found the issues below. All we
 - "bearer" in lower case was not recognised;
 - line separators, invisible characters and bidirectional marks were allowed in device and place names.
 
+A second independent review on 6 November 2026 covered the apps. It found no serious issues. The issues it did find were fixed with tests before release:
+
+- the manager app could stay open after its device and session were lost;
+- the manager's waiting screen kept checking after the session had ended;
+- an old device check could act for the next person to sign in;
+- the first admin's server command carried the code, inviting it to be sent by message;
+- a switched-off phone still offered to fill in forms;
+- on a shared phone, each new person destroyed the previous person's approval (keys are now kept per person);
+- the field app did not retry once after a server restart.
+
+**Known limits** (`docs/setup/devices.md` tells organisations what to do):
+
+- **Windows:** the manager app keeps its key seeds in a file encrypted for the Windows user (DPAPI). The plugin keeps that file in the roaming profile, so on networks with roaming profiles the keys can follow the person to other computers. Fixing this needs our own small Windows key store in the local profile, or hardware-bound keys.
+- **macOS:** the keys are in the login keychain, which the Mac's migration tools copy to a new Mac. Keys bound to one Mac need the data-protection keychain with "this device only" access, which needs a signed build with the Keychain Sharing entitlement.
+- **Fewer than three org admins:** an org admin's device cannot get two approvals in the app. The server command line approves it instead.
+
 **Deferred**, as the blueprint plans:
 
 - the organisation key and organisation-signed device records;
-- hardware attestation (Play Integrity or App Attest);
+- hardware attestation (Play Integrity or App Attest) and hardware-bound keys on desktops;
 - certificate pinning;
 - end-to-end encryption with the X25519 keys.

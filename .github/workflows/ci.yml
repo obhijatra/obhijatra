@@ -39,6 +39,10 @@ jobs:
       - name: Test manager app
         working-directory: apps/manager
         run: flutter test
+      - name: Test manager app in a browser (device keys in WebCrypto)
+        working-directory: apps/manager
+        timeout-minutes: 10
+        run: flutter test --platform chrome test/web
 
   core:
     name: Core tests (dart test)

@@ -14,9 +14,10 @@ Obhijatra is an open-source (AGPL-3.0) platform for NGOs, made by Aninda Studio.
 
 - Build from the Aninda Studio 5.0 design system: colour roles, Noto fonts, Bangla one step larger, 48 dp touch targets, WCAG 2.2 AA (body text 7 : 1), plain UK English and everyday Bangla with আপনি. Mark new Bangla strings as drafts for the owner to check.
 - Keep `packages/obhijatra_core` pure Dart (no Flutter import).
-- Before pushing, run: `flutter analyze --fatal-infos`; `flutter test` in `packages/obhijatra_ui`, `apps/field` and `apps/manager`; `dart test` in `packages/obhijatra_core` (the `e2e` tag is the Phase 1 gate and needs a server binary in `server/dist`); `go vet ./... && go test ./...` in `server`.
+- Before pushing, run: `flutter analyze --fatal-infos`; `flutter test` in `packages/obhijatra_ui`, `apps/field` and `apps/manager`; `dart test` in `packages/obhijatra_device`; `dart test` in `packages/obhijatra_core` (the `e2e` tag is the Phase 1 gate and needs a server binary in `server/dist`); `go vet ./... && go test ./...` in `server`.
 - Commit as `Aninda (GRU-953) <GRU-953@users.noreply.github.com>`, in logical steps, with the session's attribution trailers.
 - App identifiers are permanent: `io.github.obhijatra.field` and `io.github.obhijatra.manager`.
 - The Firebase plugin is enabled for this repository (`.claude/settings.json`). In a fresh environment, add its marketplace first: `claude plugin marketplace add firebase/agent-skills`.
 - For any Firebase task (the test project `obhijatra-ci`: sign-in, project selection, App Distribution, Test Lab), first look for and follow the matching Firebase agent skill (for example `firebase-basics`), within the rule above that no Firebase code goes into the apps.
 - Sign-in is email and password, Google and SMS code, all on the organisation's own server (`docs/decisions/0005-sign-in-methods.md`). Google sign-in opens a secure browser tab; no Google sign-in library goes into the apps.
+- Every device is approved and every request by a signed-in person is signed by its device (`docs/decisions/0008-device-trust.md`). Send every app request through `SigningHttpClient` (package `obhijatra_device`); never add an unsigned path, and never keep device keys outside protected storage (non-extractable WebCrypto keys in browsers).
