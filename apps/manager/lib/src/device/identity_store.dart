@@ -51,7 +51,8 @@ class DeviceKeysUnavailable implements Exception {
 /// Keeps device keys and device ids, one set per person, for one server.
 ///
 /// - Windows and macOS: the seeds in the operating system's protected
-///   storage (DPAPI, the Keychain), through `flutter_secure_storage`.
+///   storage (DPAPI, the Keychain), through `flutter_secure_storage`; not
+///   bound to one computer (see `SecureStorageIdentityStore`).
 /// - Web: non-extractable WebCrypto keys in the browser's IndexedDB. The
 ///   private keys cannot be read out, even by the app itself.
 ///

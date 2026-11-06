@@ -15,14 +15,24 @@ String platformUserAgent() => '';
 /// Keeps each person's two 32-byte seeds in the operating system's
 /// protected storage through `flutter_secure_storage`:
 ///
-/// - Windows: encrypted with DPAPI for the signed-in Windows user;
-/// - macOS: the login Keychain, kept on this Mac only (never synchronised
-///   to iCloud).
+/// - Windows: a file encrypted with DPAPI for the signed-in Windows user
+///   (`flutter_secure_storage.dat` in the user's roaming application data
+///   folder, `%APPDATA%`).
+/// - macOS: the user's login Keychain, not synchronised to iCloud.
 ///
-/// On macOS the login ("file-based") Keychain is used rather than the data
-/// protection Keychain, which needs the Keychain Sharing entitlement and a
-/// provisioning profile, so an unsigned or ad-hoc signed build could not
-/// keep keys at all.
+/// Known limitation: the seeds are not bound to this one computer.
+///
+/// - Windows: with roaming profiles, both the file and the user's DPAPI
+///   keys follow the user to other computers of the same domain. The
+///   package has no option for the local (non-roaming) folder.
+/// - macOS: the login Keychain travels with Migration Assistant and with
+///   encrypted backups to another Mac. "This device only" needs the data
+///   protection Keychain, which needs the Keychain Sharing entitlement and
+///   a build signed with an Apple team (an unsigned or ad-hoc signed build
+///   could not keep keys at all), so it is not used yet.
+///
+/// The server still treats such a copy as the same device, and switching
+/// the device off stops it everywhere.
 class SecureStorageIdentityStore implements DeviceIdentityStore {
   /// Creates the store for [server]. [storage] is for tests.
   SecureStorageIdentityStore(String server, {FlutterSecureStorage? storage})

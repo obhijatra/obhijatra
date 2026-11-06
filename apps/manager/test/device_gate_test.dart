@@ -6,12 +6,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obhijatra_manager/l10n/app_localizations.dart';
 import 'package:obhijatra_manager/src/data/devices.dart';
 import 'package:obhijatra_manager/src/data/problem.dart';
+import 'package:obhijatra_manager/src/device/device_http.dart';
 import 'package:obhijatra_manager/src/device/identity_store.dart';
 import 'package:obhijatra_manager/src/state/devices.dart';
+import 'package:obhijatra_manager/src/state/providers.dart';
 import 'package:obhijatra_manager/src/ui/choose_password_screen.dart';
 import 'package:obhijatra_manager/src/ui/device_screens.dart';
 import 'package:obhijatra_manager/src/ui/format.dart';
@@ -77,6 +80,14 @@ Future<void> signInWith(
   await tester.tap(find.widgetWithText(FilledButton, l10n.signInButton));
   await tester.pumpAndSettle();
 }
+
+/// The providers of the app on screen.
+ProviderContainer containerOf(WidgetTester tester) =>
+    ProviderScope.containerOf(tester.element(find.byType(MaterialApp)));
+
+/// The signer of the app on screen.
+DeviceSigner signerOf(WidgetTester tester) =>
+    containerOf(tester).read(deviceSignerProvider);
 
 /// Moves the app to [target] one step at a time, as the platform does
 /// (resumed, inactive, hidden and back).
@@ -280,14 +291,24 @@ void main() {
         expect(find.text(l10n.deviceWhoAdminSecond), findsNothing);
         expect(find.text(l10n.deviceFirstAdminTitle), findsOneWidget);
 
-        // The server command is in English digits, also in Bangla.
-        const command =
+        // The command leaves the 18 numbers as a placeholder: the person
+        // at the server reads them from this screen.
+        final command =
             'obhijatra-server device approve thisdevice00001 '
-            '"225 142 753 699 752 889"';
+            '"<${l10n.deviceCommandPlaceholder}>"';
         expect(find.text(command), findsOneWidget);
-        await tapAndSettle(tester, find.byTooltip(l10n.actionCopy));
-        expect(copied, <String>[command]);
-        expect(find.text(l10n.deviceCommandCopied), findsOneWidget);
+        expect(find.text(l10n.deviceFirstAdminBody), findsOneWidget);
+        final shownCommand = tester
+            .widget<Text>(find.byKey(const ValueKey('device-command')))
+            .data!;
+        expect(shownCommand, isNot(contains('225')));
+        expect(find.byType(SelectableText), findsNothing);
+        expect(find.text(l10n.deviceIdLine('thisdevice00001')), findsOneWidget);
+        // Only the id can be copied, never the numbers.
+        await tapAndSettle(tester, find.byTooltip(l10n.deviceIdCopy));
+        expect(copied, <String>['thisdevice00001']);
+        expect(find.text(l10n.deviceIdCopied), findsOneWidget);
+        expect(find.byTooltip(l10n.actionCopy), findsNothing);
 
         // After the first admin's approval, the screen says one more.
         api.meAnswer = waiting(second: true);
@@ -369,7 +390,9 @@ void main() {
           tester,
           find.byKey(const ValueKey('device-set-up-again-confirm')),
         );
-        expect(find.byType(DeviceRevokedScreen), findsOneWidget);
+        // The session has ended: that is what shows, not the old screen.
+        expect(find.byType(DeviceRevokedScreen), findsNothing);
+        expect(find.byType(DeviceProblemScreen), findsOneWidget);
         expect(find.text(l10n.problemSignInRequired), findsOneWidget);
         await tapAndSettle(tester, find.text(l10n.actionSignInAgain).first);
         expect(find.byType(SignInScreen), findsOneWidget);
@@ -477,6 +500,165 @@ void main() {
           find.byKey(const ValueKey('device-server-forgot')),
           findsNothing,
         );
+      });
+
+      testWidgets('the server forgot the device and the session: sign in '
+          'again, never the old app', (tester) async {
+        final api = FakeManagerApi(user: staff('supervisor'))
+          ..meAnswer = approved();
+        final store = enrolledStore();
+        await pumpManager(tester, api, lang: lang, store: store);
+        final l10n = l10nOf(tester);
+        expect(find.byType(ManagerShell), findsOneWidget);
+
+        // Restored from an older backup: neither the device nor the session
+        // is there any more.
+        api
+          ..failWith = const AppProblem(
+            ProblemKind.deviceUnknown,
+            statusCode: 403,
+          )
+          ..deviceUnknown = true
+          ..enrolFailure = const AppProblem(
+            ProblemKind.signInRequired,
+            statusCode: 401,
+          )
+          ..meAnswer = null
+          ..enrolAnswer = waiting();
+        await tapAndSettle(
+          tester,
+          find.bySemanticsLabel(l10n.navSubmissions).first,
+        );
+        expect(find.byType(ManagerShell), findsNothing);
+        expect(find.byType(DeviceProblemScreen), findsOneWidget);
+        expect(find.text(l10n.problemSignInRequired), findsOneWidget);
+        // The id is forgotten, the keys kept, nothing signed as the old one.
+        expect(store.identities['u1']!.deviceId, isNull);
+        expect(store.created, 0);
+        expect(signerOf(tester).deviceId, isNull);
+
+        // Signing in again enrols the same keys, and says why it waits.
+        api
+          ..enrolFailure = null
+          ..failWith = null
+          ..signInRole = 'supervisor';
+        await tapAndSettle(tester, find.text(l10n.actionSignInAgain));
+        expect(find.byType(SignInScreen), findsOneWidget);
+        // Signed in to the same server (the address is not typed again).
+        await containerOf(tester)
+            .read(sessionProvider.notifier)
+            .signIn('tania@example.org', 'pw');
+        await tester.pumpAndSettle();
+        expect(find.byType(DeviceWaitingScreen), findsOneWidget);
+        expect(find.text(l10n.deviceServerForgot), findsOneWidget);
+        expect(api.enrolments.single.code, vectorCode);
+        expect(store.created, 0);
+      });
+
+      testWidgets('offline once the device was forgotten: try again, never '
+          'the old app', (tester) async {
+        final api = FakeManagerApi(user: staff('supervisor'))
+          ..meAnswer = approved();
+        await pumpManager(tester, api, lang: lang, store: enrolledStore());
+        final l10n = l10nOf(tester);
+        api
+          ..failWith = const AppProblem(
+            ProblemKind.deviceUnknown,
+            statusCode: 403,
+          )
+          ..deviceUnknown = true
+          ..enrolFailure = const AppProblem(ProblemKind.offline)
+          ..meAnswer = null
+          ..enrolAnswer = waiting();
+        await tapAndSettle(
+          tester,
+          find.bySemanticsLabel(l10n.navSubmissions).first,
+        );
+        expect(find.byType(ManagerShell), findsNothing);
+        expect(find.byType(DeviceProblemScreen), findsOneWidget);
+        expect(find.text(l10n.problemOffline), findsOneWidget);
+
+        api.enrolFailure = null;
+        await tapAndSettle(tester, find.text(l10n.actionTryAgain));
+        expect(find.byType(DeviceWaitingScreen), findsOneWidget);
+        expect(find.text(l10n.deviceServerForgot), findsOneWidget);
+      });
+
+      for (final kind in <ProblemKind>[
+        ProblemKind.signInRequired,
+        ProblemKind.sessionOtherDevice,
+      ]) {
+        testWidgets('${kind.name} while waiting: sign in again, and no more '
+            'checks', (tester) async {
+          final api = FakeManagerApi(user: staff('supervisor'))
+            ..meAnswer = waiting();
+          await pumpManager(tester, api, lang: lang, store: enrolledStore());
+          final l10n = l10nOf(tester);
+          expect(api.meChecks, 1);
+
+          api.meFailure = AppProblem(kind, statusCode: 401);
+          await tester.pump(devicePollEvery);
+          await tester.pumpAndSettle();
+          expect(api.meChecks, 2);
+          expect(find.byType(DeviceWaitingScreen), findsNothing);
+          expect(find.byType(DeviceProblemScreen), findsOneWidget);
+          expect(find.text(l10n.actionSignInAgain), findsOneWidget);
+
+          await tester.pump(devicePollEvery * 4);
+          await tester.pumpAndSettle();
+          expect(api.meChecks, 2, reason: 'asking again cannot help');
+        });
+      }
+
+      testWidgets('too many devices waiting: says so, then tries again', (
+        tester,
+      ) async {
+        final api = FakeManagerApi(user: staff('supervisor'))
+          ..enrolFailure = const AppProblem(
+            ProblemKind.tooManyWaitingDevices,
+            statusCode: 429,
+          )
+          ..enrolAnswer = waiting();
+        await pumpManager(tester, api, lang: lang);
+        final l10n = l10nOf(tester);
+        expect(find.byType(DeviceProblemScreen), findsOneWidget);
+        expect(find.text(l10n.problemTooManyWaitingDevices), findsOneWidget);
+        api.enrolFailure = null;
+        await tapAndSettle(tester, find.text(l10n.actionTryAgain));
+        expect(find.byType(DeviceWaitingScreen), findsOneWidget);
+      });
+
+      testWidgets('a check for someone who has signed out meanwhile changes '
+          'nothing for the next person', (tester) async {
+        final api = FakeManagerApi(user: staff('supervisor'))
+          ..enrolAnswer = waiting();
+        final store = MemoryIdentityStore();
+        final held = store.createGate = Completer<void>();
+        await pumpManager(tester, api, lang: lang, store: store, settle: false);
+        // u1's check waits while its keys are made.
+        expect(find.byType(DeviceCheckingScreen), findsOneWidget);
+
+        final container = containerOf(tester);
+        container.read(sessionProvider.notifier).signOut();
+        api
+          ..signInId = 'u2'
+          ..signInRole = 'supervisor';
+        await container
+            .read(sessionProvider.notifier)
+            .signIn('rafiq@example.org', 'three green mangoes');
+        await tester.pumpAndSettle();
+        expect(find.byType(DeviceWaitingScreen), findsOneWidget);
+        expect(api.enrolments, hasLength(1));
+
+        // u1's old check now goes on, and must change nothing.
+        held.complete();
+        await tester.pumpAndSettle();
+        expect(api.enrolments, hasLength(1), reason: 'u1 is not enrolled');
+        expect(store.identities['u1']?.deviceId, isNull);
+        expect(store.identities['u2']!.deviceId, thisDevice);
+        expect(store.last, 'u2');
+        expect(signerOf(tester).deviceId, thisDevice);
+        expect(find.byType(DeviceWaitingScreen), findsOneWidget);
       });
 
       testWidgets('a wrong clock: set the date and time, then check again', (

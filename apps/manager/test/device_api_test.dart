@@ -386,6 +386,7 @@ void main() {
           id: 'otherdevice0001',
         );
         final device = await api.enrolDevice(
+          userId: 'u1',
           keys: keys,
           label: 'Web browser (Chrome on Windows)',
           platform: DevicePlatform.web,
@@ -435,11 +436,51 @@ void main() {
           id: null,
         );
         await expectLater(
-          api.enrolDevice(keys: keys, label: 'Mac', platform: 'macos'),
+          api.enrolDevice(
+            userId: 'u1',
+            keys: keys,
+            label: 'Mac',
+            platform: 'macos',
+          ),
           problem(kind),
         );
       }
     });
+
+    test(
+      'never enrols one person’s keys under another person’s session',
+      () async {
+        final keys = await testKeys();
+        final seen = <http.Request>[];
+        final (api, _) = await signedApi(
+          recording(seen, (_) => json(view())),
+          keys,
+          id: null,
+        );
+        // The check was for u2, but u1 is signed in now.
+        await expectLater(
+          api.enrolDevice(
+            userId: 'u2',
+            keys: keys,
+            label: 'Mac',
+            platform: 'macos',
+          ),
+          problem(ProblemKind.signInRequired),
+        );
+        expect(seen, isEmpty, reason: 'nothing sent');
+        api.signOut();
+        await expectLater(
+          api.enrolDevice(
+            userId: 'u1',
+            keys: keys,
+            label: 'Mac',
+            platform: 'macos',
+          ),
+          problem(ProblemKind.signInRequired),
+        );
+        expect(seen, isEmpty);
+      },
+    );
   });
 
   group('device status and refusals', () {

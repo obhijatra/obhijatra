@@ -2374,10 +2374,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deviceFirstAdminBody =>
-      'Then nobody can approve you in the app yet. Ask the person who runs the server to type this command on it:';
-
-  @override
-  String get deviceCommandCopied => 'Command copied.';
+      'Then nobody can approve you in the app yet. The person who runs the server types this command on it, with this device’s 18 numbers in place of the words in angle brackets. They must read the numbers from this screen themselves, in person or on a phone call. Never send the numbers by message.';
 
   @override
   String get deviceNoMessages =>
@@ -2646,4 +2643,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deviceServerForgot =>
       'The server no longer knew this device, so it needs approval again.';
+
+  @override
+  String get deviceCommandPlaceholder => 'the 18 numbers on this screen';
+
+  @override
+  String deviceIdLine(String id) {
+    return 'This device’s id: $id';
+  }
+
+  @override
+  String get deviceIdCopy => 'Copy the device id';
+
+  @override
+  String get deviceIdCopied => 'Device id copied.';
 }

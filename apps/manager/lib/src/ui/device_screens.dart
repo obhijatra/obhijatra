@@ -26,9 +26,11 @@ import 'package:obhijatra_ui/obhijatra_ui.dart';
 const Duration devicePollEvery = Duration(seconds: 15);
 
 /// The command the person who runs the server types to approve the very
-/// first org admin's first device. Always in English digits.
-String serverApproveCommand(String deviceId, String checkCode) =>
-    'obhijatra-server device approve $deviceId "${groupCheckCode(checkCode)}"';
+/// first org admin's first device. The 18 numbers are a [placeholder]: the
+/// person at the server reads them from this device's own screen, so they
+/// are never copied into a message.
+String serverApproveCommand(String deviceId, String placeholder) =>
+    'obhijatra-server device approve $deviceId "<$placeholder>"';
 
 /// Runs a problem's one action on a device screen: sign in again, or check
 /// the device again.
@@ -442,17 +444,26 @@ class _DeviceWaitingScreenState extends ConsumerState<DeviceWaitingScreen> {
     _start();
   }
 
-  /// Asks the server again, unless a check is running already.
+  /// Asks the server again, unless a check is running already or the last
+  /// check said to sign in again (asking again cannot help then).
   void _check() {
-    if (!mounted || ref.read(deviceGateProvider).isLoading) return;
+    if (!mounted) return;
+    final gate = ref.read(deviceGateProvider);
+    if (gate.isLoading) return;
+    final error = gate.error;
+    if (error != null &&
+        problemFrom(error).action == ProblemAction.signInAgain) {
+      return;
+    }
     ref.read(deviceGateProvider.notifier).checkAgain();
   }
 
-  Future<void> _copy(String command) async {
+  /// Copies the device id only; the 18 numbers are read from the screen.
+  Future<void> _copyId(String deviceId) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    await Clipboard.setData(ClipboardData(text: command));
-    messenger.showSnackBar(SnackBar(content: Text(l10n.deviceCommandCopied)));
+    await Clipboard.setData(ClipboardData(text: deviceId));
+    messenger.showSnackBar(SnackBar(content: Text(l10n.deviceIdCopied)));
   }
 
   @override
@@ -509,8 +520,12 @@ class _DeviceWaitingScreenState extends ConsumerState<DeviceWaitingScreen> {
           const SizedBox(height: Spacing.space1),
           _Para(l10n.deviceFirstAdminBody),
           _CommandBox(
-            command: serverApproveCommand(deviceId, gate.checkCode),
-            onCopy: (command) => unawaited(_copy(command)),
+            command: serverApproveCommand(
+              deviceId,
+              l10n.deviceCommandPlaceholder,
+            ),
+            deviceId: deviceId,
+            onCopyId: () => unawaited(_copyId(deviceId)),
           ),
           const SizedBox(height: Spacing.space4),
         ],
@@ -533,21 +548,29 @@ class _DeviceWaitingScreenState extends ConsumerState<DeviceWaitingScreen> {
   }
 }
 
-/// The server command in a fixed-width box, with a button that copies it.
+/// The server command in a fixed-width box, with the 18 numbers left as a
+/// placeholder, and below it this device's id with a button that copies
+/// only the id.
 class _CommandBox extends StatelessWidget {
-  const _CommandBox({required this.command, required this.onCopy});
+  const _CommandBox({
+    required this.command,
+    required this.deviceId,
+    required this.onCopyId,
+  });
 
   final String command;
-  final ValueChanged<String> onCopy;
+  final String deviceId;
+  final VoidCallback onCopyId;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = context.palette;
+    final code = codeStyle(Theme.of(context).textTheme.bodyMedium!);
     return Container(
       padding: const EdgeInsetsDirectional.only(
         start: Spacing.space3,
-        top: Spacing.space1,
+        top: Spacing.space2,
         bottom: Spacing.space1,
       ),
       decoration: BoxDecoration(
@@ -555,23 +578,35 @@ class _CommandBox extends StatelessWidget {
         borderRadius: Radii.smAll,
         border: Border.all(color: palette.border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Expanded(
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: Spacing.space3),
             // The command is always left to right, also in Bangla.
-            child: Directionality(
+            child: Text(
+              command,
+              key: const ValueKey<String>('device-command'),
               textDirection: TextDirection.ltr,
-              child: SelectableText(
-                command,
-                key: const ValueKey<String>('device-command'),
-                style: codeStyle(Theme.of(context).textTheme.bodyMedium!),
-              ),
+              style: code,
             ),
           ),
-          IconButton(
-            tooltip: l10n.actionCopy,
-            icon: const Icon(Icons.copy_outlined),
-            onPressed: () => onCopy(command),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  l10n.deviceIdLine(deviceId),
+                  key: const ValueKey<String>('device-id'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              IconButton(
+                key: const ValueKey<String>('device-id-copy'),
+                tooltip: l10n.deviceIdCopy,
+                icon: const Icon(Icons.copy_outlined),
+                onPressed: onCopyId,
+              ),
+            ],
           ),
         ],
       ),

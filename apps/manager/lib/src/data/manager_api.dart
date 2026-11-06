@@ -189,7 +189,12 @@ abstract interface class ManagerApi {
   ///
   /// Refusals: [ProblemKind.deviceKeyInUse] (409),
   /// [ProblemKind.tooManyWaitingDevices] (429), a session problem (401).
+  ///
+  /// [userId] is the person the keys belong to. When someone else is signed
+  /// in by now, nothing is sent and [ProblemKind.signInRequired] is thrown,
+  /// so one person's keys are never enrolled under another's session.
   Future<DeviceView> enrolDevice({
+    required String userId,
     required DeviceKeys keys,
     required String label,
     required String platform,

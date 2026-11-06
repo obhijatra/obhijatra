@@ -46,9 +46,19 @@ class ObhijatraManagerApp extends ConsumerWidget {
         value,
       _ => null,
     };
+    // A failed check, when nothing newer runs. Its problem is shown in place
+    // of the last answer when the person must sign in again, or when there
+    // is no last answer; otherwise (for example offline) the last answer
+    // stays, with the problem beside it.
+    final failed = gate.hasError && !gate.isLoading
+        ? problemFrom(gate.error!)
+        : null;
+    final signInAgain = failed?.action == ProblemAction.signInAgain;
+    final problem = signInAgain ? failed : device?.problem ?? failed;
     final stage = switch ((user, device)) {
       (null, _) => _Stage.signedOut,
-      (_, null) when gate.hasError && !gate.isLoading => _Stage.deviceProblem,
+      (_, null) when failed != null => _Stage.deviceProblem,
+      _ when signInAgain => _Stage.deviceProblem,
       (_, null) => _Stage.checking,
       // A one-time password is replaced first, from a waiting device too;
       // the device then waits for approval.
@@ -65,6 +75,7 @@ class ObhijatraManagerApp extends ConsumerWidget {
         DeviceStage.clockWrong => _Stage.clockWrong,
         DeviceStage.updateBrowser => _Stage.updateBrowser,
         DeviceStage.secureAddressNeeded => _Stage.secureAddress,
+        DeviceStage.problem => _Stage.deviceProblem,
       },
     };
     return MaterialApp(
@@ -82,9 +93,7 @@ class ObhijatraManagerApp extends ConsumerWidget {
       home: switch (stage) {
         _Stage.signedOut => const SignInScreen(),
         _Stage.checking => const DeviceCheckingScreen(),
-        _Stage.deviceProblem => DeviceProblemScreen(
-          problem: problemFrom(gate.error!),
-        ),
+        _Stage.deviceProblem => DeviceProblemScreen(problem: problem!),
         _Stage.choosePassword => const ChoosePasswordScreen(),
         _Stage.waiting => DeviceWaitingScreen(gate: device!),
         _Stage.revoked => const DeviceRevokedScreen(),

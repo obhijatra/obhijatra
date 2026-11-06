@@ -35,6 +35,12 @@ enum DeviceStage {
   /// The page was opened at a plain `http` address, where browsers keep no
   /// keys.
   secureAddressNeeded,
+
+  /// The check met a problem that no earlier answer may hide
+  /// ([DeviceGate.problem]): the session ended or belongs to another
+  /// device, too many devices wait, or the check had already changed this
+  /// device (its signature or its id) when it failed.
+  problem,
 }
 
 /// The device check's answer for one person.
@@ -50,6 +56,7 @@ class DeviceGate {
     this.needsSecondApproval = false,
     this.checkedAt,
     this.serverForgot = false,
+    this.problem,
   });
 
   /// Nobody is signed in.
@@ -61,7 +68,8 @@ class DeviceGate {
       label = '',
       needsSecondApproval = false,
       checkedAt = null,
-      serverForgot = false;
+      serverForgot = false,
+      problem = null;
 
   /// Whose device check this is.
   final String? userId;
@@ -90,6 +98,9 @@ class DeviceGate {
   /// for approval again.
   final bool serverForgot;
 
+  /// What went wrong, for [DeviceStage.problem].
+  final AppProblem? problem;
+
   @override
   String toString() => 'DeviceGate($stage)';
 }
@@ -106,16 +117,34 @@ class DeviceGateNotifier extends AsyncNotifier<DeviceGate> {
     ref.watch(deviceRecheckProvider);
     final userId = ref.watch(sessionProvider.select((user) => user?.id));
     if (userId == null) return const DeviceGate.signedOut();
-    return _check(userId);
+    try {
+      return await _check(userId);
+    } on _Superseded {
+      // Someone else signed in, or a newer check runs: this answer is about
+      // nobody signed in now, so it opens nothing.
+      return const DeviceGate.signedOut();
+    }
   }
 
   Future<DeviceGate> _check(String userId) async {
     final store = ref.read(deviceIdentityStoreProvider);
     final signer = ref.read(deviceSignerProvider);
     final api = ref.read(apiProvider);
-    final reEnrolled = ref.read(reEnrolledDevicesProvider);
+    final reEnrolment = ref.read(reEnrolmentProvider);
 
-    switch (await store.support()) {
+    /// Stops this check once it no longer matters: a newer check runs, or
+    /// someone else has signed in meanwhile. Called after every wait and
+    /// before anything changes, so a stale check never signs, enrols or
+    /// stores anything for the wrong person.
+    void stillCurrent() {
+      if (!ref.mounted || ref.read(sessionProvider)?.id != userId) {
+        throw const _Superseded();
+      }
+    }
+
+    final support = await store.support();
+    stillCurrent();
+    switch (support) {
       case KeyStoreSupport.updateBrowser:
         signer.clear();
         return DeviceGate(userId: userId, stage: DeviceStage.updateBrowser);
@@ -129,20 +158,31 @@ class DeviceGateNotifier extends AsyncNotifier<DeviceGate> {
         break;
     }
 
-    var identity = await store.load(userId) ?? await store.create(userId);
+    final stored = await store.load(userId);
+    stillCurrent();
+    var identity = stored ?? await store.create(userId);
+    stillCurrent();
     try {
       // Written only when it changes: this runs every 15 seconds while the
       // device waits.
       if (await store.lastAccount() != userId) {
+        stillCurrent();
         await store.rememberLastAccount(userId);
       }
+    } on _Superseded {
+      rethrow;
     } on Object {
       // Only the next sign-in's signature depends on it.
     }
+    stillCurrent();
     final platform = currentDevicePlatform();
     final label = deviceLabel(platform, userAgent: platformUserAgent());
 
-    DeviceGate gate(DeviceStage stage, {DeviceView? view}) => DeviceGate(
+    DeviceGate gate(
+      DeviceStage stage, {
+      DeviceView? view,
+      AppProblem? problem,
+    }) => DeviceGate(
       userId: userId,
       stage: stage,
       deviceId: identity.deviceId,
@@ -153,20 +193,38 @@ class DeviceGateNotifier extends AsyncNotifier<DeviceGate> {
       label: view?.label ?? label,
       needsSecondApproval: view?.needsSecondApproval ?? false,
       checkedAt: ref.read(deviceClockProvider)(),
-      serverForgot: reEnrolled.contains(identity.deviceId),
+      serverForgot: reEnrolment.devices.contains(identity.deviceId),
+      problem: problem,
     );
+
+    // Whether this check has changed the device (cleared its signature or
+    // forgotten its id): an earlier answer then no longer holds.
+    var changed = false;
 
     /// Enrols [identity]'s keys; nothing is signed as this device before
     /// the server knows it.
     Future<DeviceView> enrol() async {
+      changed = true;
       signer.clear();
       final keys = identity.keys;
       final view = await trackedDeviceCheck(
         ref,
-        () => api.enrolDevice(keys: keys, label: label, platform: platform),
+        () => api.enrolDevice(
+          userId: userId,
+          keys: keys,
+          label: label,
+          platform: platform,
+        ),
       );
+      stillCurrent();
       identity = await store.saveDeviceId(userId, view.id);
+      stillCurrent();
       signer.use(identity);
+      // Enrolled again because the server had forgotten the device (also
+      // when that took a second try, or signing in again).
+      if (reEnrolment.accounts.remove(userId)) {
+        reEnrolment.devices.add(view.id);
+      }
       return view;
     }
 
@@ -178,14 +236,19 @@ class DeviceGateNotifier extends AsyncNotifier<DeviceGate> {
         signer.use(identity);
         try {
           view = await trackedDeviceCheck(ref, api.myDevice);
+          stillCurrent();
         } on AppProblem catch (problem) {
           if (problem.kind != ProblemKind.deviceUnknown) rethrow;
+          stillCurrent();
           // The server no longer knows this device (for example, it was
           // restored from an older backup). The same keys are enrolled
           // again, once, and wait for approval again.
+          changed = true;
+          signer.clear();
+          reEnrolment.accounts.add(userId);
           identity = await store.forgetDeviceId(userId);
+          stillCurrent();
           view = await enrol();
-          reEnrolled.add(view.id);
         }
       }
       return gate(switch (view.status) {
@@ -195,7 +258,10 @@ class DeviceGateNotifier extends AsyncNotifier<DeviceGate> {
         DeviceStatus.revoked => DeviceStage.revoked,
         DeviceStatus.unknown => DeviceStage.notRecognised,
       }, view: view);
-    } on AppProblem catch (problem) {
+    } on _Superseded {
+      rethrow;
+    } on Object catch (error) {
+      final problem = problemFrom(error);
       final stage = switch (problem.kind) {
         ProblemKind.deviceRevoked => DeviceStage.revoked,
         ProblemKind.deviceExpired => DeviceStage.expired,
@@ -207,8 +273,18 @@ class DeviceGateNotifier extends AsyncNotifier<DeviceGate> {
         ProblemKind.deviceKeyInUse => DeviceStage.notRecognised,
         _ => null,
       };
-      if (stage == null) rethrow;
-      return gate(stage);
+      if (stage != null) return gate(stage);
+      // Shown as it is, never hidden behind an earlier answer such as
+      // "ready": the session has ended or is another device's, too many
+      // devices wait, or this check has already changed the device.
+      if (changed ||
+          problem.action == ProblemAction.signInAgain ||
+          problem.kind == ProblemKind.tooManyWaitingDevices) {
+        return gate(DeviceStage.problem, problem: problem);
+      }
+      // Nothing changed (for example, offline): the last answer stays on
+      // screen with the problem beside it.
+      rethrow;
     }
   }
 
@@ -231,13 +307,28 @@ class DeviceGateNotifier extends AsyncNotifier<DeviceGate> {
   }
 }
 
-/// The ids of devices enrolled again because the server no longer knew
-/// them, for the server in use, so the waiting screen can say why it waits
-/// (also after a check every 15 seconds, or signing in again).
-final reEnrolledDevicesProvider = Provider<Set<String>>((ref) {
+/// What the device check remembers about devices the server no longer
+/// knew, for the server in use, so the waiting screen can say why it waits
+/// (also after a check every 15 seconds, a second try or signing in again).
+class ReEnrolment {
+  /// The people whose device id was forgotten and who are not enrolled
+  /// again yet.
+  final Set<String> accounts = <String>{};
+
+  /// The ids the server gave those devices when they were enrolled again.
+  final Set<String> devices = <String>{};
+}
+
+/// Holds the [ReEnrolment] for the server in use.
+final reEnrolmentProvider = Provider<ReEnrolment>((ref) {
   ref.watch(serverUrlProvider);
-  return <String>{};
+  return ReEnrolment();
 });
+
+/// A device check that stopped because it no longer matters.
+class _Superseded implements Exception {
+  const _Superseded();
+}
 
 /// This device's standing for the person signed in.
 final deviceGateProvider =

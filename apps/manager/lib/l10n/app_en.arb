@@ -2875,13 +2875,9 @@
   "@deviceFirstAdminTitle": {
     "description": "Heading above the server command for the very first admin."
   },
-  "deviceFirstAdminBody": "Then nobody can approve you in the app yet. Ask the person who runs the server to type this command on it:",
+  "deviceFirstAdminBody": "Then nobody can approve you in the app yet. The person who runs the server types this command on it, with this device’s 18 numbers in place of the words in angle brackets. They must read the numbers from this screen themselves, in person or on a phone call. Never send the numbers by message.",
   "@deviceFirstAdminBody": {
     "description": "Explains the server command for the very first admin."
-  },
-  "deviceCommandCopied": "Command copied.",
-  "@deviceCommandCopied": {
-    "description": "Message after copying the server command."
   },
   "deviceNoMessages": "Your approver will not accept these numbers by text message, email or chat: read them out or show your screen.",
   "@deviceNoMessages": {
@@ -3246,5 +3242,26 @@
   "deviceServerForgot": "The server no longer knew this device, so it needs approval again.",
   "@deviceServerForgot": {
     "description": "Waiting screen note: the device was enrolled again because the server no longer knew it."
+  },
+  "deviceCommandPlaceholder": "the 18 numbers on this screen",
+  "@deviceCommandPlaceholder": {
+    "description": "Placeholder inside the server command, in angle brackets: the person at the server reads the numbers from the screen."
+  },
+  "deviceIdLine": "This device’s id: {id}",
+  "@deviceIdLine": {
+    "description": "The device id under the server command.",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceIdCopy": "Copy the device id",
+  "@deviceIdCopy": {
+    "description": "Tooltip: copy only the device id (never the 18 numbers)."
+  },
+  "deviceIdCopied": "Device id copied.",
+  "@deviceIdCopied": {
+    "description": "Message after copying the device id."
   }
 }

@@ -2374,10 +2374,7 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get deviceFirstAdminBody =>
-      'তাহলে এখনও কেউ অ্যাপে আপনাকে অনুমোদন দিতে পারবেন না। যিনি সার্ভার চালান, তাঁকে সার্ভারে এই কমান্ডটি টাইপ করতে বলুন:';
-
-  @override
-  String get deviceCommandCopied => 'কমান্ড কপি হয়েছে।';
+      'তাহলে এখনও কেউ অ্যাপে আপনাকে অনুমোদন দিতে পারবেন না। যিনি সার্ভার চালান, তিনি সার্ভারে এই কমান্ডটি টাইপ করবেন, কোণ-বন্ধনীর লেখার জায়গায় এই ডিভাইসের ১৮টি নম্বর বসিয়ে। নম্বরগুলো তাঁকে নিজে এই স্ক্রিন থেকে পড়তে হবে, সামনাসামনি বা ফোনে। নম্বরগুলো কখনো মেসেজে পাঠাবেন না।';
 
   @override
   String get deviceNoMessages =>
@@ -2648,4 +2645,18 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get deviceServerForgot =>
       'সার্ভার এই ডিভাইসটি আর চিনত না, তাই এটির আবার অনুমোদন দরকার।';
+
+  @override
+  String get deviceCommandPlaceholder => 'এই স্ক্রিনের ১৮টি নম্বর';
+
+  @override
+  String deviceIdLine(String id) {
+    return 'এই ডিভাইসের আইডি: $id';
+  }
+
+  @override
+  String get deviceIdCopy => 'ডিভাইসের আইডি কপি করুন';
+
+  @override
+  String get deviceIdCopied => 'ডিভাইসের আইডি কপি হয়েছে।';
 }

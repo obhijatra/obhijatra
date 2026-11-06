@@ -1083,10 +1083,15 @@ class PocketBaseApi implements ManagerApi {
 
   @override
   Future<DeviceView> enrolDevice({
+    required String userId,
     required DeviceKeys keys,
     required String label,
     required String platform,
   }) async {
+    // The keys are someone else's when another person signed in meanwhile.
+    if (_pb.authStore.record?.id != userId) {
+      throw const AppProblem(ProblemKind.signInRequired);
+    }
     // Signed with the keys it enrols ("enrol" as the device), whatever the
     // device signer holds: this proves the device has the private key.
     final enrol = PocketBase(

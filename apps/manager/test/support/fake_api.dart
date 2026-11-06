@@ -147,6 +147,9 @@ class FakeManagerApi implements ManagerApi {
   /// The role of the account [signIn] answers with.
   String signInRole = 'org_admin';
 
+  /// The id of the account [signIn] answers with.
+  String signInId = 'u1';
+
   /// Every password sign-in, in order.
   final List<(String, String)> signIns = <(String, String)>[];
 
@@ -156,7 +159,7 @@ class FakeManagerApi implements ManagerApi {
     if (f != null) throw f;
     signIns.add((email, password));
     return user = StaffUser(
-      id: 'u1',
+      id: signInId,
       name: 'Tania Rahman',
       email: email,
       role: signInRole,
@@ -1050,10 +1053,14 @@ class FakeManagerApi implements ManagerApi {
 
   @override
   Future<DeviceView> enrolDevice({
+    required String userId,
     required DeviceKeys keys,
     required String label,
     required String platform,
   }) async {
+    if (user?.id != userId) {
+      throw const AppProblem(ProblemKind.signInRequired, statusCode: 401);
+    }
     final failure = enrolFailure;
     if (failure != null) throw failure;
     deviceUnknown = false;

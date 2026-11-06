@@ -3611,14 +3611,8 @@ abstract class AppLocalizations {
   /// Explains the server command for the very first admin.
   ///
   /// In en, this message translates to:
-  /// **'Then nobody can approve you in the app yet. Ask the person who runs the server to type this command on it:'**
+  /// **'Then nobody can approve you in the app yet. The person who runs the server types this command on it, with this device’s 18 numbers in place of the words in angle brackets. They must read the numbers from this screen themselves, in person or on a phone call. Never send the numbers by message.'**
   String get deviceFirstAdminBody;
-
-  /// Message after copying the server command.
-  ///
-  /// In en, this message translates to:
-  /// **'Command copied.'**
-  String get deviceCommandCopied;
 
   /// Tells the person how to pass the numbers on.
   ///
@@ -4063,6 +4057,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server no longer knew this device, so it needs approval again.'**
   String get deviceServerForgot;
+
+  /// Placeholder inside the server command, in angle brackets: the person at the server reads the numbers from the screen.
+  ///
+  /// In en, this message translates to:
+  /// **'the 18 numbers on this screen'**
+  String get deviceCommandPlaceholder;
+
+  /// The device id under the server command.
+  ///
+  /// In en, this message translates to:
+  /// **'This device’s id: {id}'**
+  String deviceIdLine(String id);
+
+  /// Tooltip: copy only the device id (never the 18 numbers).
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the device id'**
+  String get deviceIdCopy;
+
+  /// Message after copying the device id.
+  ///
+  /// In en, this message translates to:
+  /// **'Device id copied.'**
+  String get deviceIdCopied;
 }
 
 class _AppLocalizationsDelegate

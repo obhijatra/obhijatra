@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -71,9 +72,15 @@ class MemoryIdentityStore implements DeviceIdentityStore {
     return identities[account];
   }
 
+  /// When set, the next [create] waits for it (once).
+  Completer<void>? createGate;
+
   @override
   Future<DeviceIdentity> create(String account) async {
     _check();
+    final wait = createGate;
+    createGate = null;
+    if (wait != null) await wait.future;
     final identity = DeviceIdentity(keys: FakeDeviceKeys(created++));
     identities[account] = identity;
     return identity;
