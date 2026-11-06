@@ -1,4 +1,7 @@
 // Runs in a real browser: flutter test --platform chrome test/web
+// Not in CI yet: with Flutter 3.47.9 that command hangs on GitHub's
+// runners (6 November 2026). Run it by hand after changing the web key
+// store; the shared package's Chrome and Wasm tests do run in CI.
 @TestOn('browser')
 library;
 
