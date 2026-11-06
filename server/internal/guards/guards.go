@@ -286,6 +286,16 @@ func Register(app core.App) {
 	// Devices: the fields that decide whether a device is trusted are never
 	// written through the records API, by anyone, superusers and the
 	// Dashboard included; enrolment will go through the server's own route.
+	// The export log is written only by the export route: nobody, not even
+	// a superuser in the Dashboard, adds, changes or removes an entry
+	// through the records API.
+	refuseExportWrite := func(e *core.RecordRequestEvent) error {
+		return router.NewForbiddenError("The export log is written only by the server when someone downloads submissions.", nil)
+	}
+	app.OnRecordCreateRequest(schema.Exports).BindFunc(refuseExportWrite)
+	app.OnRecordUpdateRequest(schema.Exports).BindFunc(refuseExportWrite)
+	app.OnRecordDeleteRequest(schema.Exports).BindFunc(refuseExportWrite)
+
 	app.OnRecordCreateRequest(schema.Devices).BindFunc(func(e *core.RecordRequestEvent) error {
 		if err := refuseDeviceTrustFields(e, nil); err != nil {
 			return err

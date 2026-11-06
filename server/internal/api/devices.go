@@ -380,6 +380,11 @@ func recordSession(e *core.RecordAuthRequestEvent) error {
 	sum := sha256.Sum256([]byte(e.Token))
 	s.Set("token_hash", hex.EncodeToString(sum[:]))
 	s.Set("issued", types.NowDateTime())
+	if e.AuthMethod != "" {
+		// A sign-in, not a refresh: downloads need one within the last
+		// 15 minutes (schema.RecentSignIn).
+		s.Set("signed_in", types.NowDateTime())
+	}
 
 	if d, ok := e.Get(deviceRecordKey).(*core.Record); ok && ownsDevice(e.Record, d) {
 		s.Set("device", d.Id)

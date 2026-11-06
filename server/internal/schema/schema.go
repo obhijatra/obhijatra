@@ -19,6 +19,7 @@ const (
 	Submissions  = "submissions"
 	Devices      = "devices"
 	Sessions     = "sessions"
+	Exports      = "exports"
 	LoginLocks   = "login_locks"
 	Audit        = "audit"
 
@@ -54,8 +55,32 @@ const (
 // hooks and routes refer to them by name.
 var CoreCollections = []string{
 	Settings, Locations, FieldUsers, StaffUsers, Forms, FormVersions,
-	Submissions, Devices, Sessions, LoginLocks, Audit,
+	Submissions, Devices, Sessions, LoginLocks, Audit, Exports,
 }
+
+// Export statuses: an export is recorded before its download starts and
+// marked completed, with the SHA-256 of its manifest, once the last byte is
+// written.
+const (
+	ExportStarted   = "started"
+	ExportCompleted = "completed"
+	ExportFailed    = "failed"
+)
+
+// ExportStatuses lists every export status.
+var ExportStatuses = []string{ExportStarted, ExportCompleted, ExportFailed}
+
+// ExportRoles may download submissions: org admins everything, M&E staff
+// their part of the organisation tree.
+var ExportRoles = []string{RoleOrgAdmin, RoleME}
+
+// RecentSignIn is how recently a person must have signed in (not merely
+// refreshed a session) to download submissions.
+const RecentSignIn = 15 * time.Minute
+
+// ReasonRecentSignInRequired: the download needs a sign-in within
+// RecentSignIn; the app asks for the password (or another sign-in) again.
+const ReasonRecentSignInRequired = "recent_sign_in_required"
 
 // IsCoreCollection reports whether name is one of CoreCollections.
 func IsCoreCollection(name string) bool {
@@ -434,6 +459,10 @@ var (
 
 // Session rules: rows are written by the server; an org admin may revoke.
 var (
+	// ExportsRead: org admins see every export; anyone else sees their own.
+	// Exports are written only by the export route.
+	ExportsRead = Active + ` && (` + isOrgAdmin + ` || staff_user = @request.auth.id)`
+
 	SessionsRead = Active + ` && (` +
 		`(` + isField + ` && field_user = @request.auth.id)` +
 		` || (` + isStaff + ` && staff_user = @request.auth.id)` +

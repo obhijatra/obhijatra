@@ -261,7 +261,8 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			windBackSchemaVersion6(t, app)
 			windBackSchemaVersion7(t, app)
 			windBackSchemaVersion8(t, app)
-			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%' OR file LIKE '1793836800_%' OR file LIKE '1793840400_%' OR file LIKE '1793844000_%'").Execute(); err != nil {
+			windBackSchemaVersion9(t, app)
+			if _, err := app.DB().NewQuery("DELETE FROM _migrations WHERE file LIKE '1793822400_%' OR file LIKE '1793826000_%' OR file LIKE '1793829600_%' OR file LIKE '1793833200_%' OR file LIKE '1793836800_%' OR file LIKE '1793840400_%' OR file LIKE '1793844000_%' OR file LIKE '1793847600_%'").Execute(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -273,6 +274,7 @@ func TestUpgradeWidensTheOldSignInRateLimit(t *testing.T) {
 			checkSchemaVersion6(t, app)
 			checkSchemaVersion7(t, app)
 			checkSchemaVersion8(t, app)
+			checkSchemaVersion9(t, app)
 
 			rule, ok := app.Settings().RateLimits.FindRateLimitRule([]string{"*:auth"})
 			if !ok || rule.MaxRequests != c.wantRequests || rule.Duration != c.wantSeconds {
@@ -668,5 +670,37 @@ func TestPostureChecksTheWebAddressForHTTPS(t *testing.T) {
 	if !strings.Contains(got, "[TESTING ONLY] Web address http://192.168.1.10:8090 is plain http://") ||
 		strings.Contains(got, "is not https://") {
 		t.Errorf("a private-network http address is for testing only, without the red warning:\n%s", got)
+	}
+}
+
+// windBackSchemaVersion9 undoes schema version 9: no signed_in on
+// sessions, no export log.
+func windBackSchemaVersion9(t *testing.T, app core.App) {
+	t.Helper()
+	c, _ := app.FindCollectionByNameOrId(schema.Sessions)
+	c.Fields.RemoveByName("signed_in")
+	if err := app.Save(c); err != nil {
+		t.Fatal(err)
+	}
+	if e, err := app.FindCollectionByNameOrId(schema.Exports); err == nil {
+		// The guards refuse to delete a core collection; go round them.
+		if _, err := app.DB().NewQuery("DROP TABLE {{" + schema.Exports + "}}").Execute(); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := app.DB().NewQuery("DELETE FROM _collections WHERE id = {:id}").Bind(map[string]any{"id": e.Id}).Execute(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func checkSchemaVersion9(t *testing.T, app core.App) {
+	t.Helper()
+	c, _ := app.FindCollectionByNameOrId(schema.Sessions)
+	if c.Fields.GetByName("signed_in") == nil {
+		t.Error("after the upgrade sessions have no signed_in")
+	}
+	e, err := app.FindCollectionByNameOrId(schema.Exports)
+	if err != nil || *e.ListRule != schema.ExportsRead || e.CreateRule != nil {
+		t.Errorf("after the upgrade the export log is missing or open: %v", err)
 	}
 }

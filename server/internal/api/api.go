@@ -38,6 +38,10 @@ func Register(app core.App) {
 				apis.RequireAuth(schema.FieldUsers),
 				apis.BodyLimit(submissionBodyLimit),
 			)
+			g.POST(ExportSubmissionsPath, exportSubmissions).Bind(
+				apis.RequireAuth(schema.StaffUsers),
+				apis.BodyLimit(16<<10),
+			)
 			registerDevices(app, se)
 
 			return se.Next()
