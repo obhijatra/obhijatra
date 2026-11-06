@@ -102,6 +102,8 @@ var (
 		"This device is not set up for this server yet. Sign in again on this device.")
 	errSignatureInvalid = deviceProblem(http.StatusForbidden, schema.ReasonDeviceSignatureInvalid,
 		"This request could not be checked. Try again; if it keeps happening, sign in again.")
+	errDeviceUnknown = deviceProblem(http.StatusForbidden, schema.ReasonDeviceUnknown,
+		"The server does not know this device. Set it up again; it will need approval again.")
 	errDeviceClock = deviceProblem(http.StatusForbidden, schema.ReasonDeviceClock,
 		"This device's date or time is wrong. Set the date and time, then try again.")
 	errDeviceNotApproved = deviceProblem(http.StatusForbidden, schema.ReasonDeviceNotApproved,
@@ -200,7 +202,10 @@ func verifiedDevice(e *core.RequestEvent, person *core.Record) (*core.Record, er
 	}
 	device, err := e.App.FindRecordById(schema.Devices, id)
 	if err != nil || !ownsDevice(person, device) {
-		return nil, errSignatureInvalid
+		// Not one of this person's devices: for example, the server was
+		// restored from a backup older than the enrolment. The app enrols
+		// again (and needs approval again).
+		return nil, errDeviceUnknown
 	}
 	key, err := devicetrust.DecodeKey(device.GetString("sign_public_key"))
 	if err != nil {

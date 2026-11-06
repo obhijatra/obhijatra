@@ -37,6 +37,11 @@ abstract final class DeviceReason {
   /// The signature, its nonce or its device did not check out.
   static const String signatureInvalid = 'device_signature_invalid';
 
+  /// The server does not know this device (for example, it was restored
+  /// from a backup older than the enrolment): enrol again with the same
+  /// keys; the device needs approval again.
+  static const String unknown = 'device_unknown';
+
   /// The device's clock is more than 5 minutes from the server's.
   static const String clock = 'device_clock';
 

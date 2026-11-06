@@ -820,3 +820,38 @@ func TestBearerInAnyCase(t *testing.T) {
 		}
 	}
 }
+
+// A device the server does not know (for example after restoring an older
+// backup) is told so, and can enrol again with the same keys.
+func TestAnUnknownDeviceIsToldSoAndEnrolsAgain(t *testing.T) {
+	o, mux, app, done := strictApp(t)
+	defer done()
+	a := asApprover(t, app, o.Field1)
+	for name, id := range map[string]string{
+		"no such device":        "nosuchdevice123",
+		"someone else's device": testutil.Device(t, app, o.Peer1).ID,
+	} {
+		if status, body := signed(mux, http.MethodGet, formsURL, a.token, id, a.dev.Key, nil); status != http.StatusForbidden ||
+			!reasonIs(body, schema.ReasonDeviceUnknown) {
+			t.Errorf("%s: %d %s", name, status, body)
+		}
+	}
+
+	// The phone's record is lost; it signs in and enrols the same keys.
+	phone := freshPhone()
+	_, id := phone.enrol(t, mux, schema.FieldUsers, "field1@example.org")
+	if _, err := app.DB().NewQuery("DELETE FROM sessions WHERE device = {:d}").Bind(dbx.Params{"d": id}).Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := app.DB().NewQuery("DELETE FROM devices WHERE id = {:d}").Bind(dbx.Params{"d": id}).Execute(); err != nil {
+		t.Fatal(err)
+	}
+	token, newID := phone.enrol(t, mux, schema.FieldUsers, "field1@example.org")
+	if newID == id {
+		t.Fatal("the lost record came back")
+	}
+	if status, body := signed(mux, http.MethodGet, meURL, token, newID, phone.key, nil); status != http.StatusOK ||
+		!strings.Contains(body, `"status":"pending"`) {
+		t.Errorf("after enrolling again: %d %s", status, body)
+	}
+}

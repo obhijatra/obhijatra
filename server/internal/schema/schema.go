@@ -218,6 +218,7 @@ var DevicePlatforms = []string{"android", "ios", "windows", "macos", "linux", "w
 const (
 	ReasonDeviceSignatureRequired = "device_signature_required"
 	ReasonDeviceSignatureInvalid  = "device_signature_invalid"
+	ReasonDeviceUnknown           = "device_unknown"
 	ReasonDeviceClock             = "device_clock"
 	ReasonDeviceNotApproved       = "device_not_approved"
 	ReasonDeviceRevoked           = "device_revoked"

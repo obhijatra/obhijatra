@@ -133,6 +133,7 @@ Every refusal gives a reason code in `data.reason.code`, so the apps can show th
 
 - `device_signature_required`
 - `device_signature_invalid`
+- `device_unknown`: the device id is not one of the person's devices, for example after the server was restored from an older backup. The app enrols again with the same keys, and the device needs approval again.
 - `device_clock`
 - `device_not_approved`
 - `device_revoked`
