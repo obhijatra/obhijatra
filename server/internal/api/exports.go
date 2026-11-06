@@ -83,11 +83,16 @@ func exportSubmissions(e *core.RequestEvent) error {
 	if err != nil {
 		return err
 	}
+	var states []string
 	for _, s := range body.ReviewStates {
 		if !slices.Contains(schema.ReviewStates, s) {
 			return exportFieldError("review_states", "validation_invalid_review_state", "Unknown review state: "+s+".")
 		}
+		if !slices.Contains(states, s) {
+			states = append(states, s)
+		}
 	}
+	body.ReviewStates = states
 	form, err := e.App.FindRecordById(schema.Forms, body.Form)
 	if err != nil {
 		return exportFieldError("form", "validation_form_not_found", "This form does not exist.")
@@ -149,6 +154,9 @@ func exportSubmissions(e *core.RequestEvent) error {
 			var batch []*core.Record
 			if err := q.OrderBy("received_at ASC", "id ASC").Limit(exportBatch).All(&batch); err != nil {
 				return err
+			}
+			if err := e.Request.Context().Err(); err != nil {
+				return err // the person stopped waiting: stop working
 			}
 			for _, r := range batch {
 				used[r.GetString("form_version")] = true
@@ -271,10 +279,17 @@ func exportSubmissions(e *core.RequestEvent) error {
 	}
 	entry.Set("status", status)
 	entry.Set("manifest_sha256", manifest)
+	entry.Set("files", prepared.Files)
 	if err := audit.RunAs(e.App, audit.ActorFromRequest(e), func(tx core.App) error { return tx.Save(entry) }); err != nil {
 		e.App.Logger().Error("export: could not record the end of a download", "error", err)
 	}
-	return nil // the response has started: an error can no longer be sent
+	if status == schema.ExportFailed {
+		// The response has started, so no error can be sent: break the
+		// connection instead, so the app sees an unfinished download
+		// rather than a short file that looks complete.
+		panic(http.ErrAbortHandler)
+	}
+	return nil
 }
 
 // deadlineWriter moves the response's write deadline on before each
@@ -297,7 +312,10 @@ func signedInRecently(e *core.RequestEvent) bool {
 		return false
 	}
 	at := s.GetDateTime("signed_in")
-	return !at.IsZero() && time.Since(at.Time()) <= schema.RecentSignIn
+	if at.IsZero() || at.Time().After(time.Now()) { // a time in the future was not set by a sign-in
+		return false
+	}
+	return time.Since(at.Time()) <= schema.RecentSignIn
 }
 
 func exportPeriod(b ExportRequest) (from, to time.Time, err error) {

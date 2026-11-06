@@ -34,7 +34,9 @@ type Field struct {
 // ParseDefinition and returns the fields of its primary instance in
 // document order (depth first: a group, then everything inside it).
 //
-// Like ODK Central, it takes the tree from the primary instance, value
+// Like ODK Central, it takes the tree from the primary instance (when a
+// repeat appears more than once, the children of every copy, each in the
+// place of its first appearance), value
 // types from <bind nodeset type>, repeats from <repeat nodeset> and select
 // multiples from <select ref> in the body. Several copies of a repeat in
 // the instance (including a jr:template copy) count once.
@@ -52,10 +54,12 @@ func ParseFields(r io.Reader) ([]Field, error) {
 		seenPrimary                        bool
 		rootName                           string
 
-		// the instance tree, in order of first appearance
-		order    []string
-		parent   = map[string]bool{} // path -> has element children
-		instPath []string            // names below the root of the open instance elements
+		// the instance tree: each node's children in order of first
+		// appearance, so copies of a repeat with different children still
+		// give one tree in document order
+		children = map[string][]string{} // parent path ("" for the root) -> child paths
+		parent   = map[string]bool{}     // path -> has element children
+		instPath []string                // names below the root of the open instance elements
 
 		types   = map[string]string{} // absolute nodeset -> bind type
 		repeats = map[string]bool{}   // absolute nodeset of <repeat>
@@ -118,12 +122,14 @@ func ParseFields(r io.Reader) ([]Field, error) {
 			case d > rootDepth && inPrimary:
 				instPath = append(instPath, t.Name.Local)
 				p := "/" + strings.Join(instPath, "/")
+				up := ""
+				if len(instPath) > 1 {
+					up = "/" + strings.Join(instPath[:len(instPath)-1], "/")
+					parent[up] = true
+				}
 				if _, seen := parent[p]; !seen {
 					parent[p] = false
-					order = append(order, p)
-				}
-				if len(instPath) > 1 {
-					parent["/"+strings.Join(instPath[:len(instPath)-1], "/")] = true
+					children[up] = append(children[up], p)
 				}
 			case inBody:
 				ctx := ""
@@ -162,6 +168,16 @@ func ParseFields(r io.Reader) ([]Field, error) {
 	if rootName == "" {
 		return nil, notXForm("the form has no primary instance with a root element")
 	}
+
+	var order []string
+	var visit func(string)
+	visit = func(p string) {
+		for _, c := range children[p] {
+			order = append(order, c)
+			visit(c)
+		}
+	}
+	visit("")
 
 	abs := func(p string) string { return "/" + rootName + p }
 	fields := make([]Field, 0, len(order))

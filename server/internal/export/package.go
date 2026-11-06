@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -97,15 +98,19 @@ func (p *Package) Prepare(tempDir string) (*Prepared, error) {
 	}
 	pr := &Prepared{p: p, dir: dir}
 	var files []*os.File
+	ok := false
 	defer func() {
 		for _, f := range files {
 			_ = f.Close()
 		}
+		if !ok { // an error or a panic: leave nothing behind
+			pr.Close()
+		}
 	}()
+	plan := newMediaPlan()
 
 	ids, err := os.Create(filepath.Join(dir, "ids"))
 	if err != nil {
-		pr.Close()
 		return nil, err
 	}
 	files = append(files, ids)
@@ -119,7 +124,6 @@ func (p *Package) Prepare(tempDir string) (*Prepared, error) {
 		return f, nil
 	})
 	if err != nil {
-		pr.Close()
 		return nil, err
 	}
 
@@ -148,7 +152,7 @@ func (p *Package) Prepare(tempDir string) (*Prepared, error) {
 			}
 		}
 		if p.IncludeMedia {
-			pr.Files += len(s.Media)
+			pr.Files += len(plan.add(s))
 		}
 		pr.Count++
 		if _, err := io.WriteString(ids, s.ID+"\n"); err != nil {
@@ -160,12 +164,84 @@ func (p *Package) Prepare(tempDir string) (*Prepared, error) {
 		err = tables.Flush()
 	}
 	if err != nil {
-		pr.Close()
 		return nil, err
 	}
 	pr.tables = tables.All()
+	pr.warnings = append(pr.warnings, tables.Warnings...)
+	ok = true
 	return pr, nil
 }
+
+// mediaPlan decides where each media file goes in the package: media/<name>,
+// once for the very same file; a different file with a name already used
+// goes in a folder named after its submission.
+type mediaPlan struct {
+	at    map[string]string // path in the package -> SHA-256
+	names *entryNames
+}
+
+type plannedMedia struct {
+	path, want, name string
+	open             Opener
+	moved            bool
+}
+
+func newMediaPlan() *mediaPlan {
+	return &mediaPlan{at: map[string]string{}, names: newEntryNames()}
+}
+
+// add returns the files of s that the package holds, in order.
+func (m *mediaPlan) add(s Submission) []plannedMedia {
+	var out []plannedMedia
+	for _, f := range s.Media {
+		path := "media/" + SafeName(f.Name)
+		moved := false
+		if sum, taken := m.at[strings.ToLower(path)]; taken {
+			if sum == f.SHA256 {
+				continue // the very same file, already included
+			}
+			path = m.names.unique("media/"+instanceFileName(s.Meta.InstanceID)+"/", SafeName(f.Name), s.ID)
+			moved = true
+		} else {
+			path = m.names.unique("media/", SafeName(f.Name), s.ID)
+		}
+		m.at[strings.ToLower(path)] = f.SHA256
+		out = append(out, plannedMedia{path: path, want: f.SHA256, name: f.Name, open: f.Open, moved: moved})
+	}
+	return out
+}
+
+// entryNames keeps every name in the package different, ignoring case
+// (Windows and macOS do), so unzipping never overwrites one file with
+// another.
+type entryNames struct{ used map[string]bool }
+
+func newEntryNames() *entryNames { return &entryNames{used: map[string]bool{}} }
+
+// unique returns dir+name, or, when that is taken, the name with "~" and
+// suffix (then a number) before its extension.
+func (n *entryNames) unique(dir, name, suffix string) string {
+	full := dir + name
+	if !n.used[strings.ToLower(full)] {
+		n.used[strings.ToLower(full)] = true
+		return full
+	}
+	ext := path.Ext(name)
+	stem := strings.TrimSuffix(name, ext)
+	for i := 1; ; i++ {
+		alt := stem + "~" + suffix
+		if i > 1 {
+			alt += fmt.Sprintf("~%d", i)
+		}
+		full = dir + SafeName(alt) + ext
+		if !n.used[strings.ToLower(full)] {
+			n.used[strings.ToLower(full)] = true
+			return full
+		}
+	}
+}
+
+func instanceFileName(id string) string { return SafeName(strings.ReplaceAll(id, ":", "_")) }
 
 // reload calls fn for every submission Prepare listed, in its order.
 func (pr *Prepared) reload(fn func(Submission) error) error {
@@ -250,8 +326,13 @@ func (pr *Prepared) Write(w io.Writer) (string, error) {
 		return add(name, method, rc)
 	}
 
-	// 1. The CSV tables, root first.
+	names := newEntryNames()
+	plan := newMediaPlan()
+	plan.names = names
+
+	// 1. The CSV tables, root first (NewTables keeps their names apart).
 	for _, t := range pr.tables {
+		names.unique("", t.Name, "")
 		if _, err := addOpened(t.Name, zip.Deflate, func() (io.ReadCloser, error) {
 			return os.Open(filepath.Join(pr.dir, t.Name))
 		}); err != nil {
@@ -260,59 +341,59 @@ func (pr *Prepared) Write(w io.Writer) (string, error) {
 	}
 
 	// 2. The form's XML, each version once.
-	for _, v := range p.Versions {
-		name := "forms/" + SafeName(p.FormID+"_"+v.Version) + ".xml"
+	for i, v := range p.Versions {
+		name := names.unique("forms/", SafeName(p.FormID+"_"+v.Version)+".xml", fmt.Sprintf("v%d", i+1))
 		if _, err := addOpened(name, zip.Deflate, v.XML); err != nil {
 			return "", err
 		}
 	}
 
 	// 3. Each submission's XML as it arrived, and 4. its media files.
-	mediaAt := map[string]string{} // path in the package -> SHA-256
-	var media []struct {
-		path, want string
-		open       Opener
-	}
+	var media []plannedMedia
 	err := pr.reload(func(s Submission) error {
-		name := "submissions/" + SafeName(strings.ReplaceAll(s.Meta.InstanceID, ":", "_")) + ".xml"
+		name := names.unique("submissions/", instanceFileName(s.Meta.InstanceID)+".xml", s.ID)
+		if name != "submissions/"+instanceFileName(s.Meta.InstanceID)+".xml" {
+			pr.warnings = append(pr.warnings, fmt.Sprintf(
+				"%s: another submission's id gives the same file name, so this one is %s", s.Meta.InstanceID, name))
+		}
 		if _, err := addOpened(name, zip.Deflate, s.XML); err != nil {
 			return err
 		}
-		if !p.IncludeMedia {
-			return nil
-		}
-		for _, m := range s.Media {
-			path := "media/" + SafeName(m.Name)
-			if sum, taken := mediaAt[path]; taken && sum != m.SHA256 {
-				// Two submissions sent different files with one name:
-				// the second goes in a folder of its own.
-				path = "media/" + SafeName(strings.ReplaceAll(s.Meta.InstanceID, ":", "_")) + "/" + SafeName(m.Name)
-				pr.warnings = append(pr.warnings, fmt.Sprintf(
-					"%s: another submission sent a different file called %q, so this one is at %s", s.Meta.InstanceID, m.Name, path))
-			} else if taken {
-				continue // the very same file, already included
+		if p.IncludeMedia {
+			for _, m := range plan.add(s) {
+				if m.moved {
+					pr.warnings = append(pr.warnings, fmt.Sprintf(
+						"%s: another submission sent a different file called %q, so this one is %s", s.Meta.InstanceID, m.name, m.path))
+				}
+				media = append(media, m)
 			}
-			mediaAt[path] = m.SHA256
-			media = append(media, struct {
-				path, want string
-				open       Opener
-			}{path, m.SHA256, m.Open})
 		}
 		return nil
 	})
 	if err != nil {
 		return "", err
 	}
+	included := 0
 	for _, m := range media {
-		sum, err := addOpened(m.path, zip.Store, m.open)
+		rc, err := m.open()
+		if err != nil {
+			// A file missing from storage: say so, and carry on.
+			pr.warnings = append(pr.warnings, fmt.Sprintf("%s: the file could not be read on the server and is not in the package", m.path))
+			continue
+		}
+		sum, err := add(m.path, zip.Store, rc)
+		rc.Close()
 		if err != nil {
 			return "", err
 		}
+		included++
 		if m.want != "" && sum != m.want {
 			pr.warnings = append(pr.warnings, fmt.Sprintf(
 				"%s: the file's SHA-256 is not the one recorded when it arrived; it may have been damaged on the server", m.path))
 		}
 	}
+
+	pr.Files = included
 
 	// 5. A plain-language description.
 	if _, err := add("README.txt", zip.Deflate, strings.NewReader(readme(p, pr))); err != nil {
@@ -341,7 +422,7 @@ func (pr *Prepared) Write(w io.Writer) (string, error) {
 		"filters":       p.Filters,
 		"include_media": p.IncludeMedia,
 		"submissions":   pr.Count,
-		"media_files":   len(media),
+		"media_files":   pr.Files,
 		"tables":        tableNames,
 		"csv": map[string]any{
 			"layout":        "ODK Central (groupPaths on, select multiples in one column)",

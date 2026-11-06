@@ -63,8 +63,13 @@ The device gate applies as to every request (ADR 0008).
 
 **CSV conventions.**
 
-- Every CSV is UTF-8 and starts with a byte-order mark. Lines end with CRLF, as RFC 4180 asks.
-- Text that starts with `=`, `+`, `-`, `@`, a tab or a carriage return gets a leading apostrophe, so a spreadsheet cannot run it as a formula (OWASP "CSV injection"). Plain numbers such as `-12.5` or `+8801712345678` are left alone. The XML files keep every answer exactly as sent.
+- Every CSV is UTF-8 and starts with a byte-order mark. Records end with CRLF, as RFC 4180 asks. A line break inside an answer is kept exactly as sent, inside quotes.
+- Text that starts with `=`, `+`, `-`, `@`, a tab or a carriage return gets a leading apostrophe, so a spreadsheet cannot run it as a formula (OWASP "CSV injection"). Plain decimal numbers such as `-12.5`, `-1.5E-4` or `+8801712345678` are left alone. The XML files keep every answer exactly as sent.
+- One submission writes at most 20,000 repeat rows. The rest are left out with a warning in the manifest; the XML has them all. This stops one hostile submission from filling the server's disk during an export.
+- A few columns differ slightly from Central:
+  - `Edits` is always 0, because Obhijatra does not edit submissions yet.
+  - `DeviceID` is the id of Obhijatra's approved device, not the OpenRosa device id.
+  - `AttachmentsExpected` counts the media questions of the version that lays out the columns.
 
 **Columns.** The columns follow the newest published version, as Central uses the form's current version. Answers to questions that only older versions have are in the XML files. This matches Central's default (`deletedFields=false`).
 
@@ -75,6 +80,13 @@ The device gate applies as to every request (ADR 0008).
 - Nothing is sent until the tables are ready, so a broken submission still gives a normal error.
 - A large download moves the server's 5-minute write limit on as long as it keeps moving.
 
+**Names inside the package** never collide, ignoring case, as Windows and macOS do. A second submission whose id gives the same file name gets `~<record id>`, with a warning. Characters that could disguise a file's type, such as a right-to-left override, are removed from names.
+
+**When something goes wrong.**
+- A media file missing from storage is left out, with a warning.
+- Any other failure after the first byte breaks the connection, so the app sees an unfinished download, not a short file that looks complete. The export log records it as `failed`.
+- If the person stops waiting, the server stops preparing.
+
 **Record of every download.** A new `exports` collection records each download:
 
 - who, from which device, which form, the filters, and how many submissions and files;
@@ -82,7 +94,25 @@ The device gate applies as to every request (ADR 0008).
 
 Both writes are entries in the audit chain, so a package can be matched to its entry. Org admins read every entry; other people read only their own. Nobody, not even a superuser, can write the log through the records API.
 
-**Sessions.** Each session now records `signed_in`, the time of the sign-in that made it. A refresh leaves it empty. Password, SMS code and Google all count as sign-ins.
+**Sessions.** Each session now records `signed_in`, the time of the sign-in that made it.
+- A refresh leaves it empty. Password, SMS code and Google all count as sign-ins.
+- Nobody can change it afterwards, not even a superuser.
+- A time in the future does not count.
+
+**Review.** An independent review on 6 November 2026 found no serious issues. It found:
+- a crafted submission that made every later export of its form slow;
+- a failed download that looked complete;
+- large temporary files from one submission;
+- colliding names inside the zip;
+- repeats numbered differently from Central when a group appears twice;
+- a crash on forms whose repeat copies differ;
+- sign-in times that a superuser could change;
+- numbers in exponent form treated as formulas;
+- line breaks changed inside answers;
+- one day lost at clock changes in the app;
+- a weak "Confirm it's you" by Google.
+
+All were fixed, with tests, before release.
 
 ## Consequences
 
@@ -91,7 +121,10 @@ Both writes are entries in the audit chain, so a package can be matched to its e
 - People who sign in only with Google or an SMS code confirm a download by signing in again the same way.
 - **The manager app's Download** (Submissions screen, org admins and M&E staff only):
   - Days are turned into these times in the computer's time zone.
-  - When the last sign-in is too old, a "Confirm it's you" step signs in again by password, Google or an SMS code (never an SMS code for org admins), then retries once.
+  - When the last sign-in is too old, a "Confirm it's you" step signs in again, then retries once.
+    - It offers the password first, then an SMS code (never for org admins).
+    - Google is offered only to someone who signed in with Google and has no phone. A browser already signed in to Google can finish a Google sign-in with only an account chooser, so it proves less that the person is at the computer. This is an accepted risk for Google-only accounts.
+  - The app checks that a download ends with a complete zip directory before calling it done.
   - On Windows and macOS the file streams straight into the place the person chose, and a stopped or failed download is deleted. In a browser the whole file is held in memory first, so very large downloads with media should use a desktop app or leave media out.
   - The app waits up to 10 minutes for the first byte (the server builds the tables first), then 2 minutes between parts.
 - Not yet: protected fields (Phase 3; they will export as envelopes, with `obhijatra-decrypt`), splitting select-multiples into one column per option, case and entity exports, the audit log as CSV, the data dictionary and OData (v1.1).

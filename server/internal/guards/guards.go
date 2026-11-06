@@ -341,9 +341,9 @@ func Register(app core.App) {
 	// device is tied to the first one, once); a revoked session stays
 	// revoked.
 	onUpdate(app, schema.Sessions, func(e *core.RecordEvent, old *core.Record) error {
-		if anyChanged(old, e.Record, "field_user", "staff_user", "token_hash", "issued") ||
+		if anyChanged(old, e.Record, "field_user", "staff_user", "token_hash", "issued", "signed_in") ||
 			(changed(old, e.Record, "device") && old.GetString("device") != "") {
-			return errors.New("a session's user, device, token and issue time cannot be changed")
+			return errors.New("a session's user, device, token, issue time and sign-in time cannot be changed")
 		}
 		wasRevoked := old.GetBool("revoked")
 		if wasRevoked && !e.Record.GetBool("revoked") {

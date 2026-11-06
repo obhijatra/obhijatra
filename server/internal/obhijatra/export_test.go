@@ -266,9 +266,15 @@ func TestADownloadNeedsASignInWithinFifteenMinutes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Nobody can move a session's sign-in time, so wind the clock back
+	// in the database itself.
 	old, _ := types.ParseDateTime(time.Now().Add(-16 * time.Minute))
-	s.Set("signed_in", old)
-	if err := app.Save(s); err != nil {
+	s.Set("signed_in", time.Now().Add(time.Hour))
+	if err := app.Save(s); err == nil {
+		t.Error("a session's sign-in time was changed")
+	}
+	if _, err := app.DB().NewQuery("UPDATE sessions SET signed_in = {:at} WHERE id = {:id}").
+		Bind(dbx.Params{"at": old.String(), "id": s.Id}).Execute(); err != nil {
 		t.Fatal(err)
 	}
 	if status, body, _ := download(t, mux, token, map[string]any{"form": o.form.Id}); status != http.StatusForbidden ||
