@@ -16,7 +16,7 @@ dependencies:
   intl: 0.20.3
   obhijatra_ui: any
   obhijatra_device: any
-  flutter_riverpod: 3.4.3
+  flutter_riverpod: 3.5.0
   # Same version as obhijatra_core pins; the manager talks to the server with
   # it directly because core's barrel is not web-safe (dart:io, sodium, sqlite).
   pocketbase: 0.25.3
