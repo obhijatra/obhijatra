@@ -17,7 +17,7 @@ dependencies:
   http_parser: 4.1.2
   obhijatra_device: any
   pocketbase: 0.25.3
-  riverpod: 3.4.3
+  riverpod: 3.5.0
   sodium: 4.1.2+1
   uuid: 4.6.0
   xml: 7.0.1
