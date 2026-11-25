@@ -12,6 +12,11 @@ type Tx struct {
 	tx *sql.Tx
 }
 
+// Implements [Builder.Unwrap] interface method.
+func (t *Tx) Unwrap() Builder {
+	return t
+}
+
 // Commit commits the transaction.
 func (t *Tx) Commit() error {
 	return t.tx.Commit()

@@ -120,6 +120,11 @@ func MustOpen(driverName, dsn string) (*DB, error) {
 	return db, nil
 }
 
+// Implements [Builder.Unwrap] interface method.
+func (db *DB) Unwrap() Builder {
+	return db
+}
+
 // Clone makes a shallow copy of DB.
 func (db *DB) Clone() *DB {
 	db2 := &DB{
