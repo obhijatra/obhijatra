@@ -15,6 +15,12 @@ import (
 // Builder mainly provides two sets of query building methods: those building SELECT statements
 // and those manipulating DB data or schema (e.g. INSERT statements, CREATE TABLE statements).
 type Builder interface {
+	// Unwrap returns the underlying DB instance this builder is associated with
+	// (usually *dbx.DB or *dbx.Tx).
+	//
+	// This could be useful when operating with nested/wrapped Builder implementations.
+	Unwrap() Builder
+
 	// NewQuery creates a new Query object with the given SQL statement.
 	// The SQL statement may contain parameter placeholders which can be bound with actual parameter
 	// values before the statement is executed.
@@ -113,6 +119,11 @@ type BaseBuilder struct {
 // NewBaseBuilder creates a new BaseBuilder instance.
 func NewBaseBuilder(db *DB, executor Executor) *BaseBuilder {
 	return &BaseBuilder{db, executor}
+}
+
+// Unwrap returns the wrapped DB instance that this builder is associated with.
+func (b *BaseBuilder) Unwrap() Builder {
+	return b.db
 }
 
 // DB returns the DB instance that this builder is associated with.
